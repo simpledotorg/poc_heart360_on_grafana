@@ -1,0 +1,24 @@
+version: '3.8'
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+#    volumes:
+      # Optional: for persistent storage of data, dashboards, and settings
+     # - grafana-storage:/var/lib/grafana
+    # Optional: Set environment variables for initial admin user/password (highly recommended)
+    environment:
+      - GF_INSTALL_PLUGINS=yesoreyeram-infinity-datasource
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ALLOW_EMBEDDING=true 
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SECURITY_DISABLE_PASSWORD_RESET=true
+
+#volumes:
+ # grafana-storage:
+
