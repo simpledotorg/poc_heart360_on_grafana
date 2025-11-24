@@ -25,3 +25,16 @@ services:
     volumes:
       - ./data:/usr/share/nginx/html:ro
     restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=grafana_user
+      - POSTGRES_PASSWORD=your_db_password
+      - POSTGRES_DB=metrics_db
+    volumes:
+      - ./pg_init_scripts:/docker-entrypoint-initdb.d:ro
