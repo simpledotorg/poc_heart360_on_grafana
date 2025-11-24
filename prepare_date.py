@@ -135,8 +135,8 @@ def prepare_data_for_postgres():
 
 
     # 3. SAVE TO CSV
-    patients_df.to_csv(OUTPUT_PATIENTS, index=False)
-    bp_encounters_df.to_csv(OUTPUT_ENCOUNTERS, index=False)
+    patients_df.to_csv(OUTPUT_PATIENTS, index=False, na_rep='NaT') 
+    bp_encounters_df.to_csv(OUTPUT_ENCOUNTERS, index=False, na_rep='NaT')
     
     print("\nData preparation complete:")
     print(f"1. Patient data saved to: {OUTPUT_PATIENTS}")
