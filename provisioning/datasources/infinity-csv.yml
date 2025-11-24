@@ -1,0 +1,34 @@
+# ./provisioning/datasources/infinity-csv.yml
+apiVersion: 1
+
+datasources:
+  - name: DummyCsv
+    uid: infinity-csv-demo
+    type: yesoreyeram-infinity-datasource
+    access: proxy
+    isDefault: false 
+    # The URL here is optional for Infinity, but highly recommended for provisioning
+    # It sets the base URL. 'csv-server' is the hostname from docker-compose.
+    url: http://csv-server/small_dummy.csv
+    version: 1
+    editable: true
+    jsonData:
+      # You can add custom headers or other default settings here if needed
+      # e.g., for basic auth on the csv-server, though it's not needed for Nginx:alpine
+      passHostHeader: true
+##
+## our real datasource
+##
+  - name: PatientData
+    uid: infinity-csv-patients
+    type: yesoreyeram-infinity-datasource
+    access: proxy
+    isDefault: false 
+    url: http://csv-server/clean_data.csv
+    version: 3
+    editable: true
+    jsonData:
+      # You can add custom headers or other default settings here if needed
+      # e.g., for basic auth on the csv-server, though it's not needed for Nginx:alpine
+      passHostHeader: true
+    
