@@ -1,0 +1,14 @@
+# ./provisioning/dashboards/dashboard_provider.yml
+apiVersion: 1
+
+providers:
+  - name: 'Hypertension Demo Dashboards'  # A unique name for the provider
+    orgId: 1
+    folder: 'Demo Dashboards'           # All dashboards will be placed in this folder
+    type: file                          # Specifies that dashboards are loaded from a file path
+    disableDeletion: false              # Allows dashboards to be manually deleted in the UI (set to true to prevent deletion)
+    updateIntervalSeconds: 10           # Grafana checks for changes every 10 seconds
+    options:
+      # This path is relative to the GRAFANA container's /etc/grafana/provisioning/dashboards/ directory
+      path: /etc/grafana/provisioning/dashboards
+
