@@ -17,15 +17,6 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SECURITY_DISABLE_PASSWORD_RESET=true
 
-  csv-server:
-    image: nginx:alpine  # A lightweight, stable web server
-    container_name: csv-server
-    ports:
-      - 8080:80  # Expose the server on host port 8080
-    volumes:
-      - ./data:/usr/share/nginx/html:ro
-    restart: unless-stopped
-
   postgres:
     image: postgres:16-alpine
     container_name: postgres
