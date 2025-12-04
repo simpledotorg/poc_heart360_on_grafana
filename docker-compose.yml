@@ -26,3 +26,17 @@ services:
     volumes:
       - ./pg_init_scripts:/docker-entrypoint-initdb.d:ro
       - ./data:/var/lib/postgresql/import:ro
+
+  filebrowser:
+    image: gtstef/filebrowser:stable-slim
+    container_name: filebrowser-quantum
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data/upload:/srv:rw
+    environment:
+      # Set initial admin password
+      - FILEBROWSER_ADMIN_PASSWORD=admin
+      # Optional: Set the initial base URL
+      - FILEBROWSER_BASEURL=/
