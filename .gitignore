@@ -1,4 +1,7 @@
 target
 .DS_Store
 pythonvenv
+data/upload/*.csv
+data/upload/*.xlsx
+
 
