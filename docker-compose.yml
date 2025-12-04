@@ -7,7 +7,7 @@ services:
       - 3000:3000
     restart: unless-stopped
     volumes:
-      - ./provisioning:/etc/grafana/provisioning:ro
+      - ./grafana_provisioning:/etc/grafana/provisioning:ro
     environment:
       - GF_SECURITY_ALLOW_EMBEDDING=true 
       - GF_AUTH_ANONYMOUS_ENABLED=false
@@ -36,7 +36,20 @@ services:
     volumes:
       - ./data/upload:/srv:rw
     environment:
-      # Set initial admin password
       - FILEBROWSER_ADMIN_PASSWORD=admin
-      # Optional: Set the initial base URL
       - FILEBROWSER_BASEURL=/
+
+  file-processor:
+    image: dockerpinata/inotify-tools
+    container_name: file-upload-trigger
+    restart: unless-stopped
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        sh /scripts/init.sh
+        echo "Starting file monitoring on /data ..."
+        inotifywait -r -m -e close_write --format '%w%f' /data  | xargs -n1 sh /scripts/fileproc.sh
+    volumes:
+      - ./data/upload:/data:rw
+      - ./inotify_scripts:/scripts:ro
