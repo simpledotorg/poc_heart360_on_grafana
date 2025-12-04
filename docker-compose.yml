@@ -49,7 +49,7 @@ services:
       - |
         sh /scripts/init.sh
         echo "Starting file monitoring on /data ..."
-        inotifywait -r -m -e close_write --format '%w%f' /data  | xargs -n1 sh /scripts/fileproc.sh
+        inotifywait -r -m -e close_write -e moved_to -e modify --format '%w%f' /data  | xargs -n1 sh /scripts/fileproc.sh
     volumes:
       - ./data/upload:/data:rw
       - ./inotify_scripts:/scripts:ro
