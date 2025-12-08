@@ -41,16 +41,11 @@ services:
       - FILEBROWSER_BASEURL=/
 
   file-processor:
-    image: dockerpinata/inotify-tools
+    image: devodev/inotify
     container_name: file-upload-trigger
-    restart: unless-stopped
-    entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        sh /scripts/init.sh
-        echo "Starting file monitoring on /data ..."
-        inotifywait -r -m -e close_write -e moved_to -e modify --format '%w%f' /data  | xargs -n1 sh /scripts/fileproc.sh
+    environment:
+      - INOTIFY_TARGET=/data
+      - INOTIFY_SCRIPT=/scripts/fileproc.sh
     volumes:
       - ./data/upload:/data:rw
       - ./inotify_scripts:/scripts:ro
