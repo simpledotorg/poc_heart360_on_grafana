@@ -3,9 +3,9 @@ import numpy as np
 import os
 
 # --- Configuration ---
-INPUT_FILE = "./data/clean_data.csv"
-OUTPUT_PATIENTS = "./data/patients_data.csv"
-OUTPUT_ENCOUNTERS = "./data/bp_encounters_data.csv"
+INPUT_FILE = os.environ.get("INPUT_FILE", "./data/clean_data.csv")
+OUTPUT_PATIENTS = os.environ.get("OUTPUT_PATIENTS", "./data/patients_data.csv")
+OUTPUT_ENCOUNTERS = os.environ.get("OUTPUT_ENCOUNTERS", "./data/bp_encounters_data.csv")
 # ---------------------
 
 def prepare_data_for_postgres():
