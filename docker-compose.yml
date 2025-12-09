@@ -49,4 +49,5 @@ services:
     volumes:
       - ./data/upload:/data:rw
       - ./inotify_scripts:/scripts:ro
+      - ./prepare_date.py:/prepare_date.py
 
