@@ -16,6 +16,17 @@ fi
 
 echo "We got a file !! $FULL_PATH"
 
-# if [[ "$3" == "MODIFY" ]]; then
-#   INPUT_FILE=$FULL_PATH python prepare_date.py
-# fi
+if ! which python3 > /dev/null; then
+  # The assumption here is that if python is not installed, no dependency is
+  # installed. Ideally, this should be a proper dependencies check for
+  # everything we need, but we don't have the luxury of time for such rigor
+  echo "Python 3 doesn't exist yet. Installing..."
+  apk add python3 py3-pip py3-pandas
+  echo "Python 3 and Pip installed."
+else
+  echo "Python 3 already exists."
+fi
+
+if [[ "$3" == "MODIFY" ]]; then
+  INPUT_FILE=$FULL_PATH python prepare_date.py
+fi
