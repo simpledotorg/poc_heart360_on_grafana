@@ -47,6 +47,7 @@ services:
       - INOTIFY_TARGET=/data
       - INOTIFY_SCRIPT=/scripts/fileproc.sh
     volumes:
+      - ./data:/grafana_target
       - ./data/upload:/data:rw
       - ./inotify_scripts:/scripts:ro
       - ./prepare_date.py:/prepare_date.py
