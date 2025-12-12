@@ -17,16 +17,41 @@ fi
 echo "We got a file !! $FULL_PATH"
 
 if ! which ruby > /dev/null; then
-  # The assumption here is that if python is not installed, no dependency is
+  # The assumption here is that if ruby is not installed, no dependency is
   # installed. Ideally, this should be a proper dependencies check for
   # everything we need, but we don't have the luxury of time for such rigor
   echo "Dependencies missing. Installing..."
-  apk add ruby ruby-csv
+  apk add ruby ruby-csv postgresql-client
   echo "Dependencies installed."
 else
   echo "Dependencies exist."
 fi
 
 if [[ "$3" == "MODIFY" ]]; then
-  INPUT_FILE=$FULL_PATH BP_OUT="/grafana_target/bp_encounters_data.csv" PATIENTS_OUT="/grafana_target/patients_data.csv" ruby /scripts/transformer/transform.rb
+  export INPUT_FILE=$FULL_PATH
+
+  # TODO: In the case of parallel processing, update the filename here to be
+  # based on the input file
+
+  export BP_OUT="/grafana_target/bp_encounters_data.csv"
+  export PATIENTS_OUT="/grafana_target/patients_data.csv"
+
+  # generate the raw data for patients and bo_encounters
+  echo "Generating Patients and BP data for $FULL_PATH"
+  ruby /scripts/transformer/transform.rb
+
+  # load the data into postgres
+  echo "Executing automated data copy for patients and encounters..."
+
+  # --- Load Patients Data ---
+  PGPASSWORD=$POSTGRES_PASSWORD psql -v ON_ERROR_STOP=1 --host "$POSTGRES_HOST" --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    \COPY patients FROM '$PATIENTS_OUT' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',', NULL 'NaT');
+EOSQL
+
+  # --- Load BP Encounters Data ---
+  PGPASSWORD=$POSTGRES_PASSWORD psql -v ON_ERROR_STOP=1 --host "$POSTGRES_HOST" --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    \COPY bp_encounters FROM '$BP_OUT' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',', NULL 'NaT');
+EOSQL
+
+  echo "Data copy completed successfully."
 fi
