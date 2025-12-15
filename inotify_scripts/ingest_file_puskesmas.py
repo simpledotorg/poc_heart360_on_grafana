@@ -36,12 +36,8 @@ DB_CONNECTION_PARAMS = {
 SP_REGION_VALUE = 'Demo'
 # ----------------------------------------------------------------
 
-# --- HELPER FUNCTIONS ---
+# --- HELPER FUNCTIONS (omitted for brevity) ---
 def clean_blood_pressure(value):
-    """
-    Strips non-numeric characters (units like 'mm', 'Hg') from a string
-    and converts the result to a float. Returns None if the input is invalid or NaN.
-    """
     if pd.isna(value) or value is None:
         return None
     s = str(value).strip()
@@ -54,9 +50,7 @@ def clean_blood_pressure(value):
         return None
 
 def get_metadata_from_excel(file_path):
-    """
-    Extracts and formats the static metadata block (lines 3-24).
-    """
+    # ... (unchanged)
     ROWS_TO_READ = 22
     START_ROW_INDEX = 2
     
@@ -75,7 +69,6 @@ def get_metadata_from_excel(file_path):
             if key and key.lower() != 'laporan harian - pelayanan pasien': 
                 metadata[key] = value if value else None
     
-    # Process 'Tanggal' field (Split and format date)
     if 'Tanggal' in metadata:
         tanggal_value = metadata.pop('Tanggal')
         if tanggal_value and ' - ' in tanggal_value:
@@ -96,8 +89,7 @@ def get_metadata_from_excel(file_path):
 
 def generate_sql_insert_statement(record: Dict[str, Any], facility: str, region: str) -> str:
     """
-    Generates the PostgreSQL function call string for a single data record, 
-    ensuring schema qualification and explicit type casting.
+    Generates the PostgreSQL function call string for a single data record.
     """
     
     def to_sql_literal(value, target_type=None):
@@ -119,7 +111,6 @@ def generate_sql_insert_statement(record: Dict[str, Any], facility: str, region:
             return f"'{value.strftime('%Y-%m-%d %H:%M:%S')}'::timestamp"
 
         if isinstance(value, str):
-            # FIXED: Use escape sequence for quotes inside the f-string literal
             return f"'{value.replace("'", "''")}'"
         
         if isinstance(value, (int, float)):
@@ -150,7 +141,8 @@ SELECT public.insert_heart360_data(
 
 def ingest_and_execute(file_path):
     """
-    Main function to read data, generate SQL, and execute against the DB.
+    Main function to read data, generate SQL, and execute against the DB 
+    using row-by-row commit (autocommit).
     """
     
     # 1. Extract and process static metadata
@@ -161,13 +153,11 @@ def ingest_and_execute(file_path):
         print(f"Error during metadata extraction: {e}", file=sys.stderr)
         return
 
-    # Print header JSON for logging/debugging (linearized)
     print(json.dumps(static_metadata, ensure_ascii=False))
 
     # 2. Load the main tabular data
     SKIP_ROWS_TO_DATA_HEADER = 25 
     
-    # Force 'nik' column to be read as string
     DTYPE_MAPPING = {'nik': str} 
     
     try:
@@ -182,21 +172,25 @@ def ingest_and_execute(file_path):
         print(f"Error loading main data table: {e}", file=sys.stderr)
         return
 
-    # Clean column names: lowercase, snake_case
     df_data.columns = df_data.columns.astype(str).str.lower().str.replace(r'[^a-z0-9_]+', '_', regex=True).str.strip('_')
     
     # --- DATABASE EXECUTION ---
     conn = None
     cur = None
-    total_inserts = 0
+    total_processed = 0
+    success_inserts = 0
     
     try:
+        # CRITICAL CHANGE: Set autocommit=True on the connection
         conn = psycopg2.connect(**DB_CONNECTION_PARAMS)
+        conn.autocommit = True
         cur = conn.cursor()
         
-        # 3. Combine metadata, clean data, and execute SQL for each row
+        # 3. Process, execute SQL, and commit for each row
         
         for record in df_data.to_dict('records'):
+            total_processed += 1
+            
             first_key = next(iter(record), None)
             if first_key and pd.isna(record.get(first_key)):
                  continue
@@ -207,32 +201,37 @@ def ingest_and_execute(file_path):
             flat_record['sistole'] = clean_blood_pressure(flat_record.get('sistole'))
             flat_record['diastole'] = clean_blood_pressure(flat_record.get('diastole'))
             
-            # --- Display the final JSON record before generating SQL ---
+            # Prepare JSON for logging
             final_filtered_record = {
                 key: None if pd.isna(flat_record.get(key)) else flat_record.get(key)
                 for key in FINAL_COLUMN_WHITELIST 
                 if key in flat_record 
             }
-            # Print the data row JSON (linearized)
             print(json.dumps(final_filtered_record, ensure_ascii=False))
-            # --- END Display Logic ---
             
-            # Generate and Execute SQL
-            sql_statement = generate_sql_insert_statement(flat_record, facility, SP_REGION_VALUE)
-            
-            cur.execute(sql_statement)
-            total_inserts += 1
+            # --- Per-Row Insertion Attempt ---
+            try:
+                # Generate and Execute SQL
+                sql_statement = generate_sql_insert_statement(flat_record, facility, SP_REGION_VALUE)
+                cur.execute(sql_statement)
+                success_inserts += 1
+                
+            except psycopg2.Error as e:
+                # Log the error but CONTINUE to the next record
+                print(f"\n--- RECORD FAILURE ---", file=sys.stderr)
+                print(f"Error processing record #{total_processed}. Skipping. Details: {e}", file=sys.stderr)
+                
+            # Autocommit handles the commit, no manual conn.commit() needed
 
-        conn.commit()
-        print(f"\n--- SUCCESS ---", file=sys.stderr)
-        print(f"Successfully processed and inserted {total_inserts} records into the database.", file=sys.stderr)
+        print(f"\n--- EXECUTION SUMMARY ---", file=sys.stderr)
+        print(f"Total records processed: {total_processed}", file=sys.stderr)
+        print(f"Successfully inserted records: {success_inserts}", file=sys.stderr)
+        print(f"Failed records (skipped): {total_processed - success_inserts}", file=sys.stderr)
 
     except psycopg2.Error as e:
-        if conn:
-            conn.rollback()
-        print(f"\n--- DATABASE ERROR ---", file=sys.stderr)
-        print(f"PostgreSQL Error: {e}", file=sys.stderr)
-        print("Transaction rolled back.", file=sys.stderr)
+        # This catches errors only during the initial connection setup
+        print(f"\n--- CONNECTION ERROR ---", file=sys.stderr)
+        print(f"PostgreSQL Connection Error: {e}", file=sys.stderr)
         
     finally:
         if cur:
