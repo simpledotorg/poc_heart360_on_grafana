@@ -43,6 +43,7 @@ services:
   file-processor:
     image: devodev/inotify
     container_name: file-upload-trigger
+    entrypoint: /bin/sh /scripts/init.sh
     environment:
       - INOTIFY_TARGET=/data
       - INOTIFY_SCRIPT=/scripts/fileproc.sh
