@@ -3,7 +3,7 @@ CREATE TABLE patients (
     patient_id          bigint PRIMARY KEY,
     patient_name        VARCHAR(255),
     patient_status      VARCHAR(10) NOT NULL CHECK (patient_status IN ('DEAD', 'ALIVE')),
-    registration_date   TIME NOT NULL,
+    registration_date   TIMESTAMP NOT NULL,
     birth_date          Date,
     death_date          DATE,           -- Nullable
     facility            VARCHAR(255),
@@ -14,7 +14,7 @@ CREATE TABLE patients (
 CREATE TABLE bp_encounters (
     encounter_id        bigint PRIMARY KEY,
     patient_id          bigint NOT NULL REFERENCES patients(patient_id), -- Foreign Key
-    encounter_date      TIME NOT NULL,
+    encounter_date      TIMESTAMP NOT NULL,
     diastolic_bp        NUMERIC,
     systolic_bp         NUMERIC
 );
@@ -187,7 +187,7 @@ CREATE OR REPLACE FUNCTION insert_heart360_data(
     p_birth_date        DATE,
     p_facility          VARCHAR,
     p_region            VARCHAR,
-    p_encounter_datetime TIMESTAMPTZ,
+    p_encounter_datetime TIMESTAMP,
     p_diastolic_bp      NUMERIC,
     p_systolic_bp       NUMERIC
 )
@@ -208,7 +208,7 @@ BEGIN
     ELSE
         -- Patient does not exist: Insert the new patient (Concise format)
         INSERT INTO patients (patient_id, patient_name, patient_status, registration_date, birth_date, facility, region)
-        VALUES (p_patient_id, p_patient_name, 'ALIVE', p_encounter_datetime, p_birth_date, p_facility, p_region);
+        VALUES (p_patient_id, p_patient_name, 'ALIVE', p_encounter_datetime::DATE, p_birth_date, p_facility, p_region);
     END IF;
 
     ---
