@@ -1,8 +1,10 @@
 -- 1. Patients Table
 CREATE TABLE patients (
-    patient_id          INT PRIMARY KEY,
+    patient_id          bigint PRIMARY KEY,
+    patient_name        VARCHAR(255),
     patient_status      VARCHAR(10) NOT NULL CHECK (patient_status IN ('DEAD', 'ALIVE')),
-    registration_date   DATE NOT NULL,
+    registration_date   TIME NOT NULL,
+    birth_date          Date,
     death_date          DATE,           -- Nullable
     facility            VARCHAR(255),
     region              VARCHAR(255)
@@ -10,12 +12,18 @@ CREATE TABLE patients (
 
 -- 2. BP Encounters Table
 CREATE TABLE bp_encounters (
-    encounter_id        INT PRIMARY KEY,
-    patient_id          INT NOT NULL REFERENCES patients(patient_id), -- Foreign Key
-    encounter_date      DATE NOT NULL,
+    encounter_id        bigint PRIMARY KEY,
+    patient_id          bigint NOT NULL REFERENCES patients(patient_id), -- Foreign Key
+    encounter_date      TIME NOT NULL,
     diastolic_bp        NUMERIC,
     systolic_bp         NUMERIC
 );
+
+
+
+
+
+
 
 --
 -- HEART360_PATIENTS_REGISTERED
@@ -165,5 +173,64 @@ JOIN LATEST_BP_BY_MONTH_AND_PATIENT
     ON LATEST_BP_BY_MONTH_AND_PATIENT.patient_id = ALIVE_PATIENTS.patient_id
     AND LATEST_BP_BY_MONTH_AND_PATIENT.REF_MONTH = KNOWN_MONTHS.REF_MONTH
 GROUP BY 1, 2
-ORDER BY 1 DESC
+ORDER BY 1 DESC;
+
+
+--
+-- POC SPECIFIC INSERT STATEMENT
+--
+CREATE SEQUENCE bp_encounters_encounter_id_seq START WITH 6000000;
+
+CREATE OR REPLACE FUNCTION insert_heart360_data(
+    p_patient_id        bigint,
+    p_patient_name      VARCHAR,
+    p_birth_date        DATE,
+    p_facility          VARCHAR,
+    p_region            VARCHAR,
+    p_encounter_datetime TIMESTAMPTZ,
+    p_diastolic_bp      NUMERIC,
+    p_systolic_bp       NUMERIC
+)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- 1. Patients Table Logic
+    IF EXISTS (SELECT 1 FROM patients WHERE patient_id = p_patient_id) THEN
+        -- Patient exists: Update registration_date if the new encounter date is earlier (more recent)
+        UPDATE patients
+        SET
+            registration_date = p_encounter_datetime
+        WHERE
+            patient_id = p_patient_id
+            AND registration_date > p_encounter_datetime;
+
+    ELSE
+        -- Patient does not exist: Insert the new patient (Concise format)
+        INSERT INTO patients (patient_id, patient_name, patient_status, registration_date, birth_date, facility, region)
+        VALUES (p_patient_id, p_patient_name, 'ALIVE', p_encounter_datetime, p_birth_date, p_facility, p_region);
+    END IF;
+
+    ---
+    -- 2. BP Encounters Table Logic
+    ---
+
+    -- Check if the specific (patient_id, encounter_date) pair already exists
+    IF EXISTS (
+        SELECT 1
+        FROM bp_encounters
+        WHERE
+            patient_id = p_patient_id
+            AND encounter_date = p_encounter_datetime
+    ) THEN
+        -- If it exists, do nothing (as requested)
+        RAISE NOTICE 'BP encounter for patient % on % already exists. Skipping insertion.', p_patient_id, p_encounter_datetime;
+    ELSE
+        -- If it does not exist, insert the new encounter (Concise format)
+        INSERT INTO bp_encounters (patient_id, encounter_id, encounter_date, diastolic_bp, systolic_bp)
+        VALUES (p_patient_id, nextval('bp_encounters_encounter_id_seq'), p_encounter_datetime, p_diastolic_bp, p_systolic_bp);
+    END IF;
+
+END;
+$$;
 

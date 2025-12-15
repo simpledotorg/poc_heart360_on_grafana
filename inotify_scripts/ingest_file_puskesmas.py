@@ -12,6 +12,8 @@ FINAL_COLUMN_WHITELIST = [
     'dump_end_date',
     'nik', 
     'nama_pasien',
+    'jenis_kelamin',
+    'tgl_lahir'
     'tanggal', 
     'sistole', 
     'diastole'
