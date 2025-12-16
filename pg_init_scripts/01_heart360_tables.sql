@@ -227,6 +227,8 @@ select
     patients.patient_name, 
     patients.registration_date,
     patients.birth_date,
+    patients.gender,
+    patients.phone_number,
     patients.facility,
     patients.region,
     MOST_RECENT_ENCOUNTER.encounter_date as last_visit_date,
