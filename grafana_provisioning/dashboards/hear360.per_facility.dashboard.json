@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 6,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -1011,6 +1011,10 @@
           "text": "PONDOK REJO",
           "value": "PONDOK REJO"
         },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-hypertension"
+        },
         "definition": "select distinct facility from patients",
         "name": "Facility",
         "options": [],
@@ -1029,5 +1033,5 @@
   "timezone": "browser",
   "title": "Heart 360 Global Dashboard Per Facility",
   "uid": "heart360demo_per_facility",
-  "version": 10
+  "version": 2
 }
