@@ -13,11 +13,19 @@ CREATE TABLE patients (
 -- 2. BP Encounters Table
 CREATE TABLE bp_encounters (
     encounter_id        bigint PRIMARY KEY,
-    patient_id          bigint NOT NULL REFERENCES patients(patient_id), -- Foreign Key
+    patient_id          bigint NOT NULL REFERENCES patients(patient_id),
     encounter_date      TIMESTAMP NOT NULL,
     diastolic_bp        NUMERIC,
     systolic_bp         NUMERIC
 );
+
+-- 3. Patient Calls
+CREATE TABLE reminder_calls (
+    patient_id          bigint NOT NULL REFERENCES patients(patient_id),
+    call_date           TIMESTAMP NOT NULL,
+    Call_result         VARCHAR(255)
+);
+
 
 
 
