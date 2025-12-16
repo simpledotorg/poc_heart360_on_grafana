@@ -203,6 +203,43 @@ ORDER BY 1 DESC;
 
 
 --
+-- View for overdue patients
+--
+CREATE OR REPLACE VIEW HEART360_OVERDUE_PATIENTS as
+WITH MOST_RECENT_ENCOUNTER as (
+    select * from bp_encounters where (patient_id, encounter_date) in (
+    select 
+        patient_id, 
+        max(encounter_date) as last_encounter_date
+from bp_encounters
+    group by patient_id)),
+MOST_RECENT_CALL as (
+    select * from reminder_calls where (patient_id, call_date) in (select 
+        patient_id, 
+        max(call_date) as last_call_date
+from reminder_calls
+    group by patient_id))
+select 
+    patients.patient_id,
+    patients.patient_name, 
+    patients.registration_date,
+    patients.birth_date,
+    patients.facility,
+    patients.region,
+    MOST_RECENT_ENCOUNTER.encounter_date as last_visit_date,
+    MOST_RECENT_ENCOUNTER.diastolic_bp as last_bp_diastolic,
+    MOST_RECENT_ENCOUNTER.systolic_bp as last_bp_systolic,
+    call_date as last_call_date,
+    call_result as last_call_result
+from patients
+left outer join MOST_RECENT_ENCOUNTER on patients.patient_id= MOST_RECENT_ENCOUNTER.patient_id
+left outer join MOST_RECENT_CALL on patients.patient_id= MOST_RECENT_CALL.patient_id and call_date > encounter_date
+;
+
+
+
+
+--
 -- POC SPECIFIC INSERT STATEMENT
 --
 CREATE SEQUENCE bp_encounters_encounter_id_seq START WITH 6000000;
