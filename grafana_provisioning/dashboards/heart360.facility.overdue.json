@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 5,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -726,7 +726,7 @@
             "name": "OverduePatients",
             "pagination": {
               "defaultPageSize": 10,
-              "enabled": false,
+              "enabled": true,
               "mode": "client"
             },
             "rowHighlight": {
@@ -874,5 +874,5 @@
   "timezone": "browser",
   "title": "Heart 360 Overdue Patients by Facility",
   "uid": "heart360_facility_overdue_patients",
-  "version": 2
+  "version": 3
 }
