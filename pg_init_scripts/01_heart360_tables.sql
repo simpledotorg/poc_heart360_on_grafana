@@ -2,6 +2,8 @@
 CREATE TABLE IF NOT EXISTS patients (
     patient_id          bigint PRIMARY KEY,
     patient_name        VARCHAR(255),
+    gender              VARCHAR(255),
+    phone_number        VARCHAR(255),
     patient_status      VARCHAR(10) NOT NULL CHECK (patient_status IN ('DEAD', 'ALIVE')),
     registration_date   TIMESTAMP NOT NULL,
     birth_date          Date,
@@ -248,6 +250,8 @@ CREATE SEQUENCE IF NOT EXISTS bp_encounters_encounter_id_seq START WITH 6000000;
 CREATE OR REPLACE FUNCTION insert_heart360_data(
     p_patient_id        bigint,
     p_patient_name      VARCHAR,
+    p_gender            VARCHAR,
+    p_phone_number      VARCHAR,
     p_birth_date        DATE,
     p_facility          VARCHAR,
     p_region            VARCHAR,
@@ -271,8 +275,8 @@ BEGIN
 
     ELSE
         -- Patient does not exist: Insert the new patient (Concise format)
-        INSERT INTO patients (patient_id, patient_name, patient_status, registration_date, birth_date, facility, region)
-        VALUES (p_patient_id, p_patient_name, 'ALIVE', p_encounter_datetime::DATE, p_birth_date, p_facility, p_region);
+        INSERT INTO patients (patient_id, patient_name, gender, phone_number, patient_status, registration_date, birth_date, facility, region)
+        VALUES (p_patient_id, p_patient_name, p_gender, p_phone_number, 'ALIVE', p_encounter_datetime::DATE, p_birth_date, p_facility, p_region);
     END IF;
 
     ---

@@ -18,7 +18,10 @@ FINAL_COLUMN_WHITELIST = [
     'diastole',
     'nama_pasien',
     'tgl_lahir',
-    'tanggal' 
+    'tanggal',
+    'no_telp',
+    'jenis_kelamin'
+
 ]
 # ---------------------------------
 
@@ -127,6 +130,8 @@ def generate_sql_insert_statement(record: Dict[str, Any], facility: str, region:
 SELECT public.insert_heart360_data(
     p_patient_id => {patient_id_sql},
     p_patient_name => {to_sql_literal(record.get('nama_pasien'))},
+    p_gender => {to_sql_literal(record.get('jenis_kelamin'))},
+    p_phone_number => {to_sql_literal(str(record.get('no_telp')))},
     p_birth_date => {birth_date_sql},
     p_facility => {to_sql_literal(facility)},
     p_region => {to_sql_literal(region)},
