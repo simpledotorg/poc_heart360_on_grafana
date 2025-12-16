@@ -1,5 +1,5 @@
 -- 1. Patients Table
-CREATE TABLE patients (
+CREATE TABLE IF NOT EXISTS patients (
     patient_id          bigint PRIMARY KEY,
     patient_name        VARCHAR(255),
     patient_status      VARCHAR(10) NOT NULL CHECK (patient_status IN ('DEAD', 'ALIVE')),
@@ -11,7 +11,7 @@ CREATE TABLE patients (
 );
 
 -- 2. BP Encounters Table
-CREATE TABLE bp_encounters (
+CREATE TABLE IF NOT EXISTS bp_encounters (
     encounter_id        bigint PRIMARY KEY,
     patient_id          bigint NOT NULL REFERENCES patients(patient_id),
     encounter_date      TIMESTAMP NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE bp_encounters (
 );
 
 -- 3. Patient Calls
-CREATE TABLE reminder_calls (
+CREATE TABLE IF NOT EXISTS reminder_calls (
     patient_id          bigint NOT NULL REFERENCES patients(patient_id),
     call_date           TIMESTAMP NOT NULL,
     Call_result         VARCHAR(255)
@@ -29,10 +29,10 @@ CREATE TABLE reminder_calls (
 
 
 
---drop view HEART360_PATIENTS_REGISTERED;
---drop view HEART360_PATIENTS_UNDER_CARE;
---drop view HEART360_PATIENTS_CATAGORY;
-
+drop view IF EXISTS HEART360_PATIENTS_REGISTERED;
+drop view IF EXISTS HEART360_PATIENTS_UNDER_CARE;
+drop view IF EXISTS HEART360_PATIENTS_CATAGORY;
+drop view IF EXISTS HEART360_OVERDUE_PATIENTS;
 --
 -- HEART360_PATIENTS_REGISTERED
 --
@@ -171,6 +171,7 @@ LATEST_BP_BY_MONTH_AND_PATIENT AS (
 SELECT
     KNOWN_MONTHS.REF_MONTH,
     ALIVE_PATIENTS.facility,
+    count(*) as TOTAL_NUMBER_OF_PATIENTS,
     SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' < KNOWN_MONTHS.REF_MONTH then 0 else 1 end) as NB_PATIENTS_UNDER_CARE,
     SUM(CASE WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 1 else 0 end ) AS NB_PATIENTS_NEWLY_REGISTERED,
     SUM(CASE
@@ -180,15 +181,15 @@ SELECT
     SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' < KNOWN_MONTHS.REF_MONTH then 1 else 0 end) as NB_PATIENTS_LOST_TO_FOLLOW_UP,
     SUM(CASE
         WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <  KNOWN_MONTHS.REF_MONTH then 0
-        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 1
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <  KNOWN_MONTHS.REF_MONTH then 1
         ELSE 0 END ) as NB_PATIENTS_NO_VISIT,
     SUM(CASE
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <  KNOWN_MONTHS.REF_MONTH then 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <  KNOWN_MONTHS.REF_MONTH then 0
         WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 0
         WHEN systolic > 140 OR diastolic > 90 then 1
         ELSE 0 END ) AS NB_PATIENTS_UNCONTROLLED,
     SUM(CASE
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <  KNOWN_MONTHS.REF_MONTH then 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <  KNOWN_MONTHS.REF_MONTH then 0
         WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 0
         WHEN systolic > 140 OR diastolic > 90 then 0
         ELSE 1 END ) AS NB_PATIENTS_CONTROLLED
@@ -242,7 +243,7 @@ left outer join MOST_RECENT_CALL on patients.patient_id= MOST_RECENT_CALL.patien
 --
 -- POC SPECIFIC INSERT STATEMENT
 --
-CREATE SEQUENCE bp_encounters_encounter_id_seq START WITH 6000000;
+CREATE SEQUENCE IF NOT EXISTS bp_encounters_encounter_id_seq START WITH 6000000;
 
 CREATE OR REPLACE FUNCTION insert_heart360_data(
     p_patient_id        bigint,

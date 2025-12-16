@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -405,7 +405,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_controlled / nb_patients_under_care) as Control_rate\nfrom public.HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_controlled) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom public.HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -533,7 +533,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_uncontrolled / nb_patients_under_care) as Control_rate\nfrom public.HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_uncontrolled) / (sum (000000001 + NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom public.HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -661,7 +661,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_no_visit / nb_patients_under_care) as Control_rate\nfrom public.HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_no_visit) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom public.HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -821,7 +821,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    public.HEART360_PATIENTS_CATAGORY.ref_month,\n    sum(cumulative_number_of_patients) cumulative_number_of_patients,\n    sum(nb_patients_under_care * 0.9) as nb_patients_under_care,\n    sum(nb_new_patients) nb_new_patients\nfrom public.HEART360_PATIENTS_CATAGORY\nleft outer join public.heart360_patients_registered on public.HEART360_PATIENTS_CATAGORY.ref_month = public.heart360_patients_registered.ref_month\n and  public.HEART360_PATIENTS_CATAGORY.facility = public.heart360_patients_registered.facility\nwhere public.HEART360_PATIENTS_CATAGORY.facility = '$Facility'\ngroup by 1\n",
+          "rawSql": "select \n    public.HEART360_PATIENTS_CATAGORY.ref_month,\n    sum(cumulative_number_of_patients) cumulative_number_of_patients,\n    sum(nb_patients_under_care) as nb_patients_under_care,\n    sum(nb_new_patients) nb_new_patients\nfrom public.HEART360_PATIENTS_CATAGORY\nleft outer join public.heart360_patients_registered on public.HEART360_PATIENTS_CATAGORY.ref_month = public.heart360_patients_registered.ref_month\n and  public.HEART360_PATIENTS_CATAGORY.facility = public.heart360_patients_registered.facility\nwhere public.HEART360_PATIENTS_CATAGORY.facility = '$Facility'\ngroup by 1\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -951,7 +951,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select ref_month, sum(COALESCE(nb_patients_lost_to_follow_up, 0)) nb_patients_lost_to_follow_up\nfrom public.heart360_patients_under_care\ngroup by 1",
+          "rawSql": "select ref_month, sum(COALESCE(nb_patients_lost_to_follow_up, 0)) nb_patients_lost_to_follow_up\nfrom public.heart360_patients_under_care\nwhere facility = '$Facility'\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1033,5 +1033,5 @@
   "timezone": "browser",
   "title": "Heart 360 Global Dashboard Per Facility",
   "uid": "heart360demo_per_facility",
-  "version": 2
+  "version": 6
 }
