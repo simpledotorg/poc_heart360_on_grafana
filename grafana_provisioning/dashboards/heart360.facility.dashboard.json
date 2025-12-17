@@ -1008,8 +1008,8 @@
     "list": [
       {
         "current": {
-          "text": "PONDOK REJO",
-          "value": "PONDOK REJO"
+          "text": "Gambir",
+          "value": "Gambir"
         },
         "datasource": {
           "type": "grafana-postgresql-datasource",
@@ -1026,12 +1026,12 @@
     ]
   },
   "time": {
-    "from": "now/y",
-    "to": "now/y"
+    "from": "now-1y",
+    "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Heart 360 Global Dashboard Per Facility",
   "uid": "heart360demo_per_facility",
-  "version": 6
+  "version": 1
 }

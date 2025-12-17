@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 0,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -109,7 +109,7 @@
                     "fontSize": "md"
                   },
                   "width": {
-                    "auto": true,
+                    "auto": false,
                     "min": 20,
                     "value": 100
                   },
@@ -148,7 +148,7 @@
                   "valueSize": 14
                 },
                 "group": false,
-                "label": "",
+                "label": "NIK number",
                 "newRowEdit": {
                   "editor": {
                     "type": "string"
@@ -217,7 +217,7 @@
                   "valueSize": 14
                 },
                 "group": false,
-                "label": "",
+                "label": "Name",
                 "newRowEdit": {
                   "editor": {
                     "type": "string"
@@ -286,7 +286,76 @@
                   "valueSize": 14
                 },
                 "group": false,
-                "label": "",
+                "label": "HTN Diagnosis date",
+                "newRowEdit": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "enabled": false
+                },
+                "objectId": "",
+                "pin": "",
+                "preformattedStyle": false,
+                "scale": "auto",
+                "showingRows": 20,
+                "sort": {
+                  "descFirst": false,
+                  "enabled": false
+                },
+                "type": "auto"
+              },
+              {
+                "aggregation": "none",
+                "appearance": {
+                  "alignment": "start",
+                  "background": {
+                    "applyToRow": false
+                  },
+                  "colors": {},
+                  "header": {
+                    "fontSize": "md"
+                  },
+                  "width": {
+                    "auto": false,
+                    "min": 20,
+                    "value": 100
+                  },
+                  "wrap": true
+                },
+                "columnTooltip": "",
+                "edit": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "enabled": false,
+                  "permission": {
+                    "mode": "",
+                    "userRole": []
+                  }
+                },
+                "enabled": true,
+                "field": {
+                  "name": "age_years",
+                  "source": "A"
+                },
+                "fileCell": {
+                  "size": "md",
+                  "text": "Download",
+                  "variant": "primary"
+                },
+                "filter": {
+                  "enabled": false,
+                  "mode": "client",
+                  "variable": ""
+                },
+                "footer": [],
+                "gauge": {
+                  "mode": "basic",
+                  "valueDisplayMode": "text",
+                  "valueSize": 14
+                },
+                "group": false,
+                "label": "Age",
                 "newRowEdit": {
                   "editor": {
                     "type": "string"
@@ -333,7 +402,7 @@
                     "userRole": []
                   }
                 },
-                "enabled": true,
+                "enabled": false,
                 "field": {
                   "name": "birth_date",
                   "source": "A"
@@ -424,7 +493,7 @@
                   "valueSize": 14
                 },
                 "group": false,
-                "label": "",
+                "label": "Gender",
                 "newRowEdit": {
                   "editor": {
                     "type": "string"
@@ -493,7 +562,7 @@
                   "valueSize": 14
                 },
                 "group": false,
-                "label": "",
+                "label": "Phone",
                 "newRowEdit": {
                   "editor": {
                     "type": "string"
@@ -562,6 +631,282 @@
                   "valueSize": 14
                 },
                 "group": false,
+                "label": "Last visit on",
+                "newRowEdit": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "enabled": false
+                },
+                "objectId": "",
+                "pin": "",
+                "preformattedStyle": false,
+                "scale": "auto",
+                "showingRows": 20,
+                "sort": {
+                  "descFirst": false,
+                  "enabled": false
+                },
+                "type": "auto"
+              },
+              {
+                "aggregation": "none",
+                "appearance": {
+                  "alignment": "start",
+                  "background": {
+                    "applyToRow": false
+                  },
+                  "colors": {},
+                  "header": {
+                    "fontSize": "md"
+                  },
+                  "width": {
+                    "auto": false,
+                    "min": 20,
+                    "value": 100
+                  },
+                  "wrap": true
+                },
+                "columnTooltip": "",
+                "edit": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "enabled": false,
+                  "permission": {
+                    "mode": "",
+                    "userRole": []
+                  }
+                },
+                "enabled": true,
+                "field": {
+                  "name": "days_since_last_visit",
+                  "source": "A"
+                },
+                "fileCell": {
+                  "size": "md",
+                  "text": "Download",
+                  "variant": "primary"
+                },
+                "filter": {
+                  "enabled": false,
+                  "mode": "client",
+                  "variable": ""
+                },
+                "footer": [],
+                "gauge": {
+                  "mode": "basic",
+                  "valueDisplayMode": "text",
+                  "valueSize": 14
+                },
+                "group": false,
+                "label": "Days since last visit",
+                "newRowEdit": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "enabled": false
+                },
+                "objectId": "",
+                "pin": "",
+                "preformattedStyle": false,
+                "scale": "auto",
+                "showingRows": 20,
+                "sort": {
+                  "descFirst": false,
+                  "enabled": false
+                },
+                "type": "auto"
+              },
+              {
+                "aggregation": "none",
+                "appearance": {
+                  "alignment": "start",
+                  "background": {
+                    "applyToRow": false
+                  },
+                  "colors": {},
+                  "header": {
+                    "fontSize": "md"
+                  },
+                  "width": {
+                    "auto": false,
+                    "min": 20,
+                    "value": 100
+                  },
+                  "wrap": true
+                },
+                "columnTooltip": "",
+                "edit": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "enabled": false,
+                  "permission": {
+                    "mode": "",
+                    "userRole": []
+                  }
+                },
+                "enabled": true,
+                "field": {
+                  "name": "last_bp",
+                  "source": "A"
+                },
+                "fileCell": {
+                  "size": "md",
+                  "text": "Download",
+                  "variant": "primary"
+                },
+                "filter": {
+                  "enabled": false,
+                  "mode": "client",
+                  "variable": ""
+                },
+                "footer": [],
+                "gauge": {
+                  "mode": "basic",
+                  "valueDisplayMode": "text",
+                  "valueSize": 14
+                },
+                "group": false,
+                "label": "Last BP",
+                "newRowEdit": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "enabled": false
+                },
+                "objectId": "",
+                "pin": "",
+                "preformattedStyle": false,
+                "scale": "auto",
+                "showingRows": 20,
+                "sort": {
+                  "descFirst": false,
+                  "enabled": false
+                },
+                "type": "auto"
+              },
+              {
+                "aggregation": "none",
+                "appearance": {
+                  "alignment": "start",
+                  "background": {
+                    "applyToRow": false
+                  },
+                  "colors": {},
+                  "header": {
+                    "fontSize": "md"
+                  },
+                  "width": {
+                    "auto": true,
+                    "min": 20,
+                    "value": 100
+                  },
+                  "wrap": true
+                },
+                "columnTooltip": "",
+                "edit": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "enabled": false,
+                  "permission": {
+                    "mode": "",
+                    "userRole": []
+                  }
+                },
+                "enabled": false,
+                "field": {
+                  "name": "last_bp_systolic",
+                  "source": "A"
+                },
+                "fileCell": {
+                  "size": "md",
+                  "text": "Download",
+                  "variant": "primary"
+                },
+                "filter": {
+                  "enabled": false,
+                  "mode": "client",
+                  "variable": ""
+                },
+                "footer": [],
+                "gauge": {
+                  "mode": "basic",
+                  "valueDisplayMode": "text",
+                  "valueSize": 14
+                },
+                "group": false,
+                "label": "",
+                "newRowEdit": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "enabled": false
+                },
+                "objectId": "",
+                "pin": "",
+                "preformattedStyle": false,
+                "scale": "auto",
+                "showingRows": 20,
+                "sort": {
+                  "descFirst": false,
+                  "enabled": false
+                },
+                "type": "auto"
+              },
+              {
+                "aggregation": "none",
+                "appearance": {
+                  "alignment": "start",
+                  "background": {
+                    "applyToRow": false
+                  },
+                  "colors": {},
+                  "header": {
+                    "fontSize": "md"
+                  },
+                  "width": {
+                    "auto": true,
+                    "min": 20,
+                    "value": 100
+                  },
+                  "wrap": true
+                },
+                "columnTooltip": "",
+                "edit": {
+                  "editor": {
+                    "type": "string"
+                  },
+                  "enabled": false,
+                  "permission": {
+                    "mode": "",
+                    "userRole": []
+                  }
+                },
+                "enabled": false,
+                "field": {
+                  "name": "last_bp_diastolic",
+                  "source": "A"
+                },
+                "fileCell": {
+                  "size": "md",
+                  "text": "Download",
+                  "variant": "primary"
+                },
+                "filter": {
+                  "enabled": false,
+                  "mode": "client",
+                  "variable": ""
+                },
+                "footer": [],
+                "gauge": {
+                  "mode": "basic",
+                  "valueDisplayMode": "text",
+                  "valueSize": 14
+                },
+                "group": false,
                 "label": "",
                 "newRowEdit": {
                   "editor": {
@@ -611,76 +956,7 @@
                 },
                 "enabled": true,
                 "field": {
-                  "name": "last_bp_systolic",
-                  "source": "A"
-                },
-                "fileCell": {
-                  "size": "md",
-                  "text": "Download",
-                  "variant": "primary"
-                },
-                "filter": {
-                  "enabled": false,
-                  "mode": "client",
-                  "variable": ""
-                },
-                "footer": [],
-                "gauge": {
-                  "mode": "basic",
-                  "valueDisplayMode": "text",
-                  "valueSize": 14
-                },
-                "group": false,
-                "label": "BP at last visit",
-                "newRowEdit": {
-                  "editor": {
-                    "type": "string"
-                  },
-                  "enabled": false
-                },
-                "objectId": "",
-                "pin": "",
-                "preformattedStyle": false,
-                "scale": "auto",
-                "showingRows": 20,
-                "sort": {
-                  "descFirst": false,
-                  "enabled": false
-                },
-                "type": "auto"
-              },
-              {
-                "aggregation": "none",
-                "appearance": {
-                  "alignment": "start",
-                  "background": {
-                    "applyToRow": false
-                  },
-                  "colors": {},
-                  "header": {
-                    "fontSize": "md"
-                  },
-                  "width": {
-                    "auto": true,
-                    "min": 20,
-                    "value": 100
-                  },
-                  "wrap": true
-                },
-                "columnTooltip": "",
-                "edit": {
-                  "editor": {
-                    "type": "string"
-                  },
-                  "enabled": false,
-                  "permission": {
-                    "mode": "",
-                    "userRole": []
-                  }
-                },
-                "enabled": true,
-                "field": {
-                  "name": "last_bp_diastolic",
+                  "name": "overdue_days",
                   "source": "A"
                 },
                 "fileCell": {
@@ -769,7 +1045,7 @@
                   "valueSize": 14
                 },
                 "group": false,
-                "label": "",
+                "label": "Last call date",
                 "newRowEdit": {
                   "editor": {
                     "type": "string"
@@ -842,7 +1118,7 @@
                   "valueSize": 14
                 },
                 "group": false,
-                "label": "",
+                "label": "Overdue status",
                 "newRowEdit": {
                   "editor": {
                     "type": "string"
@@ -923,7 +1199,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "\nselect * from HEART360_OVERDUE_PATIENTS WHERE facility='$facility' and last_visit_date > now() - interval '45 days'\n",
+          "rawSql": "SELECT\n  *,\n  EXTRACT(YEAR FROM AGE(birth_date)) AS age_years,\n  (CURRENT_DATE - last_visit_date::date) AS days_since_last_visit,\n  CASE\n    WHEN last_bp_systolic IS NOT NULL AND last_bp_diastolic IS NOT NULL\n      THEN CONCAT(\n        last_bp_systolic::int,\n        '/',\n        last_bp_diastolic::int\n      )\n    ELSE NULL\n  END AS last_bp\nFROM HEART360_OVERDUE_PATIENTS\nWHERE facility = '$facility'\n  AND last_visit_date > now() - interval '45 days';\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -953,7 +1229,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "select 'Agreed to Visit' as option\nunion select 'Remind to Call Later'\nunion select 'Refused to Visit'",
+          "rawSql": "select 'Pending to call' as option, 1 as sort\nunion select 'Agreed to visit', 2\nunion select 'Call again later', 3\nunion select 'Already visited puskesmas', 4\nunion select 'Multiple failed contact attempts', 5\nunion select 'Wrong phone number', 6\nunion select 'Moved out of catchment area', 7\nunion select 'Transferred to another puskesmas', 8\nunion select 'Refused to return', 9\nunion select 'Died', 10\nunion select 'Other reason', 11\norder by sort\n",
           "refId": "B",
           "sql": {
             "columns": [
@@ -1012,5 +1288,5 @@
   "timezone": "browser",
   "title": "Heart 360 Overdue Patients by Facility",
   "uid": "heart360_facility_overdue_patients",
-  "version": 4
+  "version": 6
 }
