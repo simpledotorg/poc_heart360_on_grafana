@@ -1031,7 +1031,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "this data is for month ${reference_month:date:YYYY-MM}",
+        "content": "Treatment outcomes for patients with hypertension at their latest visit before <u>**${reference_month:date:MMMM YYYY}**</u>",
         "mode": "markdown"
       },
       "pluginVersion": "12.3.0",
@@ -1880,8 +1880,8 @@
     "list": [
       {
         "current": {
-          "text": "1730419200000",
-          "value": "1730419200000"
+          "text": "1761955200000",
+          "value": "1761955200000"
         },
         "definition": "(select max(ref_month) from heart360_patients_catagory where $__timeFilter(ref_month))",
         "hide": 2,
@@ -1895,12 +1895,12 @@
     ]
   },
   "time": {
-    "from": "2024-05-31T20:19:24.061Z",
-    "to": "2024-11-23T00:03:51.688Z"
+    "from": "2023-08-10T05:36:20.542Z",
+    "to": "2025-12-16T10:29:40.542Z"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Heart 360 Global Dashboard",
   "uid": "heart360demo",
-  "version": 29
+  "version": 31
 }
