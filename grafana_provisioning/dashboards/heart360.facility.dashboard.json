@@ -22,12 +22,38 @@
   "links": [],
   "panels": [
     {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 23,
+        "x": 0,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:15px;\n\">\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Hypertension dashboard\n  </span>\n\n  <a href=\"/d/heart360_facility_overdue_patients/heart-360-overdue-patients-by-facility\n?orgId=1\n&from=now-1y\n&to=now\n&timezone=browser\n&var-facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Overdue patients list\n  </a>\n\n</div>\n",
+        "mode": "html"
+      },
+      "pluginVersion": "12.3.0",
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 2
       },
       "id": 5,
       "panels": [],
@@ -99,7 +125,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 1
+        "y": 3
       },
       "id": 1,
       "options": {
@@ -248,7 +274,7 @@
         "h": 8,
         "w": 7,
         "x": 16,
-        "y": 1
+        "y": 3
       },
       "id": 10,
       "options": {
@@ -310,7 +336,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 11
       },
       "id": 6,
       "panels": [],
@@ -382,7 +408,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 10
+        "y": 12
       },
       "id": 2,
       "options": {
@@ -510,7 +536,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 10
+        "y": 12
       },
       "id": 3,
       "options": {
@@ -638,7 +664,7 @@
         "h": 8,
         "w": 7,
         "x": 16,
-        "y": 10
+        "y": 12
       },
       "id": 4,
       "options": {
@@ -798,7 +824,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 18
+        "y": 20
       },
       "id": 7,
       "options": {
@@ -928,7 +954,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 18
+        "y": 20
       },
       "id": 8,
       "options": {
@@ -984,7 +1010,7 @@
         "h": 8,
         "w": 7,
         "x": 16,
-        "y": 18
+        "y": 20
       },
       "id": 9,
       "options": {
@@ -1033,5 +1059,5 @@
   "timezone": "browser",
   "title": "Heart 360 Global Dashboard Per Facility",
   "uid": "heart360demo_per_facility",
-  "version": 1
+  "version": 4
 }
