@@ -1014,6 +1014,32 @@
       "type": "row"
     },
     {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "id": 13,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "this data is for month ${reference_month:date:YYYY-MM}",
+        "mode": "markdown"
+      },
+      "pluginVersion": "12.3.0",
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
       "datasource": {
         "type": "grafana-postgresql-datasource",
         "uid": "postgres-hypertension"
@@ -1116,7 +1142,7 @@
         "h": 17,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 29
       },
       "id": 12,
       "options": {
@@ -1851,15 +1877,30 @@
   "schemaVersion": 42,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "text": "1730419200000",
+          "value": "1730419200000"
+        },
+        "definition": "(select max(ref_month) from heart360_patients_catagory where $__timeFilter(ref_month))",
+        "hide": 2,
+        "name": "reference_month",
+        "options": [],
+        "query": "(select max(ref_month) from heart360_patients_catagory where $__timeFilter(ref_month))",
+        "refresh": 2,
+        "regex": "",
+        "type": "query"
+      }
+    ]
   },
   "time": {
-    "from": "2025-05-11T21:54:15.135Z",
-    "to": "2025-09-19T13:27:35.135Z"
+    "from": "2024-05-31T20:19:24.061Z",
+    "to": "2024-11-23T00:03:51.688Z"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Heart 360 Global Dashboard",
   "uid": "heart360demo",
-  "version": 23
+  "version": 29
 }
