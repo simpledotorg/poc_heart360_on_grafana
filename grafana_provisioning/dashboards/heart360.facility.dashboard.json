@@ -19,7 +19,20 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 2,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": false,
+      "title": "District dashboard",
+      "tooltip": "",
+      "type": "link",
+      "url": "http://localhost:3000/goto/bf7fs4g2ln0n4f?orgId=1"
+    }
+  ],
   "panels": [
     {
       "fieldConfig": {
@@ -1000,31 +1013,6 @@
       ],
       "title": "12 month lost to follow-up",
       "type": "timeseries"
-    },
-    {
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 7,
-        "x": 16,
-        "y": 20
-      },
-      "id": 9,
-      "options": {
-        "code": {
-          "language": "plaintext",
-          "showLineNumbers": false,
-          "showMiniMap": false
-        },
-        "content": "No Data for opportunistic Screeing",
-        "mode": "markdown"
-      },
-      "pluginVersion": "12.3.0",
-      "title": "Opportunistic screening",
-      "type": "text"
     }
   ],
   "preload": false,
@@ -1056,8 +1044,8 @@
     "to": "now"
   },
   "timepicker": {},
-  "timezone": "browser",
+  "timezone": "browser ",
   "title": "Heart 360 Global Dashboard Per Facility",
   "uid": "heart360demo_per_facility",
-  "version": 4
+  "version": 5
 }

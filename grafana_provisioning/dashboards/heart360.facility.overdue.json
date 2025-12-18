@@ -72,7 +72,20 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last_call_result"
+            },
+            "properties": [
+              {
+                "id": "noValue",
+                "value": "Pending to call"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 19,
@@ -137,7 +150,7 @@
                   "width": {
                     "auto": false,
                     "min": 20,
-                    "value": 100
+                    "value": 110
                   },
                   "wrap": true
                 },
@@ -1032,9 +1045,9 @@
                     "fontSize": "md"
                   },
                   "width": {
-                    "auto": true,
+                    "auto": false,
                     "min": 20,
-                    "value": 100
+                    "value": 160
                   },
                   "wrap": true
                 },
@@ -1165,7 +1178,7 @@
             ],
             "name": "OverduePatients",
             "pagination": {
-              "defaultPageSize": 10,
+              "defaultPageSize": 20,
               "enabled": true,
               "mode": "client"
             },
@@ -1311,8 +1324,8 @@
   "timepicker": {
     "hidden": true
   },
-  "timezone": "browser",
+  "timezone": "browser ",
   "title": "Heart 360 Overdue Patients by Facility",
   "uid": "heart360_facility_overdue_patients",
-  "version": 7
+  "version": 9
 }

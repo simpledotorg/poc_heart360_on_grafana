@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 0,
+  "id": 4,
   "links": [],
   "panels": [
     {
@@ -976,31 +976,6 @@
       "type": "timeseries"
     },
     {
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 7,
-        "x": 16,
-        "y": 18
-      },
-      "id": 9,
-      "options": {
-        "code": {
-          "language": "plaintext",
-          "showLineNumbers": false,
-          "showMiniMap": false
-        },
-        "content": "No Data for opportunistic Screeing",
-        "mode": "markdown"
-      },
-      "pluginVersion": "12.3.0",
-      "title": "Opportunistic screening",
-      "type": "text"
-    },
-    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -1902,5 +1877,5 @@
   "timezone": "browser",
   "title": "Heart 360 Global Dashboard",
   "uid": "heart360demo",
-  "version": 31
+  "version": 32
 }
