@@ -19,20 +19,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 2,
-  "links": [
-    {
-      "asDropdown": false,
-      "icon": "dashboard",
-      "includeVars": false,
-      "keepTime": false,
-      "tags": [],
-      "targetBlank": false,
-      "title": "District dashboard",
-      "tooltip": "",
-      "type": "link",
-      "url": "http://localhost:3000/goto/bf7fs4g2ln0n4f?orgId=1"
-    }
-  ],
+  "links": [],
   "panels": [
     {
       "fieldConfig": {
@@ -41,7 +28,7 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 23,
+        "w": 19,
         "x": 0,
         "y": 0
       },
@@ -52,7 +39,33 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:15px;\n\">\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Hypertension dashboard\n  </span>\n\n  <a href=\"/d/heart360_facility_overdue_patients/heart-360-overdue-patients-by-facility\n?orgId=1\n&from=now-1y\n&to=now\n&timezone=browser\n&var-facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Overdue patients list\n  </a>\n\n</div>\n",
+        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Hypertension dashboard\n  </span>\n\n  <a href=\"/d/heart360_facility_overdue_patients/heart-360-overdue-patients-by-facility\n?orgId=1\n&from=now-1y\n&to=now\n&timezone=browser\n&var-facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Overdue patients list\n  </a>\n\n</div>",
+        "mode": "html"
+      },
+      "pluginVersion": "12.3.0",
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 4,
+        "x": 19,
+        "y": 0
+      },
+      "id": 12,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<div style=\"text-align: right;\">\n  \n  <a href=\"/d/heart360demo/heart-360-global-dashboard?orgId=1&from=now-1y&to=now&timezone=browser\" style=\" \n        color: #3274d9; \n        border: 1px solid #3274d9;\n        padding: 4.5px 20px; \n        font-size: 18px; \n        font-weight: 600; \n        border-radius: 6px; \n        text-decoration: none; \n        display: inline-block; \n        font-family: Inter, Helvetica, Arial, sans-serif;\n        transition: background-color 0.2s;\n  \">\n    District Dashboard\n  </a>\n\n  <a href=\"http://${server_host}:8080/login?redirect=/files/\" target=\"_blank\" style=\"\n    background-color: #3274d9; \n    color: white; \n    padding: 6px 40px; \n    font-size: 18px; \n    font-weight: 600; \n    border-radius: 6px; \n    text-decoration: none; \n    display: inline-block; \n    font-family: Inter, Helvetica, Arial, sans-serif;\n    box-shadow: 0 2px 0 rgba(0,0,0,0.1);\n    transition: background-color 0.2s;\n  \">\n    Upload File\n  </a>\n\n</div>",
         "mode": "html"
       },
       "pluginVersion": "12.3.0",
@@ -1043,9 +1056,32 @@
     "from": "now-1y",
     "to": "now"
   },
-  "timepicker": {},
+  "timepicker": {
+    "quick_ranges": [
+      {
+        "display": "Last 6 months",
+        "from": "now-6M",
+        "to": "now"
+      },
+      {
+        "display": "Last year",
+        "from": "now-1y",
+        "to": "now"
+      },
+      {
+        "display": "Last 2 years",
+        "from": "now-2y",
+        "to": "now"
+      },
+      {
+        "display": "Last 5 years",
+        "from": "now-5y",
+        "to": "now"
+      }
+    ]
+  },
   "timezone": "browser ",
   "title": "Heart 360 Global Dashboard Per Facility",
   "uid": "heart360demo_per_facility",
-  "version": 5
+  "version": 7
 }

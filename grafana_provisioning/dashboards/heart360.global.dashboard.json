@@ -1870,12 +1870,35 @@
     ]
   },
   "time": {
-    "from": "2023-08-10T05:36:20.542Z",
-    "to": "2025-12-16T10:29:40.542Z"
+    "from": "now-1y",
+    "to": "now"
   },
-  "timepicker": {},
+  "timepicker": {
+    "quick_ranges": [
+      {
+        "display": "Last 6 months",
+        "from": "now-6M",
+        "to": "now"
+      },
+      {
+        "display": "Last year",
+        "from": "now-1y",
+        "to": "now"
+      },
+      {
+        "display": "Last 2 years",
+        "from": "now-2y",
+        "to": "now"
+      },
+      {
+        "display": "Last 5 years",
+        "from": "now-5y",
+        "to": "now"
+      }
+    ]
+  },
   "timezone": "browser",
   "title": "Heart 360 Global Dashboard",
   "uid": "heart360demo",
-  "version": 32
+  "version": 33
 }
