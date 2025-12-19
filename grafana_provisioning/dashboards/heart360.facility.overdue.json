@@ -22,6 +22,32 @@
   "links": [],
   "panels": [
     {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <a href=\"/d/heart360demo_per_facility/heart-360-global-dashboard-per-facility\n?orgId=1\n&from=now-1y\n&to=now\n&timezone=browser\n&var-Facility=${facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Hypertension dashboard\n  </a>\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Overdue patients list\n  </span>\n\n</div>\n",
+        "mode": "html"
+      },
+      "pluginVersion": "12.3.0",
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
       "datasource": {
         "type": "grafana-postgresql-datasource",
         "uid": "postgres-hypertension"
@@ -46,13 +72,26 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "last_call_result"
+            },
+            "properties": [
+              {
+                "id": "noValue",
+                "value": "Pending to call"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
-        "h": 19,
+        "h": 26,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 2
       },
       "id": 1,
       "options": {
@@ -111,7 +150,7 @@
                   "width": {
                     "auto": false,
                     "min": 20,
-                    "value": 100
+                    "value": 110
                   },
                   "wrap": true
                 },
@@ -1006,9 +1045,9 @@
                     "fontSize": "md"
                   },
                   "width": {
-                    "auto": true,
+                    "auto": false,
                     "min": 20,
-                    "value": 100
+                    "value": 160
                   },
                   "wrap": true
                 },
@@ -1139,7 +1178,7 @@
             ],
             "name": "OverduePatients",
             "pagination": {
-              "defaultPageSize": 10,
+              "defaultPageSize": 20,
               "enabled": true,
               "mode": "client"
             },
@@ -1279,14 +1318,14 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-1y",
     "to": "now"
   },
   "timepicker": {
     "hidden": true
   },
-  "timezone": "browser",
+  "timezone": "browser ",
   "title": "Heart 360 Overdue Patients by Facility",
   "uid": "heart360_facility_overdue_patients",
-  "version": 6
+  "version": 10
 }
