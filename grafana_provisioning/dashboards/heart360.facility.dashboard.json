@@ -1056,30 +1056,7 @@
     "from": "now-1y",
     "to": "now"
   },
-  "timepicker": {
-    "quick_ranges": [
-      {
-        "display": "Last 6 months",
-        "from": "now-6M",
-        "to": "now"
-      },
-      {
-        "display": "Last year",
-        "from": "now-1y",
-        "to": "now"
-      },
-      {
-        "display": "Last 2 years",
-        "from": "now-2y",
-        "to": "now"
-      },
-      {
-        "display": "Last 5 years",
-        "from": "now-5y",
-        "to": "now"
-      }
-    ]
-  },
+  "timepicker": {},
   "timezone": "browser ",
   "title": "Heart 360 Global Dashboard Per Facility",
   "uid": "heart360demo_per_facility",
