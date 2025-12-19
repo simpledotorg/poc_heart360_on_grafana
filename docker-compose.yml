@@ -15,6 +15,7 @@ services:
       - GF_INSTALL_PLUGINS=volkovlabs-table-panel
       - GF_TIME_PICKER_QUICK_RANGES=[{"from":"now-6M","to":"now","display":"Last 6 months"},{"from":"now-1y","to":"now","display":"Last year"},{"from":"now-2y","to":"now","display":"Last 2 years"},{"from":"now-5y","to":"now","display":"Last 5 years"}]
       - GF_DATE_FORMATS_INTERVAL_MONTH=MMM-YYYY
+      - GF_USERS_DEFAULT_THEME=light
   postgres:
     image: postgres:16-alpine
     container_name: postgres
