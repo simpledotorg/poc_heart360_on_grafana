@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 3,
   "links": [],
   "panels": [
     {
@@ -28,7 +28,7 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 19,
+        "w": 16,
         "x": 0,
         "y": 0
       },
@@ -54,8 +54,8 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 4,
-        "x": 19,
+        "w": 7,
+        "x": 16,
         "y": 0
       },
       "id": 12,
@@ -65,7 +65,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<div style=\"text-align: right;\">\n  \n  <a href=\"/d/heart360demo/heart-360-global-dashboard?orgId=1&from=now-1y&to=now&timezone=browser\" style=\" \n        color: #3274d9; \n        border: 1px solid #3274d9;\n        padding: 4.5px 20px; \n        font-size: 18px; \n        font-weight: 600; \n        border-radius: 6px; \n        text-decoration: none; \n        display: inline-block; \n        font-family: Inter, Helvetica, Arial, sans-serif;\n        transition: background-color 0.2s;\n  \">\n    District Dashboard\n  </a>\n\n  <a href=\"http://${server_host}:8080/login?redirect=/files/\" target=\"_blank\" style=\"\n    background-color: #3274d9; \n    color: white; \n    padding: 6px 40px; \n    font-size: 18px; \n    font-weight: 600; \n    border-radius: 6px; \n    text-decoration: none; \n    display: inline-block; \n    font-family: Inter, Helvetica, Arial, sans-serif;\n    box-shadow: 0 2px 0 rgba(0,0,0,0.1);\n    transition: background-color 0.2s;\n  \">\n    Upload File\n  </a>\n\n</div>",
+        "content": "<div style=\"text-align: right;\">\n  \n  <a href=\"/d/heart360demo/heart-360-global-dashboard?orgId=1&from=now-1y&to=now&timezone=browser\" style=\" \n        background-color: #f5f5f5;\n        color: #333333; \n        border: 1px solid #d0d0d0;\n        padding: 4.5px 20px; \n        font-size: 18px; \n        font-weight: 600; \n        border-radius: 6px; \n        text-decoration: none; \n        display: inline-block; \n        font-family: Inter, Helvetica, Arial, sans-serif;\n        transition: background-color 0.2s;\n  \">\n    District Dashboard\n  </a>\n\n  <a href=\"http://${server_host}:8080/login?redirect=/files/\" target=\"_blank\" style=\"\n    background-color: #3274d9; \n    color: white; \n    padding: 6px 40px; \n    font-size: 18px; \n    font-weight: 600; \n    border-radius: 6px; \n    text-decoration: none; \n    display: inline-block; \n    font-family: Inter, Helvetica, Arial, sans-serif;\n    box-shadow: 0 2px 0 rgba(0,0,0,0.1);\n    transition: background-color 0.2s;\n  \">\n    Upload File\n  </a>\n\n</div>",
         "mode": "html"
       },
       "pluginVersion": "12.3.0",
@@ -105,7 +105,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -114,13 +114,13 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineWidth": 2,
+            "pointSize": 6,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -130,6 +130,7 @@
               "mode": "off"
             }
           },
+          "displayName": "Patients in ${Facility} with BP <140/90:",
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -148,7 +149,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 16,
         "x": 0,
         "y": 3
@@ -156,10 +157,12 @@
       "id": 1,
       "options": {
         "legend": {
-          "calcs": [],
+          "calcs": [
+            "last"
+          ],
           "displayMode": "list",
           "placement": "bottom",
-          "showLegend": true
+          "showLegend": false
         },
         "tooltip": {
           "hideZeros": false,
@@ -207,6 +210,7 @@
         "type": "grafana-postgresql-datasource",
         "uid": "postgres-hypertension"
       },
+      "description": "Estimated population with hypertension is derived from Community Survey.\n\nPatients under care are patients with hypertension with at least 1 visit in the past 12 months.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -252,7 +256,22 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "cumulative_number_of_patients"
+              "options": "estimated_people_with_hypertension_pct"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#dae0e1",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "registered_pct_of_estimated"
             },
             "properties": [
               {
@@ -267,7 +286,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "nb_patients_under_care"
+              "options": "under_care_pct_of_estimated"
             },
             "properties": [
               {
@@ -282,7 +301,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "nb_patients_controlled"
+              "options": "controlled_pct_of_estimated"
             },
             "properties": [
               {
@@ -297,7 +316,7 @@
         ]
       },
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 7,
         "x": 16,
         "y": 3
@@ -332,7 +351,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n  heart360_patients_registered.ref_month,\n  sum(cumulative_number_of_patients) as cumulative_number_of_patients,\n  sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS) as nb_patients_under_care,\n  sum(nb_patients_controlled) as nb_patients_controlled\nfrom public.heart360_patients_catagory\njoin public.heart360_patients_registered on heart360_patients_registered.ref_month = heart360_patients_catagory.ref_month \n and  public.HEART360_PATIENTS_CATAGORY.facility = public.heart360_patients_registered.facility\nwhere heart360_patients_catagory.ref_month=(select max(ref_month) from heart360_patients_catagory where $__timeFilter(ref_month))\nand public.heart360_patients_catagory.facility = '$Facility'\ngroup by 1\n\n\n\n",
+          "rawSql": "select \n  heart360_patients_registered.ref_month,\n  100.0 as estimated_people_with_hypertension_pct,\n  (sum(cumulative_number_of_patients)::numeric / 5600.0 * 100.0) as registered_pct_of_estimated,\n  (sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)::numeric / 5600.0 * 100.0) as under_care_pct_of_estimated,\n  (sum(nb_patients_controlled)::numeric / 5600.0 * 100.0) as controlled_pct_of_estimated\nfrom public.heart360_patients_catagory\njoin public.heart360_patients_registered on heart360_patients_registered.ref_month = heart360_patients_catagory.ref_month and heart360_patients_catagory.facility= heart360_patients_registered.facility\nwhere heart360_patients_catagory.ref_month=(select max(ref_month) from heart360_patients_catagory where $__timeFilter(ref_month))\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -353,7 +372,7 @@
           }
         }
       ],
-      "title": "Cascade",
+      "title": "Hypertension treatment cascade",
       "type": "barchart"
     },
     {
@@ -362,7 +381,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 13
       },
       "id": 6,
       "panels": [],
@@ -388,7 +407,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -397,13 +416,13 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineWidth": 2,
+            "pointSize": 6,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -413,7 +432,11 @@
               "mode": "off"
             }
           },
+          "decimals": 0,
+          "displayName": "% Patients with  BP <140/90 at latest visit in the past 3 months",
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -434,7 +457,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 12
+        "y": 14
       },
       "id": 2,
       "options": {
@@ -500,7 +523,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -509,13 +532,13 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineWidth": 2,
+            "pointSize": 6,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -525,7 +548,11 @@
               "mode": "off"
             }
           },
+          "decimals": 0,
+          "displayName": "% Patients with BP ≥140/90 at latest visit in the past 3 months",
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -562,7 +589,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 12
+        "y": 14
       },
       "id": 3,
       "options": {
@@ -606,7 +633,7 @@
           }
         }
       ],
-      "title": "BP Uncontrolled at latest visit in past 3 months",
+      "title": "BP uncontrolled at latest visit in past 3 months",
       "type": "timeseries"
     },
     {
@@ -628,7 +655,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -637,13 +664,13 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineWidth": 2,
+            "pointSize": 6,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -653,7 +680,11 @@
               "mode": "off"
             }
           },
+          "decimals": 0,
+          "displayName": "% Patients with no BP measure recorded in past 3 months",
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -690,7 +721,7 @@
         "h": 8,
         "w": 7,
         "x": 16,
-        "y": 12
+        "y": 14
       },
       "id": 4,
       "options": {
@@ -772,7 +803,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -826,6 +857,10 @@
                   "fixedColor": "blue",
                   "mode": "fixed"
                 }
+              },
+              {
+                "id": "displayName",
+                "value": "HTN - Cumulative registrations"
               }
             ]
           },
@@ -841,6 +876,22 @@
                   "fixedColor": "purple",
                   "mode": "fixed"
                 }
+              },
+              {
+                "id": "displayName",
+                "value": "HTN - Patients under care"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "nb_new_patients"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "HTN - Monthly registrations"
               }
             ]
           }
@@ -848,9 +899,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 16,
         "x": 0,
-        "y": 20
+        "y": 22
       },
       "id": 7,
       "options": {
@@ -942,7 +993,10 @@
               "mode": "off"
             }
           },
+          "displayName": "% Patients with no BP measure recorded in the past 12 months",
           "mappings": [],
+          "max": 100,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -973,14 +1027,29 @@
                 "value": 100
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lost_to_follow_up_pct"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "super-light-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
           }
         ]
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 20
+        "w": 7,
+        "x": 16,
+        "y": 22
       },
       "id": 8,
       "options": {
@@ -1003,7 +1072,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select ref_month, sum(COALESCE(nb_patients_lost_to_follow_up, 0)) nb_patients_lost_to_follow_up\nfrom public.heart360_patients_under_care\nwhere facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n  public.heart360_patients_under_care.ref_month,\n  (100.0 * sum(COALESCE(public.heart360_patients_under_care.nb_patients_lost_to_follow_up, 0))) / \n  NULLIF(sum(public.HEART360_PATIENTS_CATAGORY.nb_patients_under_care), 0) as lost_to_follow_up_pct\nfrom public.heart360_patients_under_care\nleft join public.HEART360_PATIENTS_CATAGORY \n  on public.heart360_patients_under_care.ref_month = public.HEART360_PATIENTS_CATAGORY.ref_month\n  and public.heart360_patients_under_care.facility = public.HEART360_PATIENTS_CATAGORY.facility\nwhere public.heart360_patients_under_care.facility = '$Facility'\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1058,7 +1127,7 @@
   },
   "timepicker": {},
   "timezone": "browser ",
-  "title": "Heart 360 Global Dashboard Per Facility",
+  "title": "Heart 360 Dashboard Per Facility",
   "uid": "heart360demo_per_facility",
-  "version": 7
+  "version": 10
 }

@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 4,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -53,7 +53,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -62,13 +62,13 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineWidth": 2,
+            "pointSize": 6,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -156,6 +156,7 @@
         "type": "grafana-postgresql-datasource",
         "uid": "postgres-hypertension"
       },
+      "description": "Estimated population with hypertension is derived from Community Survey.\n\nPatients under care are patients with hypertension with at least 1 visit in the past 12 months.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -317,7 +318,7 @@
           }
         }
       ],
-      "title": "Cascade",
+      "title": "Hypertension treatment cascade",
       "type": "barchart"
     },
     {
@@ -352,7 +353,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -361,13 +362,13 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineWidth": 2,
+            "pointSize": 6,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -377,6 +378,7 @@
               "mode": "off"
             }
           },
+          "decimals": 0,
           "displayName": "% Patients with  BP <140/90 at latest visit in the past 3 months",
           "mappings": [],
           "max": 100,
@@ -467,7 +469,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -476,13 +478,13 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineWidth": 2,
+            "pointSize": 6,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -492,6 +494,7 @@
               "mode": "off"
             }
           },
+          "decimals": 0,
           "displayName": "% Patients with BP ≥140/90 at latest visit in the past 3 months",
           "mappings": [],
           "max": 100,
@@ -598,7 +601,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -607,13 +610,13 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineWidth": 2,
+            "pointSize": 6,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -623,6 +626,7 @@
               "mode": "off"
             }
           },
+          "decimals": 0,
           "displayName": "% Patients with no BP measure recorded in past 3 months",
           "mappings": [],
           "max": 100,
@@ -745,7 +749,7 @@
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -910,7 +914,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
+            "fillOpacity": 12,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -919,13 +923,13 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
+            "lineWidth": 2,
+            "pointSize": 6,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": false,
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -935,6 +939,7 @@
               "mode": "off"
             }
           },
+          "decimals": 0,
           "displayName": "% Patients with no BP measure recorded in the past 12 months",
           "mappings": [],
           "thresholds": {
@@ -955,16 +960,15 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "nb_new_patients"
+              "options": "lost_to_follow_up_pct"
             },
             "properties": [
               {
-                "id": "custom.drawStyle",
-                "value": "bars"
-              },
-              {
-                "id": "custom.fillOpacity",
-                "value": 100
+                "id": "color",
+                "value": {
+                  "fixedColor": "super-light-red",
+                  "mode": "fixed"
+                }
               }
             ]
           }
@@ -997,7 +1001,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select ref_month, sum(COALESCE(nb_patients_lost_to_follow_up, 0)) nb_patients_lost_to_follow_up\nfrom public.heart360_patients_under_care\ngroup by 1",
+          "rawSql": "select \n  public.heart360_patients_under_care.ref_month,\n  (100.0 * sum(COALESCE(public.heart360_patients_under_care.nb_patients_lost_to_follow_up, 0))) / \n  NULLIF(sum(public.HEART360_PATIENTS_CATAGORY.nb_patients_under_care), 0) as lost_to_follow_up_pct\nfrom public.heart360_patients_under_care\nleft join public.HEART360_PATIENTS_CATAGORY \n  on public.heart360_patients_under_care.ref_month = public.HEART360_PATIENTS_CATAGORY.ref_month\n  and public.heart360_patients_under_care.facility = public.HEART360_PATIENTS_CATAGORY.facility\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1995,5 +1999,5 @@
   "timezone": "browser",
   "title": "Heart 360 Global Dashboard",
   "uid": "heart360demo",
-  "version": 34
+  "version": 35
 }
