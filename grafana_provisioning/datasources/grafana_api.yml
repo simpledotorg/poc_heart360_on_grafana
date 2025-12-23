@@ -6,20 +6,18 @@ datasources:
     uid: GrafanaApi
     orgId: 1
     access: proxy
-    url: "" # Note: The API returned an empty URL, ensure this is set correctly if needed
-    basicAuth: true
-    basicAuthUser: admin
+    url: "http://localhost:3000" # Set to localhost to allow relative pathing
+    basicAuth: false            # Disabled because we are switching to Bearer Token
     isDefault: false
     jsonData:
       allowedHosts:
         - http://localhost:3000/
-      auth_method: basicAuth
+      auth_method: bearerToken  # Updated from basicAuth to bearerToken
       keepCookies:
         - grafana_session
         - grafana_session_expiry
       oauthPassThru: false
       unsecuredQueryHandling: warn
     secureJsonData:
-      # Grafana does not export passwords/tokens. 
-      # You MUST manually enter your Service Account token or password here.
-      basicAuthPassword: "admin"
+      # The Service Account token goes here
+      bearerToken: "u4V9_kL2pZ7mQ8xR5nW1jT3hG0bY6sA9"
