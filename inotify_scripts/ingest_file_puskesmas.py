@@ -58,7 +58,7 @@ def get_metadata_from_excel(file_path):
     START_ROW_INDEX = 2
     
     try:
-        df_metadata = pd.read_excel(file_path, sheet_name=0, header=None, skiprows=START_ROW_INDEX, nrows=ROWS_TO_READ, usecols=[0])
+        df_metadata = pd.read_excel(file_path, sheet_name=0, header=None, skiprows=START_ROW_INDEX, nrows=ROWS_TO_READ, usecols=[0],engine='calamine')
     except Exception as e:
         raise Exception(f"Failed to read metadata block: {e}")
 
@@ -171,7 +171,8 @@ def ingest_and_execute(file_path):
             sheet_name=0,
             header=0,
             skiprows=SKIP_ROWS_TO_DATA_HEADER,
-            dtype=DTYPE_MAPPING
+            dtype=DTYPE_MAPPING,
+            engine='calamine'
         )
     except Exception as e:
         print(f"Error loading main data table: {e}", file=sys.stderr)
