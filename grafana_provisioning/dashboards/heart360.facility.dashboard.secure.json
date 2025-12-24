@@ -421,7 +421,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n  heart360_patients_registered.ref_month,\n  100.0 as estimated_people_with_hypertension_pct,\n  (sum(cumulative_number_of_patients)::numeric / 5600.0 * 100.0) as registered_pct_of_estimated,\n  (sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)::numeric / 5600.0 * 100.0) as under_care_pct_of_estimated,\n  (sum(nb_patients_controlled)::numeric / 5600.0 * 100.0) as controlled_pct_of_estimated\nfrom public.heart360_patients_catagory\njoin public.heart360_patients_registered\n  on heart360_patients_registered.ref_month = heart360_patients_catagory.ref_month\n  and heart360_patients_catagory.facility= heart360_patients_registered.facility\nwhere \n  heart360_patients_catagory.ref_month=(select max(ref_month) from heart360_patients_catagory where $__timeFilter(ref_month))\n  and $isAllowed > 0\ngroup by 1",
+          "rawSql": "select \n  heart360_patients_registered.ref_month,\n  100.0 as estimated_people_with_hypertension_pct,\n  (sum(cumulative_number_of_patients)::numeric / 5600.0 * 100.0) as registered_pct_of_estimated,\n  (sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)::numeric / 5600.0 * 100.0) as under_care_pct_of_estimated,\n  (sum(nb_patients_controlled)::numeric / 5600.0 * 100.0) as controlled_pct_of_estimated\nfrom public.heart360_patients_catagory\njoin public.heart360_patients_registered\n  on heart360_patients_registered.ref_month = heart360_patients_catagory.ref_month\n  and heart360_patients_catagory.facility= heart360_patients_registered.facility\nwhere \n  heart360_patients_catagory.ref_month=(select max(ref_month) from heart360_patients_catagory where $__timeFilter(ref_month))\n  and heart360_patients_catagory.facility = '$Facility'\n  and $isAllowed > 0\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1174,8 +1174,8 @@
     "list": [
       {
         "current": {
-          "text": "Gambir",
-          "value": "Gambir"
+          "text": "Example",
+          "value": "Example"
         },
         "datasource": {
           "type": "grafana-postgresql-datasource",
@@ -1191,8 +1191,8 @@
       },
       {
         "current": {
-          "text": "0",
-          "value": "0"
+          "text": "1",
+          "value": "1"
         },
         "datasource": {
           "type": "yesoreyeram-infinity-datasource",
@@ -1228,12 +1228,12 @@
     ]
   },
   "time": {
-    "from": "now-1y",
+    "from": "now-5y",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser ",
   "title": "Heart 360 Dashboard Per Facility (With Security)",
   "uid": "heart360demo_per_facility_security",
-  "version": 16
+  "version": 17
 }
