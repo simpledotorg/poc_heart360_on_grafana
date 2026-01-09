@@ -25,12 +25,15 @@ jobs:
       - name: Build Docker Image
         run: |
           cd docker_build
-          docker compose build
+          docker compose --project-name heart360tk build
 
 
       - name: Tag Docker Image
         run: |
           set -euo pipefail
+          IMAGE_REPO="simpledotorg"
+          docker tag 
+
 
           # Extract branch name from GITHUB_REF (refs/heads/{branch_name})
           BRANCH_NAME=$(echo "${GITHUB_REF##refs/heads/}")

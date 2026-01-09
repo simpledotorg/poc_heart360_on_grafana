@@ -4,7 +4,7 @@ services:
     build: 
       context: ..
       dockerfile: docker_build/heart360.grafana.docker
-  postgres:
+  postgresql:
     build: 
       context: ..
       dockerfile: docker_build/heart360.pg_database.docker
@@ -21,7 +21,7 @@ services:
       - FILEBROWSER_ADMIN_PASSWORD=admin
       - FILEBROWSER_BASEURL=/
 
-  file-processor:
+  fileprocessor:
     image: devodev/inotify
     container_name: file-upload-trigger
     entrypoint: /bin/sh /scripts/init.sh
