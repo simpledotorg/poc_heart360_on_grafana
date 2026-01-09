@@ -27,78 +27,12 @@ jobs:
           cd docker_build
           docker compose --project-name heart360tk build
 
-
       - name: Tag Docker Image
         run: |
-          set -euo pipefail
-          IMAGE_REPO="simpledotorg"
-          docker tag 
+          cd .github/workflows
+          bash dockertag.sh
 
-
-          # Extract branch name from GITHUB_REF (refs/heads/{branch_name})
-          BRANCH_NAME=$(echo "${GITHUB_REF##refs/heads/}")
-
-          # Fallback to main if branch is empty (safety)
-          if [ -z "$BRANCH_NAME" ]; then
-            BRANCH_NAME="main"
-          fi
-
-          # Extract full commit hash
-          COMMIT_HASH=$(git rev-parse HEAD)
-
-          # Get GitHub run number
-          BUILD_NUMBER="${GITHUB_RUN_NUMBER}"
-
-          # Sanitize branch name and commit hash for tag safety
-          BRANCH_NAME=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]._-' )
-          COMMIT_HASH=$(echo "$COMMIT_HASH" | tr -cd '[:alnum:]')
-
-          echo "Branch name: $BRANCH_NAME"
-          echo "Commit hash: $COMMIT_HASH"
-          echo "Build number: $BUILD_NUMBER"
-
-          # Validate
-          if [ -z "$BRANCH_NAME" ] || [ -z "$COMMIT_HASH" ] || [ -z "$BUILD_NUMBER" ]; then
-            echo "Error: required variable missing"
-            exit 1
-          fi
-
-          # Compose tags
-          IMAGE_REPO="simpledotorg/simple_patient_scoring"
-          TAG_BRANCH_BUILD="${BRANCH_NAME}.${BUILD_NUMBER}"    # unique, human readable (e.g., main.42)
-          TAG_BRANCH="${BRANCH_NAME}"                           # non-unique, human readable (e.g., main)
-          TAG_COMMIT="${COMMIT_HASH}"                           # unique, dev friendly (e.g., a1b2c3d)
-
-          echo "Generated tags:"
-          echo "  - ${IMAGE_REPO}:${TAG_BRANCH_BUILD}"
-          echo "  - ${IMAGE_REPO}:${TAG_BRANCH}"
-          echo "  - ${IMAGE_REPO}:${TAG_COMMIT}"
-
-          # Build image with all tags
-          docker build \
-            -t "${IMAGE_REPO}:${TAG_BRANCH_BUILD}" \
-            -t "${IMAGE_REPO}:${TAG_BRANCH}" \
-            -t "${IMAGE_REPO}:${TAG_COMMIT}" \
-            .
-
-          # Export tags for next step
-          echo "IMAGE_REPO=${IMAGE_REPO}" >> "$GITHUB_ENV"
-          echo "TAG_BRANCH_BUILD=${TAG_BRANCH_BUILD}" >> "$GITHUB_ENV"
-          echo "TAG_BRANCH=${TAG_BRANCH}" >> "$GITHUB_ENV"
-          echo "TAG_COMMIT=${TAG_COMMIT}" >> "$GITHUB_ENV"
-
-      - name: Push Docker image (all tags)
+      - name: Push Docker images (all tags)
         run: |
-          set -euo pipefail
-
-          echo "Pushing all tags..."
-
-          # Push all three tags
-          docker push "${IMAGE_REPO}:${TAG_BRANCH_BUILD}"
-          docker push "${IMAGE_REPO}:${TAG_BRANCH}"
-          docker push "${IMAGE_REPO}:${TAG_COMMIT}"
-
-          echo "Pushed tags:"
-          echo "  - ${IMAGE_REPO}:${TAG_BRANCH_BUILD}"
-          echo "  - ${IMAGE_REPO}:${TAG_BRANCH}"
-          echo "  - ${IMAGE_REPO}:${TAG_COMMIT}"
+          cd .github/workflows
+          bash dockerpush.sh
