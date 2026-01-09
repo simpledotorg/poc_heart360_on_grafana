@@ -1,0 +1,7 @@
+FROM postgres:16-alpine
+
+COPY ./pg_init_scripts/01_heart360_tables.sql docker-entrypoint-initdb.d/01_heart360_tables.sql
+
+ENV POSTGRES_USER=grafana_user
+ENV POSTGRES_PASSWORD=your_db_password
+ENV POSTGRES_DB=metrics_db
