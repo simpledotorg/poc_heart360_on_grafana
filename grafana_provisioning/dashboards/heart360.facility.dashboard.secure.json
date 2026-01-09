@@ -23,8 +23,8 @@
   "panels": [
     {
       "datasource": {
-        "type": "yesoreyeram-infinity-datasource",
-        "uid": "GrafanaApi"
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres-hypertension"
       },
       "fieldConfig": {
         "defaults": {
@@ -53,7 +53,7 @@
       "id": 13,
       "options": {
         "afterRender": "",
-        "content": "{{#if (eq isAllowed 0)}}\n  <div style=\"color: #e02424; background: rgba(224, 36, 36, 0.05); border-left: 4px solid #e02424; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; border-radius: 2px; line-height: 1.4;\">\n    <span>⚠️</span>\n    <span>\n      <strong>Access Denied:</strong> Ask your admin for membership in: \n      <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875;\">heart360tk_facility_view_patients_{{Facility}}</span> \n      or \n      <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875;\">heart360tk_facility_view_aggregated_{{Facility}}</span>\n    </span>\n  </div>\n{{/if}}",
+        "content": "{{#if (eq isAllowed 0)}}\n  <div style=\"color: #e02424; background: rgba(224, 36, 36, 0.05); border-left: 4px solid #e02424; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; border-radius: 2px; line-height: 1.4;\">\n    <span>⚠️</span>\n    <span>\n      <strong>Access Denied:</strong> Ask your admin for membership in: \n      <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875;\">heart360tk_facility_view_patients_{{Facility}}</span> \n      or \n      <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875;\">heart360tk_facility_view_aggregated_{{Facility}}</span>\n    </span>\n  </div>\n{{/if}}\n",
         "contentPartials": [],
         "defaultContent": "",
         "editor": {
@@ -70,20 +70,32 @@
       "pluginVersion": "6.2.0",
       "targets": [
         {
-          "columns": [],
-          "data": "[{\"Facility\": \"${Facility}\",\"isAllowed\": ${isAllowed}}]",
-          "filters": [],
+          "dataset": "metrics_db",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres-hypertension"
+          },
+          "editorMode": "code",
           "format": "table",
-          "global_query_id": "",
-          "parser": "backend",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  LOWER('$Facility') as \"Facility\",\n  $isAllowed as \"isAllowed\"",
           "refId": "A",
-          "root_selector": "",
-          "source": "inline",
-          "type": "json",
-          "url": "",
-          "url_options": {
-            "data": "",
-            "method": "GET"
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
           }
         }
       ],
@@ -1191,8 +1203,8 @@
       },
       {
         "current": {
-          "text": "1",
-          "value": "1"
+          "text": "0",
+          "value": "0"
         },
         "datasource": {
           "type": "yesoreyeram-infinity-datasource",
@@ -1228,12 +1240,12 @@
     ]
   },
   "time": {
-    "from": "now-5y",
+    "from": "now-2y",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser ",
   "title": "Heart 360 Dashboard Per Facility (With Security)",
   "uid": "heart360demo_per_facility_security",
-  "version": 17
+  "version": 18
 }
