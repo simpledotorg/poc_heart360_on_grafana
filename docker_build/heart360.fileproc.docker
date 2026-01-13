@@ -1,0 +1,14 @@
+FROM devodev/inotify
+
+COPY ./inotify_scripts/fileproc.sh
+
+# Installs dependencies
+RUN apk update
+RUN apk upgrade
+RUN apk add python3 py3-pip
+RUN pip install --break-system-packages pandas openpyxl psycopg2-binary python-calamine
+
+# Sets environement variables
+ENV INOTIFY_TARGET=/data
+ENV INOTIFY_SCRIPT=/scripts/fileproc.sh
+ENV H360TK_DATA_LOAD_SCRIPT=__CHANGE_THIS__
