@@ -1,0 +1,4 @@
+FROM gtstef/filebrowser:stable-slim
+
+ENV FILEBROWSER_ADMIN_PASSWORD=admin
+ENV FILEBROWSER_BASEURL=/

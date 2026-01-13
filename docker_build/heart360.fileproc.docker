@@ -1,12 +1,13 @@
 FROM devodev/inotify
 
-COPY ./inotify_scripts/fileproc.sh
-
 # Installs dependencies
 RUN apk update
 RUN apk upgrade
 RUN apk add python3 py3-pip
 RUN pip install --break-system-packages pandas openpyxl psycopg2-binary python-calamine
+
+# copies files that are required
+COPY ./inotify_scripts/fileproc.sh /scripts/fileproc.sh
 
 # Sets environement variables
 ENV INOTIFY_TARGET=/data

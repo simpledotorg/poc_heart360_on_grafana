@@ -47,6 +47,7 @@ services:
     container_name: file-upload-trigger
     entrypoint: /bin/sh /scripts/init.sh
     environment:
+      - H360TK_DATA_LOAD_SCRIPT=/scripts/ingest_file_puskesmas.py
       - INOTIFY_TARGET=/data
       - INOTIFY_SCRIPT=/scripts/fileproc.sh
       - POSTGRES_HOST=postgres

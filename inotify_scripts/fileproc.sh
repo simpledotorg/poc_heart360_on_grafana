@@ -16,4 +16,4 @@ fi
 
 echo "We got a file !! $FULL_PATH"
 
-python3 /scripts/ingest_file_puskesmas.py "$FULL_PATH"
+python3 "${H360TK_DATA_LOAD_SCRIPT}"" "$FULL_PATH"

@@ -11,4 +11,4 @@ services:
   fileprocessor:
     build: 
       context: ..
-      dockerfile: docker_build/heart360.pg_database.docker
+      dockerfile: docker_build/heart360.fileproc.docker
