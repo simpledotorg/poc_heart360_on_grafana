@@ -1,4 +1,5 @@
-SET SEARCH_PATH heart360tk_schema, public;
+# TODO
+# SET SEARCH_PATH heart360tk_schema, public;
 
 -- 1. Patients Table
 CREATE TABLE IF NOT EXISTS patients (
