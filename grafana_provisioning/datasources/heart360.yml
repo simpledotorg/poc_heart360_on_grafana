@@ -6,7 +6,7 @@ datasources:
     uid: postgres-hypertension
     type: postgres
     url: postgres:5432
-    user: grafana_user
+    user: heart360tk
     access: proxy
     isDefault: false 
     version: 4
@@ -15,7 +15,7 @@ datasources:
       # Host is the Docker service name, port is the default 5432
       host: 
       port: 5432
-      database: metrics_db
+      database: heart360tk_database
       # Use a secure connection if needed, but 'disable' is common for Docker environments
       sslmode: disable
       searchPath: public
@@ -31,4 +31,4 @@ datasources:
       intVal: true
     secureJsonData:
       # Password must be stored securely
-      password: your_db_password
+      password: YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0

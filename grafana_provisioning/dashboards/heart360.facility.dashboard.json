@@ -351,7 +351,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n  heart360_patients_registered.ref_month,\n  100.0 as estimated_people_with_hypertension_pct,\n  (sum(cumulative_number_of_patients)::numeric / 5600.0 * 100.0) as registered_pct_of_estimated,\n  (sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)::numeric / 5600.0 * 100.0) as under_care_pct_of_estimated,\n  (sum(nb_patients_controlled)::numeric / 5600.0 * 100.0) as controlled_pct_of_estimated\nfrom public.heart360_patients_catagory\njoin public.heart360_patients_registered on heart360_patients_registered.ref_month = heart360_patients_catagory.ref_month and heart360_patients_catagory.facility= heart360_patients_registered.facility\nwhere heart360_patients_catagory.ref_month=(select max(ref_month) from heart360_patients_catagory where $__timeFilter(ref_month))\n  and public.heart360_patients_catagory.facility='$Facility'\ngroup by 1",
+          "rawSql": "select \n  heart360_patients_registered.ref_month,\n  100.0 as estimated_people_with_hypertension_pct,\n  (sum(cumulative_number_of_patients)::numeric / 5600.0 * 100.0) as registered_pct_of_estimated,\n  (sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)::numeric / 5600.0 * 100.0) as under_care_pct_of_estimated,\n  (sum(nb_patients_controlled)::numeric / 5600.0 * 100.0) as controlled_pct_of_estimated\nfrom heart360_patients_catagory\njoin heart360_patients_registered on heart360_patients_registered.ref_month = heart360_patients_catagory.ref_month and heart360_patients_catagory.facility= heart360_patients_registered.facility\nwhere heart360_patients_catagory.ref_month=(select max(ref_month) from heart360_patients_catagory where $__timeFilter(ref_month))\n  and heart360_patients_catagory.facility='$Facility'\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -480,7 +480,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_controlled) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom public.HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_controlled) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -612,7 +612,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_uncontrolled) / (sum (000000001 + NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom public.HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_uncontrolled) / (sum (000000001 + NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -744,7 +744,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_no_visit) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom public.HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_no_visit) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -924,7 +924,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    public.HEART360_PATIENTS_CATAGORY.ref_month,\n    sum(cumulative_number_of_patients) cumulative_number_of_patients,\n    sum(nb_patients_under_care) as nb_patients_under_care,\n    sum(nb_new_patients) nb_new_patients\nfrom public.HEART360_PATIENTS_CATAGORY\nleft outer join public.heart360_patients_registered on public.HEART360_PATIENTS_CATAGORY.ref_month = public.heart360_patients_registered.ref_month\n and  public.HEART360_PATIENTS_CATAGORY.facility = public.heart360_patients_registered.facility\nwhere public.HEART360_PATIENTS_CATAGORY.facility = '$Facility'\ngroup by 1\n",
+          "rawSql": "select \n    HEART360_PATIENTS_CATAGORY.ref_month,\n    sum(cumulative_number_of_patients) cumulative_number_of_patients,\n    sum(nb_patients_under_care) as nb_patients_under_care,\n    sum(nb_new_patients) nb_new_patients\nfrom HEART360_PATIENTS_CATAGORY\nleft outer join heart360_patients_registered on HEART360_PATIENTS_CATAGORY.ref_month = heart360_patients_registered.ref_month\n and  HEART360_PATIENTS_CATAGORY.facility = heart360_patients_registered.facility\nwhere HEART360_PATIENTS_CATAGORY.facility = '$Facility'\ngroup by 1\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1072,7 +1072,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n  public.heart360_patients_under_care.ref_month,\n  (100.0 * sum(COALESCE(public.heart360_patients_under_care.nb_patients_lost_to_follow_up, 0))) / \n  NULLIF(sum(public.HEART360_PATIENTS_CATAGORY.nb_patients_under_care), 0) as lost_to_follow_up_pct\nfrom public.heart360_patients_under_care\nleft join public.HEART360_PATIENTS_CATAGORY \n  on public.heart360_patients_under_care.ref_month = public.HEART360_PATIENTS_CATAGORY.ref_month\n  and public.heart360_patients_under_care.facility = public.HEART360_PATIENTS_CATAGORY.facility\nwhere public.heart360_patients_under_care.facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n  heart360_patients_under_care.ref_month,\n  (100.0 * sum(COALESCE(heart360_patients_under_care.nb_patients_lost_to_follow_up, 0))) / \n  NULLIF(sum(HEART360_PATIENTS_CATAGORY.nb_patients_under_care), 0) as lost_to_follow_up_pct\nfrom heart360_patients_under_care\nleft join HEART360_PATIENTS_CATAGORY \n  on heart360_patients_under_care.ref_month = HEART360_PATIENTS_CATAGORY.ref_month\n  and heart360_patients_under_care.facility = HEART360_PATIENTS_CATAGORY.facility\nwhere heart360_patients_under_care.facility = '$Facility'\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [

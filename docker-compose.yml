@@ -9,6 +9,7 @@ services:
     volumes:
       - ./grafana_provisioning:/etc/grafana/provisioning:ro
     environment:
+      - GF_DATABASE_URL=postgres://grafana:ZDI5MGE3YmYyMTRlNGNmYThkMTYyZjk3@postgres:5432/heart360tk_database
       - GF_SECURITY_ALLOW_EMBEDDING=true 
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
@@ -23,9 +24,9 @@ services:
       - 5432:5432
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=grafana_user
-      - POSTGRES_PASSWORD=your_db_password
-      - POSTGRES_DB=metrics_db
+      - POSTGRES_USER=h360tk_root
+      - POSTGRES_PASSWORD=NGE5ZjljYjM1ZWEyNDI5N2I0YmZiZGM0
+      - POSTGRES_DB=heart360tk_database
     volumes:
       - ./pg_init_scripts:/docker-entrypoint-initdb.d:ro
       - ./data:/var/lib/postgresql/import:ro
@@ -51,9 +52,9 @@ services:
       - INOTIFY_TARGET=/data
       - INOTIFY_SCRIPT=/scripts/fileproc.sh
       - POSTGRES_HOST=postgres
-      - POSTGRES_USER=grafana_user
-      - POSTGRES_PASSWORD=your_db_password
-      - POSTGRES_DB=metrics_db
+      - POSTGRES_USER=heart360tk
+      - POSTGRES_PASSWORD=YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0
+      - POSTGRES_DB=heart360tk_database
     volumes:
       - ./data:/grafana_target
       - ./data/upload:/data:rw
