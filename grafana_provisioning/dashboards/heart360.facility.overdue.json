@@ -1238,7 +1238,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  *,\n  EXTRACT(YEAR FROM AGE(birth_date)) AS age_years,\n  (CURRENT_DATE - last_visit_date::date) AS days_since_last_visit,\n  CASE\n    WHEN last_bp_systolic IS NOT NULL AND last_bp_diastolic IS NOT NULL\n      THEN CONCAT(\n        last_bp_systolic::int,\n        '/',\n        last_bp_diastolic::int\n      )\n    ELSE NULL\n  END AS last_bp\nFROM HEART360_OVERDUE_PATIENTS\nWHERE facility = '$facility'\n  AND last_visit_date > now() - interval '45 days';\n",
+          "rawSql": "SELECT\n  *,\n  EXTRACT(YEAR FROM AGE(birth_date)) AS age_years,\n  (CURRENT_DATE - last_visit_date::date) AS days_since_last_visit,\n  CASE\n    WHEN last_bp_systolic IS NOT NULL AND last_bp_diastolic IS NOT NULL\n      THEN CONCAT(\n        last_bp_systolic::int,\n        '/',\n        last_bp_diastolic::int\n      )\n    ELSE NULL\n  END AS last_bp\nFROM HEART360_OVERDUE_PATIENTS\nWHERE facility = '$facility'\n  AND last_visit_date < now() - interval '45 days';\n",
           "refId": "A",
           "sql": {
             "columns": [
