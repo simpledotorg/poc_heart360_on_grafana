@@ -3,6 +3,13 @@ FROM postgres:16-alpine
 COPY ./pg_init_scripts/00_schemas.sql          docker-entrypoint-initdb.d/00_schemas.sql
 COPY ./pg_init_scripts/01_heart360_tables.sql  docker-entrypoint-initdb.d/01_heart360_tables.sql
 
-ENV POSTGRES_USER=pg_root
-ENV POSTGRES_PASSWORD=NGE5ZjljYjM1ZWEyNDI5N2I0YmZiZGM0
+## Database name, to be used everywhere
 ENV POSTGRES_DB=heart360tk_database
+ENV PGDATABASE=heart360tk_database
+
+## default user, never to be used
+ENV POSTGRES_USER=heart360tk_root
+ENV PGUSER=heart360tk_root
+
+## Admin password, never to be used but mandatory
+ENV POSTGRES_PASSWORD=NGE5ZjljYjM1ZWEyNDI5N2I0YmZiZGM0
