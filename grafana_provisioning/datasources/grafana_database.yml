@@ -1,0 +1,34 @@
+# ./provisioning/datasources/postgres-db.yml
+apiVersion: 1
+
+datasources:
+  - name: Grafana Database (PostgreSQL)
+    uid: postgres-grafana
+    type: postgres
+    url: postgres:5432
+    user: grafana
+    access: proxy
+    isDefault: false 
+    version: 4
+    editable: true
+    jsonData:
+      # Host is the Docker service name, port is the default 5432
+      host: 
+      port: 5432
+      database: heart360tk_database
+      # Use a secure connection if needed, but 'disable' is common for Docker environments
+      sslmode: disable
+      searchPath: public
+      # Postgres plugin requires this for time series
+      timescaledb: false
+      maxOpenConns: 0
+      maxIdleConns: 2
+      maxIdleConnsLifetime: 14400
+      pool: false
+      # Settings for the time column and schema visibility
+      timeseries: true
+      timeInterval: 
+      intVal: true
+    secureJsonData:
+      # Password must be stored securely
+      password: ZDI5MGE3YmYyMTRlNGNmYThkMTYyZjk3

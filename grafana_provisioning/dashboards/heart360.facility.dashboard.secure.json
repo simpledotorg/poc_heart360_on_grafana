@@ -1207,45 +1207,27 @@
           "value": "0"
         },
         "datasource": {
-          "type": "yesoreyeram-infinity-datasource",
-          "uid": "GrafanaApi"
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-grafana"
         },
-        "definition": "",
+        "definition": "SELECT \n    COUNT(tm.team_id) AS group_count\nFROM \n    team_member tm\nJOIN \n    team t ON tm.team_id = t.id\nWHERE \n    tm.user_id = ${__user.id} \n    AND t.name IN (\n        'heart360tk_facility_view_patients_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_aggregated_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL');\n",
         "hide": 2,
         "name": "isAllowed",
         "options": [],
-        "query": {
-          "infinityQuery": {
-            "columns": [],
-            "filters": [],
-            "format": "table",
-            "parser": "backend",
-            "refId": "variable",
-            "root_selector": "$count($[name in [\n  \"heart360tk_facility_view_patients\" & $lowercase(\"${Facility}\"),\n  \"heart360tk_facility_view_aggregated_\" & $lowercase(\"${Facility}\")\n]])",
-            "source": "url",
-            "type": "json",
-            "url": "http://localhost:3000/api/users/${__user.id}/teams",
-            "url_options": {
-              "data": "",
-              "method": "GET"
-            }
-          },
-          "query": "",
-          "queryType": "infinity"
-        },
-        "refresh": 1,
+        "query": "SELECT \n    COUNT(tm.team_id) AS group_count\nFROM \n    team_member tm\nJOIN \n    team t ON tm.team_id = t.id\nWHERE \n    tm.user_id = ${__user.id} \n    AND t.name IN (\n        'heart360tk_facility_view_patients_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_aggregated_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL');\n",
+        "refresh": 2,
         "regex": "",
         "type": "query"
       }
     ]
   },
   "time": {
-    "from": "now-2y",
-    "to": "now"
+    "from": "2024-07-27T22:21:00.507Z",
+    "to": "2025-02-28T07:02:13.234Z"
   },
   "timepicker": {},
   "timezone": "browser ",
   "title": "Heart 360 Dashboard Per Facility (With Security)",
   "uid": "heart360demo_per_facility_security",
-  "version": 18
+  "version": 19
 }
