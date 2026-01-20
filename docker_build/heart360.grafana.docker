@@ -3,7 +3,7 @@ FROM grafana/grafana:latest
 COPY ./grafana_provisioning /etc/grafana/provisioning
 
 # Copy custom logo and favicon
-COPY ./grafana_provisioning/assets/grafana_icon.svg /usr/share/grafana/public/img/grafana_icon.png
+COPY ./grafana_provisioning/assets/grafana_icon.png /usr/share/grafana/public/img/grafana_icon.png
 COPY ./grafana_provisioning/assets/fav32.png /usr/share/grafana/public/img/fav32.png
 
 # Replace "Welcome to Grafana" text in built JavaScript files
