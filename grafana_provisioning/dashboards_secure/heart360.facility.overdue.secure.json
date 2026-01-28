@@ -18,12 +18,29 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
+  "id": 20,
   "links": [],
   "panels": [
     {
+      "datasource": {
+        "uid": "postgres-hypertension"
+      },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "gridPos": {
@@ -34,12 +51,72 @@
       },
       "id": 2,
       "options": {
+        "afterRender": "",
+        "content": "{{#if (eq isAllowed 0)}}\n  <div style=\"color: #e02424; background: rgba(224, 36, 36, 0.05); border-left: 4px solid #e02424; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; border-radius: 2px; line-height: 1.4;\">\n    <span>⚠️</span>\n    <span>\n      <strong>Access Denied:</strong> Ask admin to add to team: \n      <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875;\">heart360tk_facility_view_patients_{{Facility}}</span>\n    </span>\n  </div>\n{{/if}}",
+        "contentPartials": [],
+        "defaultContent": "The query didn't return any results.",
+        "editor": {
+          "format": "auto",
+          "language": "markdown"
+        },
+        "editors": [],
+        "externalStyles": [],
+        "helpers": "",
+        "renderMode": "everyRow",
+        "styles": "",
+        "wrap": true
+      },
+      "pluginVersion": "6.2.0",
+      "targets": [
+        {
+          "dataset": "heart360tk_database",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  LOWER('$Facility') as \"Facility\",\n  $isAllowed as \"isAllowed\"",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "",
+      "transparent": true,
+      "type": "marcusolsson-dynamictext-panel"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 2
+      },
+      "id": 3,
+      "options": {
         "code": {
           "language": "plaintext",
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <a href=\"/d/heart360demo_per_facility/heart-360-global-dashboard-per-facility\n?orgId=1\n&from=now-1y\n&to=now\n&timezone=browser\n&var-Facility=${facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Hypertension dashboard\n  </a>\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Overdue patients list\n  </span>\n\n</div>\n",
+        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <a href=\"/d/heart360demo_per_facility_security/heart-360-dashboard-per-facility-with-security\n?orgId=1\n&from=now-1y\n&to=now\n&timezone=browser\n&var-Facility=${facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Hypertension dashboard\n  </a>\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Overdue patients list\n  </span>\n\n</div>\n",
         "mode": "html"
       },
       "pluginVersion": "12.3.0",
@@ -91,7 +168,7 @@
         "h": 26,
         "w": 24,
         "x": 0,
-        "y": 2
+        "y": 4
       },
       "id": 1,
       "options": {
@@ -1238,7 +1315,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  *,\n  EXTRACT(YEAR FROM AGE(birth_date)) AS age_years,\n  (CURRENT_DATE - last_visit_date::date) AS days_since_last_visit,\n  CASE\n    WHEN last_bp_systolic IS NOT NULL AND last_bp_diastolic IS NOT NULL\n      THEN CONCAT(\n        last_bp_systolic::int,\n        '/',\n        last_bp_diastolic::int\n      )\n    ELSE NULL\n  END AS last_bp\nFROM HEART360_OVERDUE_PATIENTS\nWHERE facility = '$facility'\n  AND last_visit_date < now() - interval '45 days';\n",
+          "rawSql": "SELECT\n  *,\n  EXTRACT(YEAR FROM AGE(birth_date)) AS age_years,\n  (CURRENT_DATE - last_visit_date::date) AS days_since_last_visit,\n  CASE\n    WHEN last_bp_systolic IS NOT NULL AND last_bp_diastolic IS NOT NULL\n      THEN CONCAT(\n        last_bp_systolic::int,\n        '/',\n        last_bp_diastolic::int\n      )\n    ELSE NULL\n  END AS last_bp\nFROM HEART360_OVERDUE_PATIENTS\nWHERE facility = '$Facility' \n  AND $isAllowed > 0\n  AND last_visit_date < now() - interval '45 days';",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1300,17 +1377,36 @@
     "list": [
       {
         "current": {
-          "text": "Gambir",
-          "value": "Gambir"
+          "text": "Example",
+          "value": "Example"
         },
         "datasource": {
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-hypertension"
         },
         "definition": "select distinct (facility) from patients",
-        "name": "facility",
+        "name": "Facility",
         "options": [],
         "query": "select distinct (facility) from patients",
+        "refresh": 1,
+        "regex": "",
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "3",
+          "value": "3"
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-grafana"
+        },
+        "definition": "SELECT \n    count(tm.team_id) as is_allowed\nFROM \"user\" u\nLEFT OUTER JOIN team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN team t ON tm.team_id = t.id\nWHERE \n    u.id = ${__user.id}\n    AND (\n        t.name IN (\n            'heart360tk_facility_view_patients_' || trim(lower('${Facility}')),\n            'heart360tk_facility_view_patients_ALL'\n        )\n        OR u.is_admin\n    )",
+        "description": "",
+        "hide": 2,
+        "name": "isAllowed",
+        "options": [],
+        "query": "SELECT \n    count(tm.team_id) as is_allowed\nFROM \"user\" u\nLEFT OUTER JOIN team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN team t ON tm.team_id = t.id\nWHERE \n    u.id = ${__user.id}\n    AND (\n        t.name IN (\n            'heart360tk_facility_view_patients_' || trim(lower('${Facility}')),\n            'heart360tk_facility_view_patients_ALL'\n        )\n        OR u.is_admin\n    )",
         "refresh": 1,
         "regex": "",
         "type": "query"
@@ -1325,7 +1421,7 @@
     "hidden": true
   },
   "timezone": "browser ",
-  "title": "HEARTS360 Overdue Patients by Facility",
-  "uid": "heart360_facility_overdue_patients",
-  "version": 11
+  "title": "HEARTS360 Overdue Patients by Facility (With Security)",
+  "uid": "heart360-overdue-secure",
+  "version": 15
 }

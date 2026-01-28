@@ -18,8 +18,21 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
-  "links": [],
+  "id": 12,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Upload file",
+      "tooltip": "",
+      "type": "link",
+      "url": "http://localhost:8080/"
+    }
+  ],
   "panels": [
     {
       "collapsed": false,
@@ -1997,7 +2010,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Heart 360 Global Dashboard",
+  "title": "HEARTS360 Global Dashboard",
   "uid": "heart360demo",
-  "version": 35
+  "version": 37
 }

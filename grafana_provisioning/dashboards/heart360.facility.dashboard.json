@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 8,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -65,7 +65,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<div style=\"text-align: right;\">\n  \n  <a href=\"/d/heart360demo/heart-360-global-dashboard?orgId=1&from=now-1y&to=now&timezone=browser\" style=\" \n        background-color: #f5f5f5;\n        color: #333333; \n        border: 1px solid #d0d0d0;\n        padding: 4.5px 20px; \n        font-size: 18px; \n        font-weight: 600; \n        border-radius: 6px; \n        text-decoration: none; \n        display: inline-block; \n        font-family: Inter, Helvetica, Arial, sans-serif;\n        transition: background-color 0.2s;\n  \">\n    District Dashboard\n  </a>\n\n  <a href=\"http://${server_host}:8080/login?redirect=/files/\" target=\"_blank\" style=\"\n    background-color: #3274d9; \n    color: white; \n    padding: 6px 40px; \n    font-size: 18px; \n    font-weight: 600; \n    border-radius: 6px; \n    text-decoration: none; \n    display: inline-block; \n    font-family: Inter, Helvetica, Arial, sans-serif;\n    box-shadow: 0 2px 0 rgba(0,0,0,0.1);\n    transition: background-color 0.2s;\n  \">\n    Upload File\n  </a>\n\n</div>",
+        "content": "<div style=\"text-align: right;\">\n  \n  <a href=\"/d/heart360demo/heart-360-global-dashboard?orgId=1&from=now-1y&to=now&timezone=browser\" style=\" \n        background-color: #f5f5f5;\n        color: #333333; \n        border: 1px solid #d0d0d0;\n        padding: 4.5px 20px; \n        font-size: 18px; \n        font-weight: 600; \n        border-radius: 6px; \n        text-decoration: none; \n        display: inline-block; \n        font-family: Inter, Helvetica, Arial, sans-serif;\n        transition: background-color 0.2s;\n  \">\n    District Dashboard\n  </a>\n\n  <a href=\"http://localhost:8080/\" target=\"_blank\" style=\"\n    background-color: #3274d9; \n    color: white; \n    padding: 6px 40px; \n    font-size: 18px; \n    font-weight: 600; \n    border-radius: 6px; \n    text-decoration: none; \n    display: inline-block; \n    font-family: Inter, Helvetica, Arial, sans-serif;\n    box-shadow: 0 2px 0 rgba(0,0,0,0.1);\n    transition: background-color 0.2s;\n  \">\n    Upload File\n  </a>\n\n</div>",
         "mode": "html"
       },
       "pluginVersion": "12.3.0",
@@ -1127,7 +1127,7 @@
   },
   "timepicker": {},
   "timezone": "browser ",
-  "title": "Heart 360 Dashboard Per Facility",
+  "title": "HEARTS360 Dashboard Per Facility",
   "uid": "heart360demo_per_facility",
-  "version": 11
+  "version": 13
 }
