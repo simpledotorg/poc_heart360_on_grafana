@@ -20,6 +20,7 @@ RUN grafana cli plugins install marcusolsson-dynamictext-panel
 ENV GF_SECURITY_ALLOW_EMBEDDING=true 
 ENV GF_AUTH_ANONYMOUS_ENABLED=false
 ENV GF_USERS_ALLOW_SIGN_UP=false
+ENV GF_USERS_HOME_PAGE=/d/heart360demo/heart-360-global-dashboard
 ENV GF_TIME_PICKER_QUICK_RANGES='[{"from":"now-6M","to":"now","display":"Last 6 months"},{"from":"now-1y","to":"now","display":"Last year"},{"from":"now-2y","to":"now","display":"Last 2 years"},{"from":"now-5y","to":"now","display":"Last 5 years"}]'
 ENV GF_DATE_FORMATS_INTERVAL_MONTH=MMM-YYYY
 ENV GF_USERS_DEFAULT_THEME=light
