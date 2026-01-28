@@ -2,9 +2,13 @@ FROM grafana/grafana:latest
 
 COPY ./grafana_provisioning /etc/grafana/provisioning
 
-# Copy custom logo and favicon
+# Copy custom logo and favicon to standard grafana location
 COPY ./grafana_provisioning/assets/grafana_icon.svg /usr/share/grafana/public/img/grafana_icon.svg
 COPY ./grafana_provisioning/assets/fav32.png /usr/share/grafana/public/img/fav32.png
+
+# Copy logo to build directory (where browser actually requests it)
+# Find the hashed filename and replace it with our custom logo
+RUN find /usr/share/grafana/public/build/static/img -name "grafana_icon.*.svg" -type f -exec cp /usr/share/grafana/public/img/grafana_icon.svg {} \;
 
 # Replace "Welcome to Grafana" text in built JavaScript files
 RUN find /usr/share/grafana/public/build -name "*.js" -type f -exec sed -i 's/Welcome to Grafana/HEARTS360 Dashboard/g' {} \; || true
