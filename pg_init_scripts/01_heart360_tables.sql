@@ -245,6 +245,45 @@ left outer join MOST_RECENT_CALL on patients.patient_id= MOST_RECENT_CALL.patien
 ;
 
 
+--
+-- View for Patient Cohort Classification
+--
+CREATE OR REPLACE VIEW HEART360_COHORT_PATIENT_DETAILS as
+WITH patients_quarter as (SELECT
+    patient_id, facility,
+    date_trunc('quarter', registration_date) as registration_quarter,
+    date_trunc('quarter', registration_date) + interval '5 month' as cohort_validation_month,
+ registration_date
+FROM patients),
+LAST_BP_IN_INTERVAL as (
+    select *
+    from bp_encounters 
+    where encounter_id in (
+        select max(encounter_id) as encounter_id
+        from bp_encounters
+        where (patient_id, encounter_date) in (
+            SELECT 
+                patients_quarter.patient_id, 
+                max(encounter_date) as most_recent_bp 
+            from bp_encounters
+            join patients_quarter 
+                on patients_quarter.patient_id=bp_encounters.patient_id
+                and bp_encounters.encounter_date < patients_quarter.cohort_validation_month
+            group by patients_quarter.patient_id)
+        group by patient_id))
+select 
+    patients_quarter.patient_id, 
+    facility, 
+    registration_quarter,
+    case 
+        when cohort_validation_month < encounter_date + interval '3 month'  then 'missed visit' 
+        when  diastolic_bp <  90 and  systolic_bp < 140 then 'controlled'
+        else 'uncontrolled' end as status_at_end_of_interval
+from patients_quarter 
+join LAST_BP_IN_INTERVAL on LAST_BP_IN_INTERVAL.patient_id = patients_quarter.patient_id
+;
+
+
 
 
 --
@@ -306,4 +345,5 @@ BEGIN
 
 END;
 $$;
+
 
