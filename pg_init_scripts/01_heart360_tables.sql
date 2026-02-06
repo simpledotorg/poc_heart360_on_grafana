@@ -252,7 +252,7 @@ CREATE OR REPLACE VIEW HEART360_COHORT_PATIENT_DETAILS as
 WITH patients_quarter as (SELECT
     patient_id, facility,
     date_trunc('quarter', registration_date) as registration_quarter,
-    date_trunc('quarter', registration_date) + interval '7 month' as cohort_validation_month,
+    date_trunc('quarter', registration_date) + interval '6 month' as cohort_validation_month,
  registration_date
 FROM patients),
 LAST_BP_IN_INTERVAL as (
@@ -276,11 +276,12 @@ select
     facility, 
     registration_quarter,
     case 
-        when LEAST(cohort_validation_month, now()) > encounter_date + interval '3 month'  then 'missed visit' 
+        when encounter_date IS NULL then 'missed visit'
+        when cohort_validation_month > encounter_date + interval '3 month'  then 'missed visit' 
         when diastolic_bp <  90 and  systolic_bp < 140 then 'controlled'
         else 'uncontrolled' end as status_at_end_of_interval
 from patients_quarter 
-join LAST_BP_IN_INTERVAL on LAST_BP_IN_INTERVAL.patient_id = patients_quarter.patient_id
+left outer join LAST_BP_IN_INTERVAL on LAST_BP_IN_INTERVAL.patient_id = patients_quarter.patient_id
 ;
 
 
