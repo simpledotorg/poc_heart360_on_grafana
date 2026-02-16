@@ -1378,18 +1378,18 @@
       },
       {
         "current": {
-          "text": "0",
-          "value": "0"
+          "text": "1",
+          "value": "1"
         },
         "datasource": {
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-grafana"
         },
-        "definition": "SELECT \n    COUNT(tm.team_id) AS group_count\nFROM \n    team_member tm\nJOIN \n    team t ON tm.team_id = t.id\nWHERE \n    tm.user_id = ${__user.id} \n    AND t.name IN (\n        'heart360tk_facility_view_patients_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_aggregated_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL');\n",
+        "definition": "\nSELECT \n    count(*) as is_allowed\nFROM \"user\" u\nleft outer join team_member tm on tm.user_id = u.id\nleft outer join team t on tm.team_id = t.id\nWHERE \n   u.id = ${__user.id} \n   AND \n     (t.name IN (\n        'heart360tk_facility_view_patients_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_aggregated_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL')\n     OR u.is_admin)",
         "hide": 2,
         "name": "isAllowed",
         "options": [],
-        "query": "SELECT \n    COUNT(tm.team_id) AS group_count\nFROM \n    team_member tm\nJOIN \n    team t ON tm.team_id = t.id\nWHERE \n    tm.user_id = ${__user.id} \n    AND t.name IN (\n        'heart360tk_facility_view_patients_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_aggregated_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL');\n",
+        "query": "\nSELECT \n    count(*) as is_allowed\nFROM \"user\" u\nleft outer join team_member tm on tm.user_id = u.id\nleft outer join team t on tm.team_id = t.id\nWHERE \n   u.id = ${__user.id} \n   AND \n     (t.name IN (\n        'heart360tk_facility_view_patients_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_aggregated_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL')\n     OR u.is_admin)",
         "refresh": 2,
         "regex": "",
         "type": "query"
@@ -1404,5 +1404,5 @@
   "timezone": "browser ",
   "title": "HEARTS360 Dashboard Per Facility (With Security)",
   "uid": "heart360demo_per_facility_security",
-  "version": 25
+  "version": 26
 }
