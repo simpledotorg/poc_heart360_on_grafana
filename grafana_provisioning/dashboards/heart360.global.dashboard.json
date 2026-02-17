@@ -427,7 +427,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    100.00 * sum(nb_patients_controlled) / (0.000001 + sum(NB_PATIENTS_UNDER_CARE)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    100.00 * sum(nb_patients_controlled) / (0.000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -559,7 +559,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    100.00 * sum(nb_patients_uncontrolled) /(0.000001 + sum(NB_PATIENTS_UNDER_CARE)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\ngroup by 1\n",
+          "rawSql": "select \n    ref_month,\n    100.00 * sum(nb_patients_uncontrolled) /(0.000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\ngroup by 1\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -691,7 +691,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    100.00 * sum(nb_patients_no_visit) / (0.000001 + sum(NB_PATIENTS_UNDER_CARE)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    100.00 * sum(nb_patients_no_visit) / (0.000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
