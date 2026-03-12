@@ -653,7 +653,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "control_rate"
+              "options": "uncontrolled_pct"
             },
             "properties": [
               {
@@ -662,6 +662,10 @@
                   "fixedColor": "light-orange",
                   "mode": "fixed"
                 }
+              },
+              {
+                "id": "displayName",
+                "value": "% BP uncontrolled"
               }
             ]
           }
@@ -694,7 +698,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_uncontrolled) / (sum (000000001 + NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility' and $isAllowed  >0 \ngroup by 1",
+          "rawSql": "select ref_month,\n    sum(100.00 * nb_patients_uncontrolled) / (sum(000000001 + NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as uncontrolled_pct\nfrom HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility' and $isAllowed > 0\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1397,7 +1401,7 @@
     ]
   },
   "time": {
-    "from": "now-5y",
+    "from": "now-1y",
     "to": "now"
   },
   "timepicker": {},
