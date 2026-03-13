@@ -48,7 +48,7 @@ KNOWN_MONTHS AS (
     date_trunc('month', series_date)::date AS REF_MONTH
   FROM
     generate_series(
-        (SELECT min(REGISTRATION_DATE) from patients),
+        date_trunc('month', (SELECT min(REGISTRATION_DATE) from patients)),
         date_trunc('month', current_date),
         '1 month'::interval
     ) AS t(series_date)
@@ -82,7 +82,7 @@ KNOWN_MONTHS AS (
     date_trunc('month', series_date)::date AS REF_MONTH
   FROM
     generate_series(
-        (SELECT min(REGISTRATION_DATE) from patients),
+        date_trunc('month', (SELECT min(REGISTRATION_DATE) from patients)),
         date_trunc('month', current_date),
         '1 month'::interval
     ) AS t(series_date)
@@ -129,7 +129,7 @@ KNOWN_MONTHS AS (
     date_trunc('month', series_date)::date AS REF_MONTH
   FROM
     generate_series(
-        (SELECT min(REGISTRATION_DATE) from patients), -- Replace '2023-08-15' with your starting date
+        date_trunc('month', (SELECT min(REGISTRATION_DATE) from patients)),
         date_trunc('month', current_date),       -- The current date/time is converted to the start of the current month
         '1 month'::interval
     ) AS t(series_date)
@@ -177,27 +177,40 @@ SELECT
     KNOWN_MONTHS.REF_MONTH,
     ALIVE_PATIENTS.facility,
     count(*) as TOTAL_NUMBER_OF_PATIENTS,
-    SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' < KNOWN_MONTHS.REF_MONTH then 0 else 1 end) as NB_PATIENTS_UNDER_CARE,
+    SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0 WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH then 0 else 1 end) as NB_PATIENTS_UNDER_CARE,
     SUM(CASE WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 1 else 0 end ) AS NB_PATIENTS_NEWLY_REGISTERED,
     SUM(CASE
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <  KNOWN_MONTHS.REF_MONTH then 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <=  KNOWN_MONTHS.REF_MONTH then 0
         WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 0 else 1 end 
         ) AS NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS,
-    SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' < KNOWN_MONTHS.REF_MONTH then 1 else 0 end) as NB_PATIENTS_LOST_TO_FOLLOW_UP,
+    SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 1 WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH then 1 else 0 end) as NB_PATIENTS_LOST_TO_FOLLOW_UP,
     SUM(CASE
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <  KNOWN_MONTHS.REF_MONTH then 0
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <  KNOWN_MONTHS.REF_MONTH then 1
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <=  KNOWN_MONTHS.REF_MONTH then 0
+        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <=  KNOWN_MONTHS.REF_MONTH then 1
         ELSE 0 END ) as NB_PATIENTS_NO_VISIT,
     SUM(CASE
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <  KNOWN_MONTHS.REF_MONTH then 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <=  KNOWN_MONTHS.REF_MONTH then 0
         WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 0
         WHEN systolic > 140 OR diastolic > 90 then 1
         ELSE 0 END ) AS NB_PATIENTS_UNCONTROLLED,
     SUM(CASE
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <  KNOWN_MONTHS.REF_MONTH then 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <=  KNOWN_MONTHS.REF_MONTH then 0
         WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 0
+        WHEN systolic IS NULL OR diastolic IS NULL THEN 0
         WHEN systolic > 140 OR diastolic > 90 then 0
-        ELSE 1 END ) AS NB_PATIENTS_CONTROLLED
+        ELSE 1 END ) AS NB_PATIENTS_CONTROLLED,
+    SUM(CASE
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <=  KNOWN_MONTHS.REF_MONTH then 0
+        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <=  KNOWN_MONTHS.REF_MONTH then 0
+        WHEN systolic IS NULL OR diastolic IS NULL THEN 1
+        ELSE 0 END ) AS NB_PATIENTS_VISIT_NO_BP
 FROM KNOWN_MONTHS
 LEFT OUTER JOIN ALIVE_PATIENTS
     ON ALIVE_PATIENTS.REGISTRATION_MONTH <= KNOWN_MONTHS.REF_MONTH
@@ -253,7 +266,7 @@ WITH patients_quarter as (SELECT
     patient_id, facility,
     date_trunc('quarter', registration_date) as registration_quarter,
     date_trunc('quarter', registration_date) + interval '6 month' as cohort_validation_month,
- registration_date
+    registration_date
 FROM patients),
 LAST_BP_IN_INTERVAL as (
     select *

@@ -4,4 +4,10 @@ pythonvenv
 data/upload/*.csv
 data/upload/*.xlsx
 
+# Local testing and fix documentation
+LOCAL_TEST_CHANGES.md
+
+# IDE/editor config
+.claude/
+
 
