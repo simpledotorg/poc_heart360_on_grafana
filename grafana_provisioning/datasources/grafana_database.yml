@@ -21,7 +21,7 @@ datasources:
       searchPath: public
       # Postgres plugin requires this for time series
       timescaledb: false
-      maxOpenConns: 0
+      maxOpenConns: 100
       maxIdleConns: 2
       maxIdleConnsLifetime: 14400
       pool: false
