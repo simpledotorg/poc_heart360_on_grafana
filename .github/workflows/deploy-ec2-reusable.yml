@@ -28,8 +28,16 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -eu
-            sudo rm -rf "${{ inputs.ec2_deploy_path }}"
             mkdir -p "${{ inputs.ec2_deploy_path }}"
+
+      - name: Fix permissions on deploy directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            sudo chown -R $USER "${{ inputs.ec2_deploy_path }}"
 
       - name: Stop running containers
         uses: appleboy/ssh-action@v1.0.3
