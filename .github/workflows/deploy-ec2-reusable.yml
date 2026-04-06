@@ -50,6 +50,7 @@ jobs:
           script: |
             set -eu
             cd "${{ inputs.ec2_deploy_path }}"
+            docker rm -f grafana postgres filebrowser-quantum file-upload-trigger || true
             docker compose pull
             docker compose up -d --remove-orphans
             docker image prune -f
