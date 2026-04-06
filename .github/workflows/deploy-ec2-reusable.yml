@@ -28,7 +28,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -eu
-            rm -rf "${{ inputs.ec2_deploy_path }}"
+            sudo rm -rf "${{ inputs.ec2_deploy_path }}"
             mkdir -p "${{ inputs.ec2_deploy_path }}"
 
       - name: Stop running containers
