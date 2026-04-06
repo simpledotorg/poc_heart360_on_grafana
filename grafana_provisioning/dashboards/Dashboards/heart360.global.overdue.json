@@ -18,11 +18,37 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 20,
   "links": [],
   "panels": [
     {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<div class=\"tab-bar\" style=\"display:flex; gap:0; border-bottom:2px solid #e0e0e0; font-size:16px; margin-top:4px;\"><a target=\"_top\" href=\"/d/heart360_drilldown/hearts360-global-dashboard?orgId=1&var-region=${region}&var-district=${district}&var-facility=${facility}&var-sub_facility=${sub_facility}&from=${__from}&to=${__to}\" style=\"padding:8px 20px; text-decoration:none; color:#6b7280; cursor:pointer;\">Hypertension Dashboard</a><span style=\"padding:8px 20px; font-weight:600; color:#1f2937; border-bottom:3px solid #3b82f6; cursor:default; text-decoration:none;\">Overdue Patient List</span></div>",
+        "mode": "html"
+      },
+      "pluginVersion": "12.4.1",
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
       "datasource": {
+        "type": "grafana-postgresql-datasource",
         "uid": "postgres-hypertension"
       },
       "fieldConfig": {
@@ -47,12 +73,12 @@
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 2
       },
-      "id": 2,
+      "id": 50,
       "options": {
         "afterRender": "",
-        "content": "{{#if (eq isAllowed 0)}}\n  <div style=\"color: #e02424; background: rgba(224, 36, 36, 0.05); border-left: 4px solid #e02424; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; border-radius: 2px; line-height: 1.4;\">\n    <span>\u26a0\ufe0f</span>\n    <span>\n      <strong>Access Denied:</strong> Ask admin to add to team: \n      <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875;\">heart360tk_facility_view_patients_{{Facility}}</span>\n    </span>\n  </div>\n{{/if}}",
+        "content": "{{#if (eq isAccessible 0)}}\n  <div style=\"color: #e02424; background: rgba(224, 36, 36, 0.05); border-left: 4px solid #e02424; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; border-radius: 2px; line-height: 1.4;\">\n    <span>\u26a0\ufe0f</span>\n    <span>\n      <strong>Overdue patient list is available only at the facility and sub-facility levels.</strong>\n    </span>\n  </div>\n{{/if}}",
         "contentPartials": [],
         "defaultContent": "The query didn't return any results.",
         "editor": {
@@ -73,7 +99,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  LOWER('$Facility') as \"Facility\",\n  $isAllowed as \"isAllowed\"",
+          "rawSql": "SELECT\n  CASE WHEN COALESCE(NULLIF('${selected_level}',''),'0')::int IN (3, 4, 10) THEN 1 ELSE 0 END AS \"isAccessible\"",
           "refId": "A",
           "sql": {
             "columns": [
@@ -97,32 +123,6 @@
       "title": "",
       "transparent": true,
       "type": "marcusolsson-dynamictext-panel"
-    },
-    {
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 24,
-        "x": 0,
-        "y": 2
-      },
-      "id": 3,
-      "options": {
-        "code": {
-          "language": "plaintext",
-          "showLineNumbers": false,
-          "showMiniMap": false
-        },
-        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <a target=\"_top\" href=\"/d/heart360demo_per_facility_security?orgId=1&from=${__from}&to=${__to}&timezone=browser&var-Facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Hypertension dashboard\n  </a>\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Overdue patients list\n  </span>\n\n</div>\n",
-        "mode": "html"
-      },
-      "pluginVersion": "12.3.0",
-      "title": "",
-      "transparent": true,
-      "type": "text"
     },
     {
       "datasource": {
@@ -1341,7 +1341,7 @@
                 "editorMode": "code",
                 "format": "table",
                 "rawQuery": true,
-                "rawSql": "INSERT INTO call_results (patient_id, call_date, result_type, removed_reason, org_unit_id)\nVALUES (\n  '${payload.patient_id}',\n  CURRENT_DATE,\n  CASE\n    WHEN '${payload.removed_reason}' IN ('Agreed to visit', 'Pending to call', 'Call again later')\n      THEN NULL\n    ELSE 'removed_from_overdue_list'\n  END,\n  '${payload.removed_reason}',\n  (SELECT org_unit_id FROM patients WHERE patient_id='${payload.patient_id}' LIMIT 1),\n  (SELECT org_unit_id FROM patients WHERE patient_id='${payload.patient_id}' LIMIT 1)\n)\nON CONFLICT (patient_id, call_date)\nDO UPDATE SET\n  result_type = EXCLUDED.result_type,\n  removed_reason = EXCLUDED.removed_reason;",
+                "rawSql": "INSERT INTO call_results (patient_id, call_date, result_type, removed_reason, org_unit_id)\nVALUES (\n  '${payload.patient_id}',\n  CURRENT_DATE,\n  CASE\n    WHEN '${payload.removed_reason}' IN ('Agreed to visit', 'Pending to call', 'Call again later')\n      THEN NULL\n    ELSE 'removed_from_overdue_list'\n  END,\n  '${payload.removed_reason}',\n  (SELECT org_unit_id FROM patients WHERE patient_id='${payload.patient_id}' LIMIT 1)\n)\nON CONFLICT (patient_id, call_date)\nDO UPDATE SET\n  result_type = EXCLUDED.result_type,\n  removed_reason = EXCLUDED.removed_reason;",
                 "refId": "A",
                 "sql": {
                   "columns": [
@@ -1379,7 +1379,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  patient_id,\n  patient_name,\n  registration_date,\n  birth_date,\n  gender,\n  phone_number,\n  (SELECT name FROM org_units WHERE id = HEART360_OVERDUE_PATIENTS.org_unit_id) AS facility,\n  last_visit_date,\n  last_bp_diastolic,\n  last_bp_systolic,\n  last_call_date,\n  last_call_result AS result_type,\n  COALESCE(removed_reason, '-') AS removed_reason,\n  EXTRACT(YEAR FROM AGE(birth_date)) AS age_years,\n  (CURRENT_DATE - last_visit_date::date) AS days_since_last_visit,\n  CASE\n    WHEN last_bp_systolic IS NOT NULL AND last_bp_diastolic IS NOT NULL\n      THEN CONCAT(\n        last_bp_systolic::int,\n        '/',\n        last_bp_diastolic::int\n      )\n    ELSE NULL\n  END AS last_bp\nFROM HEART360_OVERDUE_PATIENTS\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) \n  AND $isAllowed > 0\n  AND last_visit_date < now() - interval '45 days';",
+          "rawSql": "SELECT\n  patient_id,\n  patient_name,\n  registration_date,\n  birth_date,\n  gender,\n  phone_number,\n  (SELECT name FROM org_units WHERE id = h.org_unit_id) AS facility,\n  last_visit_date,\n  last_bp_diastolic,\n  last_bp_systolic,\n  last_call_date,\n  last_call_result AS result_type,\n  COALESCE(removed_reason, '-') AS removed_reason,\n  EXTRACT(YEAR FROM AGE(birth_date)) AS age_years,\n  (CURRENT_DATE - last_visit_date::date) AS days_since_last_visit,\n  CASE\n    WHEN last_bp_systolic IS NOT NULL AND last_bp_diastolic IS NOT NULL\n      THEN CONCAT(\n        last_bp_systolic::int,\n        '/',\n        last_bp_diastolic::int\n      )\n    ELSE NULL\n  END AS last_bp\nFROM HEART360_OVERDUE_PATIENTS h\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND last_visit_date < now() - interval '45 days'\n  AND ${selected_level} IN (3, 4, 10);\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1445,34 +1445,261 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-hypertension"
         },
-        "definition": "SELECT DISTINCT ou.name AS __text, ou.id::text AS __value FROM org_units ou WHERE ou.level = 3 AND EXISTS (SELECT 1 FROM patients p WHERE p.org_unit_id IN (SELECT id FROM get_descendant_ids(ou.id))) ORDER BY ou.name",
-        "name": "Facility",
+        "definition": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 1 ORDER BY name",
+        "includeAll": false,
+        "label": "Region",
+        "name": "region",
         "options": [],
-        "query": "SELECT DISTINCT ou.name AS __text, ou.id::text AS __value FROM org_units ou WHERE ou.level = 3 AND EXISTS (SELECT 1 FROM patients p WHERE p.org_unit_id IN (SELECT id FROM get_descendant_ids(ou.id))) ORDER BY ou.name",
+        "query": {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 1 ORDER BY name",
+          "refId": "tempvar",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
         "refresh": 1,
         "regex": "",
-        "type": "query",
-        "sort": 1
+        "regexApplyTo": "value",
+        "sort": 1,
+        "type": "query"
       },
       {
+        "allValue": "0",
         "current": {
-          "text": "3",
-          "value": "3"
+          "text": "All",
+          "value": "$__all"
         },
         "datasource": {
           "type": "grafana-postgresql-datasource",
-          "uid": "postgres-grafana"
+          "uid": "postgres-hypertension"
         },
-        "definition": "SELECT \n    count(tm.team_id) as is_allowed\nFROM \"user\" u\nLEFT OUTER JOIN team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN team t ON tm.team_id = t.id\nWHERE \n    u.id = ${__user.id}\n    AND (\n        t.name IN (\n            'heart360tk_facility_view_patients_' || trim(lower('${Facility}')),\n            'heart360tk_facility_view_patients_ALL'\n        )\n        OR u.is_admin\n    )",
-        "description": "",
-        "hide": 2,
-        "name": "isAllowed",
+        "definition": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 2 AND parent_id::text = '${region}' ORDER BY name",
+        "includeAll": true,
+        "label": "District",
+        "name": "district",
         "options": [],
-        "query": "SELECT \n    count(tm.team_id) as is_allowed\nFROM \"user\" u\nLEFT OUTER JOIN team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN team t ON tm.team_id = t.id\nWHERE \n    u.id = ${__user.id}\n    AND (\n        t.name IN (\n            'heart360tk_facility_view_patients_' || trim(lower('${Facility}')),\n            'heart360tk_facility_view_patients_ALL'\n        )\n        OR u.is_admin\n    )",
+        "query": {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 2 AND parent_id::text = '${region}' ORDER BY name",
+          "refId": "tempvar",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
         "refresh": 1,
         "regex": "",
-        "type": "query",
-        "sort": 1
+        "regexApplyTo": "value",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": "0",
+        "current": {
+          "text": "All",
+          "value": "0"
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-hypertension"
+        },
+        "definition": "SELECT 'All' AS __text, '0' AS __value UNION ALL SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 3 AND parent_id::text = '${district}' AND '${district}' != '0' ORDER BY 1",
+        "includeAll": false,
+        "label": "Facility",
+        "name": "facility",
+        "options": [],
+        "query": {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'All' AS __text, '0' AS __value UNION ALL SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 3 AND parent_id::text = '${district}' AND '${district}' != '0' ORDER BY 1",
+          "refId": "tempvar",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        "refresh": 1,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allValue": "0",
+        "current": {
+          "text": "All",
+          "value": "0"
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-hypertension"
+        },
+        "definition": "SELECT 'All' AS __text, '0' AS __value UNION ALL SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 4 AND parent_id::text = '${facility}' AND '${facility}' != '0' ORDER BY 1",
+        "includeAll": false,
+        "label": "Sub-Facility",
+        "name": "sub_facility",
+        "options": [],
+        "query": {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT 'All' AS __text, '0' AS __value UNION ALL SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 4 AND parent_id::text = '${facility}' AND '${facility}' != '0' ORDER BY 1",
+          "refId": "tempvar",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        "refresh": 1,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-hypertension"
+        },
+        "definition": "SELECT COALESCE(NULLIF(NULLIF('${sub_facility}',''),'0'), NULLIF(NULLIF('${facility}',''),'0'), NULLIF(NULLIF('${district}',''),'0'), '${region}') AS __value",
+        "hide": 2,
+        "name": "org_unit",
+        "options": [],
+        "query": {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(NULLIF(NULLIF('${sub_facility}',''),'0'), NULLIF(NULLIF('${facility}',''),'0'), NULLIF(NULLIF('${district}',''),'0'), '${region}') AS __value",
+          "refId": "tempvar",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        "refresh": 2,
+        "regex": "",
+        "regexApplyTo": "value",
+        "skipUrlSync": true,
+        "type": "query"
+      },
+      {
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-hypertension"
+        },
+        "definition": "SELECT ou.level AS __value FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1",
+        "hide": 2,
+        "name": "selected_level",
+        "options": [],
+        "query": {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT ou.level AS __value FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1",
+          "refId": "tempvar",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        "refresh": 2,
+        "regex": "",
+        "regexApplyTo": "value",
+        "skipUrlSync": true,
+        "type": "query"
       }
     ]
   },
@@ -1480,11 +1707,10 @@
     "from": "now-1y",
     "to": "now"
   },
-  "timepicker": {
-    "hidden": true
-  },
-  "timezone": "browser ",
-  "title": "HEARTS360 Overdue Patients by Facility (With Security)",
-  "uid": "heart360-overdue-secure",
-  "version": 15
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "HEARTS360 Overdue Patients",
+  "uid": "heart360_drilldown_overdue",
+  "version": 1,
+  "weekStart": ""
 }
