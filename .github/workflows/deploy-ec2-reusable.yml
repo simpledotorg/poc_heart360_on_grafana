@@ -39,7 +39,7 @@ jobs:
           source: "."
           target: "${{ inputs.ec2_deploy_path }}"
           overwrite: true
-          exclude: .git,.github
+          rm: true
 
       - name: Deploy with Docker Compose on EC2
         uses: appleboy/ssh-action@v1.0.3
