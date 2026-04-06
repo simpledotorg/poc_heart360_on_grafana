@@ -12,13 +12,15 @@ services:
       - ./grafana_provisioning:/etc/grafana/provisioning:ro
     environment:
       - GF_DATABASE_URL=postgres://grafana:ZDI5MGE3YmYyMTRlNGNmYThkMTYyZjk3@postgres:5432/heart360tk_database
-      - GF_SECURITY_ALLOW_EMBEDDING=true 
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=volkovlabs-table-panel,yesoreyeram-infinity-datasource,marcusolsson-dynamictext-panel,volkovlabs-echarts-panel
       - GF_TIME_PICKER_QUICK_RANGES=[{"from":"now-6M","to":"now","display":"Last 6 months"},{"from":"now-1y","to":"now","display":"Last year"},{"from":"now-2y","to":"now","display":"Last 2 years"},{"from":"now-5y","to":"now","display":"Last 5 years"}]
       - GF_DATE_FORMATS_INTERVAL_MONTH=MMM-YYYY
       - GF_USERS_DEFAULT_THEME=light
+      - GF_USERS_HOME_PAGE=/d/heart360_drilldown?orgId=1&from=now-1y&to=now&timezone=browser
   postgres:
     image: postgres:16-alpine
     container_name: postgres
@@ -44,6 +46,23 @@ services:
     environment:
       - FILEBROWSER_ADMIN_PASSWORD=admin
       - FILEBROWSER_BASEURL=/
+
+  data-admin:
+    build:
+      context: .
+      dockerfile: docker_build/heart360.data_admin.docker
+    container_name: data-admin
+    ports:
+      - "5050:5000"
+    restart: unless-stopped
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=heart360tk
+      - POSTGRES_PASSWORD=YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0
+      - POSTGRES_DB=heart360tk_database
+      - ADMIN_API_KEY=h360tk-admin-clear-key
+      - ADMIN_USER=admin
+      - ADMIN_PASSWORD=admin
 
   file-processor:
     image: devodev/inotify

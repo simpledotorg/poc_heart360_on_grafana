@@ -18,7 +18,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 4,
   "links": [],
   "panels": [
     {
@@ -28,7 +27,7 @@
       },
       "gridPos": {
         "h": 2,
-        "w": 16,
+        "w": 17,
         "x": 0,
         "y": 0
       },
@@ -39,36 +38,10 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Hypertension dashboard\n  </span>\n\n  <a href=\"/d/heart360_facility_overdue_patients/heart-360-overdue-patients-by-facility\n?orgId=1\n&from=now-1y\n&to=now\n&timezone=browser\n&var-facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Overdue patients list\n  </a>\n\n</div>",
+        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Hypertension dashboard\n  </span>\n\n  <a target=\"_top\" href=\"/d/heart360_facility_overdue_patients/heart-360-overdue-patients-by-facility?orgId=1&from=now-1y&to=now&timezone=browser&var-facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Overdue patients list\n  </a>\n\n</div>",
         "mode": "html"
       },
-      "pluginVersion": "12.3.0",
-      "title": "",
-      "transparent": true,
-      "type": "text"
-    },
-    {
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 2,
-        "w": 7,
-        "x": 16,
-        "y": 0
-      },
-      "id": 12,
-      "options": {
-        "code": {
-          "language": "plaintext",
-          "showLineNumbers": false,
-          "showMiniMap": false
-        },
-        "content": "<div style=\"text-align: right;\">\n  \n  <a href=\"/d/heart360demo/heart-360-global-dashboard?orgId=1&from=now-1y&to=now&timezone=browser\" style=\" \n        background-color: #f5f5f5;\n        color: #333333; \n        border: 1px solid #d0d0d0;\n        padding: 4.5px 20px; \n        font-size: 18px; \n        font-weight: 600; \n        border-radius: 6px; \n        text-decoration: none; \n        display: inline-block; \n        font-family: Inter, Helvetica, Arial, sans-serif;\n        transition: background-color 0.2s;\n  \">\n    District Dashboard\n  </a>\n\n  <a href=\"http://localhost:8080/\" target=\"_blank\" style=\"\n    background-color: #3274d9; \n    color: white; \n    padding: 6px 40px; \n    font-size: 18px; \n    font-weight: 600; \n    border-radius: 6px; \n    text-decoration: none; \n    display: inline-block; \n    font-family: Inter, Helvetica, Arial, sans-serif;\n    box-shadow: 0 2px 0 rgba(0,0,0,0.1);\n    transition: background-color 0.2s;\n  \">\n    Upload File\n  </a>\n\n</div>",
-        "mode": "html"
-      },
-      "pluginVersion": "12.3.0",
+      "pluginVersion": "12.4.0",
       "title": "",
       "transparent": true,
       "type": "text"
@@ -147,9 +120,9 @@
           },
           "gridPos": {
             "h": 10,
-            "w": 16,
+            "w": 23,
             "x": 0,
-            "y": 2
+            "y": 53
           },
           "id": 1,
           "options": {
@@ -167,7 +140,7 @@
               "sort": "none"
             }
           },
-          "pluginVersion": "12.3.0",
+          "pluginVersion": "12.4.0",
           "targets": [
             {
               "dataset": "metrics_db",
@@ -178,7 +151,7 @@
               "editorMode": "code",
               "format": "table",
               "rawQuery": true,
-              "rawSql": "select\n  ref_month,\n  sum(nb_patients_controlled) nb_patients_controlled\nfrom heart360_patients_catagory\nwhere facility = '$Facility'\ngroup by 1",
+              "rawSql": "select\n  ref_month,\n  sum(nb_patients_controlled) nb_patients_controlled\nfrom heart360_patients_catagory\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\ngroup by 1",
               "refId": "A",
               "sql": {
                 "columns": [
@@ -201,176 +174,6 @@
           ],
           "title": "Patients protected from heart attacks and strokes with world-class treatment",
           "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "postgres-hypertension"
-          },
-          "description": "Estimated population with hypertension is derived from Community Survey.\n\nPatients under care are patients with hypertension with at least 1 visit in the past 12 months.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "fillOpacity": 80,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineWidth": 1,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": 0
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "estimated_people_with_hypertension_pct"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "#dae0e1",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "registered_pct_of_estimated"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "blue",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "under_care_pct_of_estimated"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "purple",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "controlled_pct_of_estimated"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "green",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 10,
-            "w": 7,
-            "x": 16,
-            "y": 2
-          },
-          "id": 10,
-          "options": {
-            "barRadius": 0,
-            "barWidth": 0.97,
-            "fullHighlight": false,
-            "groupWidth": 0.7,
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "orientation": "auto",
-            "showValue": "auto",
-            "stacking": "none",
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            },
-            "xTickLabelRotation": 0,
-            "xTickLabelSpacing": 0
-          },
-          "pluginVersion": "12.3.0",
-          "targets": [
-            {
-              "dataset": "metrics_db",
-              "editorMode": "code",
-              "format": "table",
-              "rawQuery": true,
-              "rawSql": "select \n  heart360_patients_registered.ref_month,\n  100.0 as estimated_people_with_hypertension_pct,\n  (sum(cumulative_number_of_patients)::numeric / 5600.0 * 100.0) as registered_pct_of_estimated,\n  (sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)::numeric / 5600.0 * 100.0) as under_care_pct_of_estimated,\n  (sum(nb_patients_controlled)::numeric / 5600.0 * 100.0) as controlled_pct_of_estimated\nfrom heart360_patients_catagory\njoin heart360_patients_registered on heart360_patients_registered.ref_month = heart360_patients_catagory.ref_month and heart360_patients_catagory.facility= heart360_patients_registered.facility\nwhere heart360_patients_catagory.ref_month=(select max(ref_month) from heart360_patients_catagory where $__timeFilter(ref_month))\n  and heart360_patients_catagory.facility='$Facility'\ngroup by 1",
-              "refId": "A",
-              "sql": {
-                "columns": [
-                  {
-                    "parameters": [],
-                    "type": "function"
-                  }
-                ],
-                "groupBy": [
-                  {
-                    "property": {
-                      "type": "string"
-                    },
-                    "type": "groupBy"
-                  }
-                ],
-                "limit": 50
-              }
-            }
-          ],
-          "title": "Hypertension treatment cascade",
-          "type": "barchart"
         }
       ],
       "title": "Overview indicators",
@@ -474,14 +277,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.3.0",
+      "pluginVersion": "12.4.0",
       "targets": [
         {
           "dataset": "metrics_db",
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_controlled) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_controlled) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -550,7 +353,7 @@
             }
           },
           "decimals": 0,
-          "displayName": "% Patients with BP ≥140/90 at latest visit in the past 3 months",
+          "displayName": "% Patients with BP \u2265140/90 at latest visit in the past 3 months",
           "mappings": [],
           "max": 100,
           "min": 0,
@@ -610,14 +413,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.3.0",
+      "pluginVersion": "12.4.0",
       "targets": [
         {
           "dataset": "metrics_db",
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select ref_month,\n    sum(100.00 * nb_patients_uncontrolled) / (sum(000000001 + NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as uncontrolled_pct\nfrom HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
+          "rawSql": "select ref_month,\n    sum(100.00 * nb_patients_uncontrolled) / (sum(000000001 + NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as uncontrolled_pct\nfrom HEART360_PATIENTS_CATAGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -742,14 +545,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.3.0",
+      "pluginVersion": "12.4.0",
       "targets": [
         {
           "dataset": "metrics_db",
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_no_visit) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_no_visit) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -922,14 +725,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.3.0",
+      "pluginVersion": "12.4.0",
       "targets": [
         {
           "dataset": "metrics_db",
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    HEART360_PATIENTS_CATAGORY.ref_month,\n    sum(cumulative_number_of_patients) cumulative_number_of_patients,\n    sum(nb_patients_under_care) as nb_patients_under_care,\n    sum(nb_new_patients) nb_new_patients\nfrom HEART360_PATIENTS_CATAGORY\nleft outer join heart360_patients_registered on HEART360_PATIENTS_CATAGORY.ref_month = heart360_patients_registered.ref_month\n and  HEART360_PATIENTS_CATAGORY.facility = heart360_patients_registered.facility\nwhere HEART360_PATIENTS_CATAGORY.facility = '$Facility'\ngroup by 1\n",
+          "rawSql": "select \n    HEART360_PATIENTS_CATAGORY.ref_month,\n    sum(cumulative_number_of_patients) cumulative_number_of_patients,\n    sum(nb_patients_under_care) as nb_patients_under_care,\n    sum(nb_new_patients) nb_new_patients\nfrom HEART360_PATIENTS_CATAGORY\nleft outer join heart360_patients_registered on HEART360_PATIENTS_CATAGORY.ref_month = heart360_patients_registered.ref_month\n and  HEART360_PATIENTS_CATAGORY.org_unit_id = heart360_patients_registered.org_unit_id\nwhere HEART360_PATIENTS_CATAGORY.org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\ngroup by 1\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -973,7 +776,7 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 12,
+            "fillOpacity": 0,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
@@ -982,13 +785,13 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 6,
+            "lineWidth": 1,
+            "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
             },
             "showPoints": "auto",
-            "showValues": true,
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -998,7 +801,6 @@
               "mode": "off"
             }
           },
-          "decimals": 0,
           "displayName": "% Patients with no BP measure recorded in the past 12 months",
           "mappings": [],
           "max": 100,
@@ -1071,14 +873,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.3.0",
+      "pluginVersion": "12.4.0",
       "targets": [
         {
           "dataset": "metrics_db",
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n  heart360_patients_under_care.ref_month,\n  (100.0 * sum(COALESCE(heart360_patients_under_care.nb_patients_lost_to_follow_up, 0))) / \n  NULLIF(sum(heart360_patients_under_care.cumulative_number_of_patients), 0) as lost_to_follow_up_pct\nfrom heart360_patients_under_care\nwhere heart360_patients_under_care.facility = '$Facility'\ngroup by 1",
+          "rawSql": "select \n  heart360_patients_under_care.ref_month,\n  (100.0 * sum(COALESCE(heart360_patients_under_care.nb_patients_lost_to_follow_up, 0))) / \n  NULLIF(sum(heart360_patients_under_care.cumulative_number_of_patients), 0) as lost_to_follow_up_pct\nfrom heart360_patients_under_care\nwhere heart360_patients_under_care.org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1110,7 +912,412 @@
         "x": 0,
         "y": 20
       },
+      "id": 16,
+      "panels": [],
+      "title": "Overdue patients",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres-hypertension"
+      },
+      "description": "Patients that are overdue at the start of the month",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-BlPu"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 6,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "showValues": true,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "displayName": "Patients that are overdue at the start of the month.",
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 21
+      },
       "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.0",
+      "targets": [
+        {
+          "dataset": "metrics_db",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ref_month AS \"time\",\n  SUM(overdue_on_first) AS overdue_on_first\nFROM HEART360_OVERDUE_START_OF_MONTH\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Overdue patients",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres-hypertension"
+      },
+      "description": "Patients called during the month.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#ffe200",
+            "mode": "fixed",
+            "seriesBy": "min"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": true,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "displayName": "Patients called during the month.",
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "control_rate"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "light-orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 21
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.0",
+      "targets": [
+        {
+          "dataset": "metrics_db",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ref_month AS \"time\",\n  overdue_patients_called\nFROM HEART360_OVERDUE_PATIENTS_CALLED\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nORDER BY ref_month;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Overdue patients called",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres-hypertension"
+      },
+      "description": "Patients called during the month.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "#da04ff",
+            "mode": "shades",
+            "seriesBy": "last"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 6,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": true,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "decimals": 0,
+          "displayName": "Patients that returned to care within 15 days of call.",
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "control_rate"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "light-orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 7,
+        "x": 16,
+        "y": 21
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.0",
+      "targets": [
+        {
+          "dataset": "metrics_db",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ref_month AS \"time\",\n  overdue_returned_to_care\nFROM HEART360_OVERDUE_RETURNED_TO_CARE\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nORDER BY ref_month;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Overdue patients that returned to care",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "id": 18,
       "panels": [],
       "title": "Cohort",
       "type": "row"
@@ -1123,7 +1330,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "fixed"
           },
           "custom": {
             "axisBorderShow": false,
@@ -1131,34 +1338,22 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.3,
-            "drawStyle": "bars",
-            "fillOpacity": 100,
+            "fillOpacity": 80,
             "gradientMode": "none",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
               "viz": false
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 5,
-            "pointSize": 5,
+            "lineWidth": 1,
             "scaleDistribution": {
               "type": "linear"
-            },
-            "showPoints": "auto",
-            "showValues": false,
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
             },
             "thresholdsStyle": {
               "mode": "off"
             }
           },
+          "fieldMinMax": false,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -1178,13 +1373,13 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "nb_missed_visit"
+              "options": "% Controlled BP at latest visit in following quarter"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "orange",
+                  "fixedColor": "#98ff8a",
                   "mode": "fixed"
                 }
               }
@@ -1193,13 +1388,13 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "nb_uncontrolled"
+              "options": "% Uncontrolled BP at latest visit in following quarter"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "yellow",
+                  "fixedColor": "#ffdd00",
                   "mode": "fixed"
                 }
               }
@@ -1208,13 +1403,13 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "nb_controlled"
+              "options": "% Patients with no visit in following quarter"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "green",
+                  "fixedColor": "#ff001e",
                   "mode": "fixed"
                 }
               }
@@ -1223,26 +1418,36 @@
         ]
       },
       "gridPos": {
-        "h": 9,
-        "w": 24,
+        "h": 11,
+        "w": 23,
         "x": 0,
-        "y": 21
+        "y": 30
       },
-      "id": 14,
+      "id": 17,
       "options": {
+        "barRadius": 0,
+        "barWidth": 0.26,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
         "legend": {
           "calcs": [],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "percent",
         "tooltip": {
           "hideZeros": false,
           "mode": "single",
           "sort": "none"
-        }
+        },
+        "xField": "quarter_label",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
       },
-      "pluginVersion": "12.3.0",
+      "pluginVersion": "12.4.0",
       "targets": [
         {
           "dataset": "heart360tk_database",
@@ -1253,7 +1458,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    registration_quarter,\n    sum(case when status_at_end_of_interval ='missed visit' then 1 end) as nb_missed_visit,\n    sum(case when status_at_end_of_interval ='uncontrolled' then 1 end) as nb_uncontrolled,\n    sum(case when status_at_end_of_interval ='controlled' then 1 end) as nb_controlled\nfrom HEART360_COHORT_PATIENT_DETAILS\nwhere facility ='$Facility'\ngroup by registration_quarter;",
+          "rawSql": "SELECT\n  TO_CHAR(registration_quarter, 'Mon') || ' - ' ||\n  TO_CHAR(registration_quarter + interval '2 month', 'Mon YYYY')\n  AS quarter_label,\n\n  SUM(CASE WHEN status_at_end_of_interval = 'controlled' THEN 1 END)\n  AS \"% Controlled BP at latest visit in following quarter\",\n\n  SUM(CASE WHEN status_at_end_of_interval = 'uncontrolled' THEN 1 END)\n  AS \"% Uncontrolled BP at latest visit in following quarter\",\n\n  SUM(CASE WHEN status_at_end_of_interval = 'missed visit' THEN 1 END)\n  AS \"% Patients with no visit in following quarter\"\n\nFROM HEART360_COHORT_PATIENT_DETAILS\nWHERE $__timeFilter(registration_quarter)\n  AND org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY registration_quarter\nORDER BY registration_quarter;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1275,7 +1480,7 @@
         }
       ],
       "title": "Cohort Report",
-      "type": "timeseries"
+      "type": "barchart"
     }
   ],
   "preload": false,
@@ -1284,20 +1489,19 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "text": "Example",
-          "value": "Example"
-        },
+        "current": {},
         "datasource": {
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-hypertension"
         },
-        "definition": "select distinct facility from patients",
+        "definition": "SELECT DISTINCT ou.name AS __text, ou.id::text AS __value FROM org_units ou WHERE ou.level = 3 AND EXISTS (SELECT 1 FROM patients p WHERE p.org_unit_id IN (SELECT id FROM get_descendant_ids(ou.id))) ORDER BY ou.name",
         "name": "Facility",
         "options": [],
-        "query": "select distinct facility from patients",
+        "query": "SELECT DISTINCT ou.name AS __text, ou.id::text AS __value FROM org_units ou WHERE ou.level = 3 AND EXISTS (SELECT 1 FROM patients p WHERE p.org_unit_id IN (SELECT id FROM get_descendant_ids(ou.id))) ORDER BY ou.name",
         "refresh": 1,
         "regex": "",
+        "regexApplyTo": "value",
+        "sort": 1,
         "type": "query"
       }
     ]
@@ -1310,5 +1514,6 @@
   "timezone": "browser ",
   "title": "HEARTS360 Dashboard Per Facility",
   "uid": "heart360demo_per_facility",
-  "version": 15
+  "version": 1,
+  "weekStart": ""
 }
