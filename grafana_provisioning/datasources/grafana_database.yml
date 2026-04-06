@@ -24,7 +24,7 @@ datasources:
       maxOpenConns: 100
       maxIdleConns: 2
       maxIdleConnsLifetime: 14400
-      pool: false
+      pool: true
       # Settings for the time column and schema visibility
       timeseries: true
       timeInterval: 

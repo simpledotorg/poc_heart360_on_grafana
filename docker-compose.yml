@@ -12,13 +12,15 @@ services:
       - ./grafana_provisioning:/etc/grafana/provisioning:ro
     environment:
       - GF_DATABASE_URL=postgres://grafana:ZDI5MGE3YmYyMTRlNGNmYThkMTYyZjk3@postgres:5432/heart360tk_database
-      - GF_SECURITY_ALLOW_EMBEDDING=true 
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_PANELS_DISABLE_SANITIZE_HTML=true
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=volkovlabs-table-panel,yesoreyeram-infinity-datasource,marcusolsson-dynamictext-panel,volkovlabs-echarts-panel
       - GF_TIME_PICKER_QUICK_RANGES=[{"from":"now-6M","to":"now","display":"Last 6 months"},{"from":"now-1y","to":"now","display":"Last year"},{"from":"now-2y","to":"now","display":"Last 2 years"},{"from":"now-5y","to":"now","display":"Last 5 years"}]
       - GF_DATE_FORMATS_INTERVAL_MONTH=MMM-YYYY
       - GF_USERS_DEFAULT_THEME=light
+      - GF_USERS_HOME_PAGE=/d/heart360_drilldown?orgId=1&from=now-1y&to=now&timezone=browser
   postgres:
     image: postgres:16-alpine
     container_name: postgres
@@ -32,6 +34,26 @@ services:
     volumes:
       - ./pg_init_scripts:/docker-entrypoint-initdb.d:ro
       - ./data:/var/lib/postgresql/import:ro
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+    user: root
+    entrypoint: /bin/sh -c "cp /pgadmin4/pgpass_src /tmp/pgpass && chmod 0600 /tmp/pgpass && chown 5050:5050 /tmp/pgpass && /entrypoint.sh"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@heart360.org
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_SERVER_MODE=True
+      - PGPASSFILE=/tmp/pgpass
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin_config/servers.json:/pgadmin4/servers.json:ro
+      - ./pgadmin_config/pgpass:/pgadmin4/pgpass_src:ro
+    depends_on:
+      - postgres
 
   filebrowser:
     image: gtstef/filebrowser:stable-slim
@@ -63,3 +85,5 @@ services:
       - ./inotify_scripts:/scripts:ro
       - ./prepare_date.py:/prepare_date.py
 
+volumes:
+  pgadmin_data:
