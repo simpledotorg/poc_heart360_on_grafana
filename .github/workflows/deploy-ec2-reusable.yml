@@ -39,6 +39,16 @@ jobs:
           script: |
             sudo chown -R $USER "${{ inputs.ec2_deploy_path }}"
 
+      - name: Clean up unnecessary files on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          script: |
+            cd "${{ inputs.ec2_deploy_path }}"
+            rm -rf .git
+
       - name: Stop running containers
         uses: appleboy/ssh-action@v1.0.3
         with:
