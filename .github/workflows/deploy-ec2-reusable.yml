@@ -28,6 +28,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             set -eu
+            rm -rf "${{ inputs.ec2_deploy_path }}"
             mkdir -p "${{ inputs.ec2_deploy_path }}"
 
       - name: Stop running containers
@@ -50,7 +51,6 @@ jobs:
           source: "."
           target: "${{ inputs.ec2_deploy_path }}"
           overwrite: true
-          rm: true
 
       - name: Deploy with Docker Compose on EC2
         uses: appleboy/ssh-action@v1.0.3
