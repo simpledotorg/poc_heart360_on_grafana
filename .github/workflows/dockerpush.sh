@@ -7,21 +7,26 @@
 docker push ${DOCKER_REPO}/heart360tk-grafana:latest
 docker push ${DOCKER_REPO}/heart360tk-postgresql:latest
 docker push ${DOCKER_REPO}/heart360tk-fileprocessor:latest
+docker push ${DOCKER_REPO}/heart360tk-pgadmin:latest
 
 docker push ${DOCKER_REPO}/heart360tk-grafana:${BRANCH_NAME}
 docker push ${DOCKER_REPO}/heart360tk-postgresql:${BRANCH_NAME}
 docker push ${DOCKER_REPO}/heart360tk-fileprocessor:${BRANCH_NAME}
+docker push ${DOCKER_REPO}/heart360tk-pgadmin:${BRANCH_NAME}
 
 docker push ${DOCKER_REPO}/heart360tk-grafana:${BRANCH_NAME}.${BUILD_NUMBER}
 docker push ${DOCKER_REPO}/heart360tk-postgresql:${BRANCH_NAME}.${BUILD_NUMBER}
 docker push ${DOCKER_REPO}/heart360tk-fileprocessor:${BRANCH_NAME}.${BUILD_NUMBER}
+docker push ${DOCKER_REPO}/heart360tk-pgadmin:${BRANCH_NAME}.${BUILD_NUMBER}
 
 
 docker push ${DOCKER_REPO}/heart360tk-grafana:${BRANCH_NAME}.${COMMIT_HASH}
 docker push ${DOCKER_REPO}/heart360tk-postgresql:${BRANCH_NAME}.${COMMIT_HASH}
 docker push ${DOCKER_REPO}/heart360tk-fileprocessor:${BRANCH_NAME}.${COMMIT_HASH}
+docker push ${DOCKER_REPO}/heart360tk-pgadmin:${BRANCH_NAME}.${COMMIT_HASH}
 
 docker push ${DOCKER_REPO}/heart360tk-grafana:${COMMIT_HASH}
 docker push ${DOCKER_REPO}/heart360tk-postgresql:${COMMIT_HASH}
 docker push ${DOCKER_REPO}/heart360tk-fileprocessor:${COMMIT_HASH}
+docker push ${DOCKER_REPO}/heart360tk-pgadmin:${COMMIT_HASH}
 

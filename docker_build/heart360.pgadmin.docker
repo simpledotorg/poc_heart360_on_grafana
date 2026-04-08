@@ -1,0 +1,9 @@
+FROM dpage/pgadmin4:9.14
+
+COPY ./pgadmin_config/servers.json /pgadmin4/servers.json
+COPY ./pgadmin_config/pgpass /pgadmin4/pgpass_src
+
+ENV PGADMIN_DEFAULT_EMAIL=admin@heart360.org
+ENV PGADMIN_DEFAULT_PASSWORD=admin
+ENV PGADMIN_CONFIG_SERVER_MODE=True
+ENV PGPASSFILE=/tmp/pgpass

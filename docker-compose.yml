@@ -36,7 +36,7 @@ services:
       - ./data:/var/lib/postgresql/import:ro
 
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:9.14
     container_name: pgadmin
     ports:
       - "5050:80"
