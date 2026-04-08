@@ -1,0 +1,32 @@
+services:
+  db:
+    image: simpledotorg/heart360tk-postgresql:latest
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
+      interval: 5s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+
+
+  schemaspy:
+    image: schemaspy/schemaspy:6.2.4
+    volumes:
+      - ./schemaspy-output:/output
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    command: >
+      -t pgsql 
+      -host db 
+      -port 5432 
+      -db heart360tk_database 
+      -u heart360tk
+      -p YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0
+
+
+ 

@@ -1,4 +1,5 @@
 target
+schemaspy-output
 .DS_Store
 pythonvenv
 data/upload/*.csv
