@@ -37,7 +37,15 @@ jobs:
           cd autodoc
           mkdir -p schemaspy-output
           chmod -R 777 schemaspy-output
-          docker compose up --exit-code-from schemaspy      
+          docker compose up --exit-code-from schemaspy
+          zip -r schemaspy-report.zip schemaspy-output
+
+      - name: Upload SchemaSpy Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-documentation
+          path: autodoc/schemaspy-report.zip
+          retention-days: 90       
 
       - name: Push Docker images (all tags)
         run: |
