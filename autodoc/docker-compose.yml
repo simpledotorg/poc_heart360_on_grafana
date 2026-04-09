@@ -27,6 +27,8 @@ services:
       -db heart360tk_database 
       -u heart360tk
       -p YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0
+      -norows
+
 
 
  
