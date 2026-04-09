@@ -32,6 +32,11 @@ jobs:
           cd .github/workflows
           bash dockertag.sh
 
+      - name: Document Databae
+        run: |
+          cd autodoc
+          docker compose up --exit-code-from schemaspy      
+
       - name: Push Docker images (all tags)
         run: |
           cd .github/workflows
