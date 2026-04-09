@@ -35,6 +35,8 @@ jobs:
       - name: Document Databae
         run: |
           cd autodoc
+          mkdir -p schemaspy-output
+          chmod -R 777 schemaspy-output
           docker compose up --exit-code-from schemaspy      
 
       - name: Push Docker images (all tags)
