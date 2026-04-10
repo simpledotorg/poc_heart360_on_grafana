@@ -760,6 +760,7 @@ SELECT
         WHERE p.registration_date <= rm.ref_month - interval '3 months'
             AND EXISTS (
                 SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
                 WHERE e.patient_id = p.patient_id
                 AND DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
                 AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > rm.ref_month
@@ -824,6 +825,7 @@ SELECT
       AND (p.registration_date >= km.ref_month - interval '12 month'
         OR EXISTS (
             SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
             WHERE e.patient_id = p.patient_id
               AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
               AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
@@ -834,6 +836,7 @@ SELECT
       AND (p.registration_date >= km.ref_month - interval '12 month'
         OR EXISTS (
             SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
             WHERE e.patient_id = p.patient_id
               AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
               AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
@@ -850,6 +853,7 @@ SELECT
       AND (p.registration_date >= km.ref_month - interval '12 month'
         OR EXISTS (
             SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
             WHERE e.patient_id = p.patient_id
               AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
               AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
@@ -887,10 +891,11 @@ ALL_PATIENTS AS (
   SELECT p.patient_id, p.org_unit_id, p.registration_date, p.death_date
   FROM patients p
 ),
-LAST_VISIT_BEFORE_MONTH AS (
+LAST_BS_VISIT_BEFORE_MONTH AS (
   SELECT km.ref_month, e.patient_id, MAX(e.encounter_date) AS last_visit_date
   FROM KNOWN_MONTHS km
   JOIN encounters e ON DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+  JOIN blood_sugars bs ON bs.encounter_id = e.id
   GROUP BY km.ref_month, e.patient_id
 )
 SELECT
@@ -901,6 +906,7 @@ SELECT
       AND (p.registration_date >= km.ref_month - interval '12 month'
         OR EXISTS (
             SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
             WHERE e.patient_id = p.patient_id
               AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
               AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
@@ -911,6 +917,7 @@ SELECT
       AND (p.registration_date >= km.ref_month - interval '12 month'
         OR EXISTS (
             SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
             WHERE e.patient_id = p.patient_id
               AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
               AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
@@ -921,10 +928,102 @@ FROM KNOWN_MONTHS km
 LEFT JOIN ALL_PATIENTS p
   ON p.registration_date <= km.ref_month
   AND (p.death_date IS NULL OR DATE_TRUNC('month', p.death_date) >= km.ref_month)
-LEFT JOIN LAST_VISIT_BEFORE_MONTH lv
+LEFT JOIN LAST_BS_VISIT_BEFORE_MONTH lv
   ON lv.patient_id = p.patient_id AND lv.ref_month = km.ref_month
 GROUP BY km.ref_month, p.org_unit_id
 ORDER BY km.ref_month;
+
+
+-- ============================================================================
+-- VIEW 12: HEART360_DM_BP_CONTROL
+-- DM patients with controlled BP at their latest visit in the past 3 months
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_DM_BP_CONTROL AS
+WITH REF_MONTHS AS (
+    SELECT generate_series(
+        date_trunc('month', (SELECT MIN(registration_date) FROM patients)),
+        date_trunc('month', CURRENT_DATE),
+        interval '1 month'
+    )::date AS ref_month
+),
+ALL_PATIENTS AS (
+    SELECT p.patient_id, p.org_unit_id, p.registration_date, p.death_date
+    FROM patients p
+),
+LATEST_BP AS (
+    SELECT rm.ref_month, e.patient_id, MAX(e.encounter_date) AS latest_bp_date
+    FROM REF_MONTHS rm
+    JOIN encounters e ON DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+    JOIN blood_pressures bp ON bp.encounter_id = e.id
+    GROUP BY rm.ref_month, e.patient_id
+),
+LATEST_BP_VALUES AS (
+    SELECT lb.ref_month, lb.patient_id, lb.latest_bp_date AS encounter_date,
+           MAX(bp.systolic_bp) AS systolic_bp, MAX(bp.diastolic_bp) AS diastolic_bp
+    FROM LATEST_BP lb
+    JOIN encounters e ON e.patient_id = lb.patient_id AND e.encounter_date = lb.latest_bp_date
+    JOIN blood_pressures bp ON bp.encounter_id = e.id
+    GROUP BY lb.ref_month, lb.patient_id, lb.latest_bp_date
+)
+SELECT
+    rm.ref_month,
+    p.org_unit_id,
+    COUNT(DISTINCT p.patient_id) FILTER (
+        WHERE p.registration_date <= rm.ref_month - interval '3 months'
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+            )
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                WHERE e.patient_id = p.patient_id
+                AND DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+                AND DATE_TRUNC('month', e.encounter_date) + interval '3 month' > rm.ref_month
+            )
+    ) AS dm_patients_under_care,
+    COUNT(DISTINCT p.patient_id) FILTER (
+        WHERE p.registration_date <= rm.ref_month - interval '3 months'
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+            )
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                WHERE e.patient_id = p.patient_id
+                AND DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+                AND DATE_TRUNC('month', e.encounter_date) + interval '3 month' > rm.ref_month
+            )
+            AND lbp.encounter_date IS NOT NULL
+            AND DATE_TRUNC('month', lbp.encounter_date) + interval '3 month' > rm.ref_month
+            AND lbp.systolic_bp < 140 AND lbp.diastolic_bp < 90
+    ) AS bp_controlled_140_90,
+    COUNT(DISTINCT p.patient_id) FILTER (
+        WHERE p.registration_date <= rm.ref_month - interval '3 months'
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+            )
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                WHERE e.patient_id = p.patient_id
+                AND DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+                AND DATE_TRUNC('month', e.encounter_date) + interval '3 month' > rm.ref_month
+            )
+            AND lbp.encounter_date IS NOT NULL
+            AND DATE_TRUNC('month', lbp.encounter_date) + interval '3 month' > rm.ref_month
+            AND lbp.systolic_bp < 130 AND lbp.diastolic_bp < 80
+    ) AS bp_controlled_130_80
+FROM REF_MONTHS rm
+LEFT JOIN ALL_PATIENTS p
+    ON p.registration_date <= rm.ref_month
+    AND (p.death_date IS NULL OR DATE_TRUNC('month', p.death_date) >= rm.ref_month)
+LEFT JOIN LATEST_BP_VALUES lbp
+    ON lbp.patient_id = p.patient_id AND lbp.ref_month = rm.ref_month
+GROUP BY rm.ref_month, p.org_unit_id
+ORDER BY rm.ref_month;
 
 
 -- ============================================================================
