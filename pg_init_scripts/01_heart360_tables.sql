@@ -72,7 +72,7 @@ CREATE INDEX IF NOT EXISTS idx_blood_pressures_encounter_id ON blood_pressures(e
 CREATE TABLE blood_sugars (
     id                BIGSERIAL PRIMARY KEY,
     encounter_id      BIGINT NOT NULL REFERENCES encounters(id) ON DELETE CASCADE,
-    blood_sugar_type  VARCHAR(50),
+    blood_sugar_type  VARCHAR(50) DEFAULT 'RBS',
     blood_sugar_value NUMERIC,
     UNIQUE (encounter_id)
 );
@@ -744,7 +744,7 @@ BS_ENCOUNTERS AS (
 LATEST_BS AS (
     SELECT rm.ref_month, e.patient_id, MAX(e.encounter_date) AS latest_bs_date
     FROM REF_MONTHS rm
-    JOIN BS_ENCOUNTERS e ON e.encounter_date < rm.ref_month
+    JOIN BS_ENCOUNTERS e ON DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
     GROUP BY rm.ref_month, e.patient_id
 ),
 LATEST_BS_VALUES AS (
@@ -761,17 +761,16 @@ SELECT
             AND EXISTS (
                 SELECT 1 FROM encounters e
                 WHERE e.patient_id = p.patient_id
-                AND e.encounter_date >= rm.ref_month - interval '12 months'
-                AND e.encounter_date < rm.ref_month
+                AND DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+                AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > rm.ref_month
             )
     ) AS diabetes_patients_under_care,
     COUNT(DISTINCT p.patient_id) FILTER (
         WHERE p.registration_date <= rm.ref_month - interval '3 months'
-            AND lbv.encounter_date >= rm.ref_month - interval '3 months'
-            AND lbv.encounter_date < rm.ref_month
+            AND DATE_TRUNC('month', lbv.encounter_date) + interval '3 month' > rm.ref_month
             AND (
-                (LOWER(lbv.blood_sugar_type) IN ('random','ppbs') AND lbv.blood_sugar_value < 200)
-                OR (LOWER(lbv.blood_sugar_type) = 'fasting' AND lbv.blood_sugar_value < 126)
+                (LOWER(lbv.blood_sugar_type) IN ('rbs', 'random') AND lbv.blood_sugar_value < 140)
+                OR (LOWER(lbv.blood_sugar_type) IN ('fbs', 'fasting') AND lbv.blood_sugar_value < 126)
                 OR (LOWER(lbv.blood_sugar_type) = 'hba1c' AND lbv.blood_sugar_value < 7)
             )
     ) AS diabetes_controlled
@@ -809,7 +808,7 @@ BS_ENCOUNTERS AS (
 LATEST_BS AS (
   SELECT km.ref_month, e.patient_id, MAX(e.encounter_date) AS latest_bs_date
   FROM KNOWN_MONTHS km
-  JOIN BS_ENCOUNTERS e ON e.encounter_date < km.ref_month
+  JOIN BS_ENCOUNTERS e ON DATE_TRUNC('month', e.encounter_date) <= km.ref_month
   GROUP BY km.ref_month, e.patient_id
 ),
 LATEST_BS_VALUES AS (
@@ -826,8 +825,8 @@ SELECT
         OR EXISTS (
             SELECT 1 FROM encounters e
             WHERE e.patient_id = p.patient_id
-              AND e.encounter_date >= km.ref_month - interval '12 month'
-              AND e.encounter_date < km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
         ))
   ) AS diabetes_patients_under_care,
   COUNT(DISTINCT p.patient_id) FILTER (
@@ -836,34 +835,32 @@ SELECT
         OR EXISTS (
             SELECT 1 FROM encounters e
             WHERE e.patient_id = p.patient_id
-              AND e.encounter_date >= km.ref_month - interval '12 month'
-              AND e.encounter_date < km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
         ))
-      AND lbv.encounter_date >= km.ref_month - interval '3 month'
-      AND lbv.encounter_date < km.ref_month
+      AND DATE_TRUNC('month', lbv.encounter_date) + interval '3 month' > km.ref_month
       AND (
-           (LOWER(lbv.blood_sugar_type) IN ('random','ppbs') AND lbv.blood_sugar_value BETWEEN 200 AND 299)
-        OR (LOWER(lbv.blood_sugar_type) = 'fasting' AND lbv.blood_sugar_value BETWEEN 126 AND 199)
-        OR (LOWER(lbv.blood_sugar_type) = 'hba1c' AND lbv.blood_sugar_value BETWEEN 7 AND 8.9)
+           (LOWER(lbv.blood_sugar_type) IN ('rbs', 'random') AND lbv.blood_sugar_value >= 140 AND lbv.blood_sugar_value <= 199)
+        OR (LOWER(lbv.blood_sugar_type) IN ('fbs', 'fasting') AND lbv.blood_sugar_value >= 126 AND lbv.blood_sugar_value <= 199)
+        OR (LOWER(lbv.blood_sugar_type) = 'hba1c' AND lbv.blood_sugar_value >= 7 AND lbv.blood_sugar_value <= 8.9)
       )
-  ) AS bs_200_299,
+  ) AS uncontrolled_moderate,
   COUNT(DISTINCT p.patient_id) FILTER (
     WHERE p.registration_date <= km.ref_month - interval '3 month'
       AND (p.registration_date >= km.ref_month - interval '12 month'
         OR EXISTS (
             SELECT 1 FROM encounters e
             WHERE e.patient_id = p.patient_id
-              AND e.encounter_date >= km.ref_month - interval '12 month'
-              AND e.encounter_date < km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
         ))
-      AND lbv.encounter_date >= km.ref_month - interval '3 month'
-      AND lbv.encounter_date < km.ref_month
+      AND DATE_TRUNC('month', lbv.encounter_date) + interval '3 month' > km.ref_month
       AND (
-           (LOWER(lbv.blood_sugar_type) IN ('random','ppbs') AND lbv.blood_sugar_value >= 300)
-        OR (LOWER(lbv.blood_sugar_type) = 'fasting' AND lbv.blood_sugar_value >= 200)
+           (LOWER(lbv.blood_sugar_type) IN ('rbs', 'random') AND lbv.blood_sugar_value >= 200)
+        OR (LOWER(lbv.blood_sugar_type) IN ('fbs', 'fasting') AND lbv.blood_sugar_value >= 200)
         OR (LOWER(lbv.blood_sugar_type) = 'hba1c' AND lbv.blood_sugar_value >= 9)
       )
-  ) AS bs_300_plus
+  ) AS uncontrolled_high
 FROM KNOWN_MONTHS km
 LEFT JOIN ALL_PATIENTS p
   ON p.registration_date <= km.ref_month
@@ -893,7 +890,7 @@ ALL_PATIENTS AS (
 LAST_VISIT_BEFORE_MONTH AS (
   SELECT km.ref_month, e.patient_id, MAX(e.encounter_date) AS last_visit_date
   FROM KNOWN_MONTHS km
-  JOIN encounters e ON e.encounter_date < km.ref_month
+  JOIN encounters e ON DATE_TRUNC('month', e.encounter_date) <= km.ref_month
   GROUP BY km.ref_month, e.patient_id
 )
 SELECT
@@ -905,8 +902,8 @@ SELECT
         OR EXISTS (
             SELECT 1 FROM encounters e
             WHERE e.patient_id = p.patient_id
-              AND e.encounter_date >= km.ref_month - interval '12 month'
-              AND e.encounter_date < km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
         ))
   ) AS diabetes_patients_under_care,
   COUNT(DISTINCT p.patient_id) FILTER (
@@ -915,10 +912,10 @@ SELECT
         OR EXISTS (
             SELECT 1 FROM encounters e
             WHERE e.patient_id = p.patient_id
-              AND e.encounter_date >= km.ref_month - interval '12 month'
-              AND e.encounter_date < km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
         ))
-      AND (lv.last_visit_date IS NULL OR lv.last_visit_date < km.ref_month - interval '3 month')
+      AND (lv.last_visit_date IS NULL OR DATE_TRUNC('month', lv.last_visit_date) + interval '3 month' <= km.ref_month)
   ) AS missed_visit
 FROM KNOWN_MONTHS km
 LEFT JOIN ALL_PATIENTS p

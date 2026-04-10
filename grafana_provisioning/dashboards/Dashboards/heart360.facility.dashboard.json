@@ -38,7 +38,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Hypertension dashboard\n  </span>\n\n  <a target=\"_top\" href=\"/d/heart360_facility_overdue_patients/heart-360-overdue-patients-by-facility?orgId=1&from=now-1y&to=now&timezone=browser&var-facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Overdue patients list\n  </a>\n\n</div>",
+        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Hypertension dashboard\n  </span>\n\n  <a target=\"_top\" href=\"/d/diabetes_dashboard/hearts360-diabetes-dashboard-by-facility?orgId=1&from=now-1y&to=now&timezone=browser&var-Facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Diabetes dashboard\n  </a>\n\n  <a target=\"_top\" href=\"/d/heart360_facility_overdue_patients/heart-360-overdue-patients-by-facility?orgId=1&from=now-1y&to=now&timezone=browser&var-facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Overdue patients list\n  </a>\n\n</div>",
         "mode": "html"
       },
       "pluginVersion": "12.4.0",

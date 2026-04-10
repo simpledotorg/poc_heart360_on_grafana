@@ -150,10 +150,10 @@ def prepare_data_for_postgres():
                         except:
                             blood_sugar_value = None
                     else:
-                        # Just a number, default type to 'random'
+                        # Just a number, default type to 'RBS'
                         try:
                             blood_sugar_value = float(bs_reading.strip())
-                            blood_sugar_type = 'random'
+                            blood_sugar_type = 'RBS'
                         except:
                             blood_sugar_value = None
                 

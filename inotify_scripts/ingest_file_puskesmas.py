@@ -320,6 +320,10 @@ def ingest_and_execute(file_path):
             else:
                 blood_sugar_value = None
 
+            blood_sugar_type = safe_str(record.get('jenis_gula_darah'))
+            if blood_sugar_value is not None and not blood_sugar_type:
+                blood_sugar_type = 'RBS'
+
             # Validate: Skip if no clinical data (no BP and no blood sugar)
             if (record.get('sistole') is None and
                 record.get('diastole') is None and
@@ -383,7 +387,7 @@ def ingest_and_execute(file_path):
                         execute_insert_bp(cur, bp_enc_id, record.get('sistole'), record.get('diastole'))
                     if has_bs:
                         bs_enc_id = execute_insert_encounter(cur, patient_id_sql, dm_followup_parsed, org_unit_id)
-                        execute_insert_bs(cur, bs_enc_id, safe_str(record.get('jenis_gula_darah')), blood_sugar_value)
+                        execute_insert_bs(cur, bs_enc_id, blood_sugar_type, blood_sugar_value)
                 else:
                     # SINGLE encounter — use priority chain
                     encounter_datetime_parsed = (
@@ -393,7 +397,7 @@ def ingest_and_execute(file_path):
                     )
                     enc_id = execute_insert_encounter(cur, patient_id_sql, encounter_datetime_parsed, org_unit_id)
                     execute_insert_bp(cur, enc_id, record.get('sistole'), record.get('diastole'))
-                    execute_insert_bs(cur, enc_id, safe_str(record.get('jenis_gula_darah')), blood_sugar_value)
+                    execute_insert_bs(cur, enc_id, blood_sugar_type, blood_sugar_value)
 
                 success_inserts += 1
 
