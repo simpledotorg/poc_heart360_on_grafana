@@ -430,7 +430,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 7,
         "x": 16,
         "y": 3
       },
@@ -926,7 +926,7 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 4,
+        "w": 3,
         "x": 20,
         "y": 11
       },
@@ -1018,6 +1018,7 @@
               "type": "linear"
             },
             "showPoints": "always",
+            "showValues": true,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -1028,8 +1029,22 @@
             }
           },
           "decimals": 0,
+          "mappings": [],
           "max": 100,
           "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
           "unit": "none"
         },
         "overrides": [
@@ -1067,7 +1082,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 16,
         "x": 0,
         "y": 14
       },
@@ -1115,6 +1130,322 @@
       ],
       "title": "DM patients with controlled BP",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres-hypertension"
+      },
+      "description": "Patients with diabetes with no visit in the past 12 months",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": true,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "displayName": "% DM patients with no visit in the past 12 months",
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "lost_to_follow_up_pct"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "super-light-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 7,
+        "x": 16,
+        "y": 14
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.2",
+      "targets": [
+        {
+          "dataset": "metrics_db",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ref_month,\n  100.0 * (SUM(cumulative_dm_patients) - SUM(COALESCE(nb_dm_patients_under_care, 0))) /\n  NULLIF(SUM(cumulative_dm_patients), 0) AS lost_to_follow_up_pct\nFROM HEART360_DM_PATIENTS_UNDER_CARE\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "12 month lost to follow-up",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres-hypertension"
+      },
+      "description": "Patients with diabetes with at least 1 visit in the past 12 months",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisGridShow": true,
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 2,
+            "pointSize": 6,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "showValues": true,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "nb_new_dm_patients"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "bars"
+              },
+              {
+                "id": "custom.fillOpacity",
+                "value": 65
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cumulative_dm_patients"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "displayName",
+                "value": "DM - Cumulative registrations"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "nb_dm_patients_under_care"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "displayName",
+                "value": "DM - Patients under care"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "nb_new_dm_patients"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "DM - Monthly registrations"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 16,
+        "x": 0,
+        "y": 22
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.4.2",
+      "targets": [
+        {
+          "dataset": "metrics_db",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ref_month,\n  SUM(cumulative_dm_patients) AS cumulative_dm_patients,\n  SUM(nb_dm_patients_under_care) AS nb_dm_patients_under_care,\n  SUM(nb_new_dm_patients) AS nb_new_dm_patients\nFROM HEART360_DM_PATIENTS_UNDER_CARE\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Patients under care",
+      "type": "timeseries"
     }
   ],
   "preload": false,
@@ -1151,6 +1482,6 @@
   "timezone": "browser ",
   "title": "HEARTS360 Diabetes Dashboard by Facility",
   "uid": "diabetes_dashboard",
-  "version": 11,
+  "version": 7,
   "weekStart": ""
 }

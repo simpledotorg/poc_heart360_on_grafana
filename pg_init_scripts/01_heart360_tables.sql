@@ -311,6 +311,7 @@ DROP VIEW IF EXISTS HEART360_BLOOD_SUGAR_CONTROLLED CASCADE;
 DROP VIEW IF EXISTS HEART360_BLOOD_SUGAR_SEVERITY CASCADE;
 DROP VIEW IF EXISTS HEART360_BLOOD_SUGAR_MISSED_VISITS CASCADE;
 DROP VIEW IF EXISTS HEART360_COHORT_PATIENT_DETAILS CASCADE;
+DROP VIEW IF EXISTS HEART360_DM_PATIENTS_UNDER_CARE CASCADE;
 
 
 -- ============================================================================
@@ -935,7 +936,63 @@ ORDER BY km.ref_month;
 
 
 -- ============================================================================
--- VIEW 12: HEART360_DM_BP_CONTROL
+-- VIEW 12: HEART360_DM_PATIENTS_UNDER_CARE
+-- DM patients under care, cumulative registrations, and monthly registrations
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_DM_PATIENTS_UNDER_CARE AS
+WITH
+KNOWN_MONTHS AS (
+  SELECT date_trunc('month', series_date)::date AS ref_month
+  FROM generate_series(
+      date_trunc('month', (SELECT MIN(registration_date) FROM patients)),
+      date_trunc('month', CURRENT_DATE),
+      '1 month'::interval
+  ) AS t(series_date)
+),
+-- DM patients: those with at least one blood sugar encounter
+DM_PATIENTS AS (
+  SELECT DISTINCT p.patient_id, p.org_unit_id,
+         DATE_TRUNC('month', p.registration_date)::date AS registration_month
+  FROM patients p
+  WHERE LOWER(p.patient_status) <> 'dead'
+    AND EXISTS (
+      SELECT 1 FROM encounters e
+      JOIN blood_sugars bs ON bs.encounter_id = e.id
+      WHERE e.patient_id = p.patient_id
+    )
+),
+-- Encounters for DM patients (any encounter, not just BS)
+DM_ENCOUNTERS AS (
+  SELECT e.patient_id,
+         DATE_TRUNC('month', e.encounter_date) AS encounter_month
+  FROM encounters e
+  WHERE EXISTS (
+    SELECT 1 FROM DM_PATIENTS dp WHERE dp.patient_id = e.patient_id
+  )
+)
+SELECT
+    km.ref_month,
+    dp.org_unit_id,
+    COUNT(DISTINCT CASE
+      WHEN de.patient_id IS NOT NULL THEN dp.patient_id
+    END) AS nb_dm_patients_under_care,
+    COUNT(DISTINCT dp.patient_id) AS cumulative_dm_patients,
+    COUNT(DISTINCT dp.patient_id) FILTER (
+      WHERE dp.registration_month = km.ref_month
+    ) AS nb_new_dm_patients
+FROM KNOWN_MONTHS km
+LEFT JOIN DM_PATIENTS dp
+    ON dp.registration_month <= km.ref_month
+LEFT JOIN DM_ENCOUNTERS de
+    ON de.patient_id = dp.patient_id
+    AND de.encounter_month <= km.ref_month
+    AND de.encounter_month + interval '12 month' > km.ref_month
+GROUP BY km.ref_month, dp.org_unit_id
+ORDER BY km.ref_month DESC;
+
+
+-- ============================================================================
+-- VIEW 13: HEART360_DM_BP_CONTROL
 -- DM patients with controlled BP at their latest visit in the past 3 months
 -- ============================================================================
 CREATE OR REPLACE VIEW HEART360_DM_BP_CONTROL AS
