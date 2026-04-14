@@ -1176,6 +1176,7 @@
               "mode": "off"
             }
           },
+          "decimals": 0,
           "displayName": "% DM patients with no visit in the past 12 months",
           "mappings": [],
           "max": 100,
@@ -1239,7 +1240,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ref_month,\n  100.0 * (SUM(cumulative_dm_patients) - SUM(COALESCE(nb_dm_patients_under_care, 0))) /\n  NULLIF(SUM(cumulative_dm_patients), 0) AS lost_to_follow_up_pct\nFROM HEART360_DM_PATIENTS_UNDER_CARE\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "rawSql": "SELECT\n  ref_month,\n  (100.0 * SUM(COALESCE(nb_patients_lost_to_follow_up, 0))) /\n  NULLIF(SUM(cumulative_dm_patients), 0) AS lost_to_follow_up_pct\nFROM HEART360_DM_PATIENTS_UNDER_CARE\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1423,7 +1424,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ref_month,\n  SUM(cumulative_dm_patients) AS cumulative_dm_patients,\n  SUM(nb_dm_patients_under_care) AS nb_dm_patients_under_care,\n  SUM(nb_new_dm_patients) AS nb_new_dm_patients\nFROM HEART360_DM_PATIENTS_UNDER_CARE\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "rawSql": "SELECT\n  uc.ref_month,\n  SUM(uc.cumulative_number_of_patients) AS cumulative_dm_patients,\n  SUM(uc.nb_patients_under_care) AS nb_dm_patients_under_care,\n  SUM(cat.nb_patients_newly_registered) AS nb_new_dm_patients\nFROM HEART360_PATIENTS_UNDER_CARE uc\nLEFT JOIN HEART360_PATIENTS_CATAGORY cat ON uc.ref_month = cat.ref_month AND uc.org_unit_id = cat.org_unit_id\nWHERE uc.org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY uc.ref_month\nORDER BY uc.ref_month;",
           "refId": "A",
           "sql": {
             "columns": [

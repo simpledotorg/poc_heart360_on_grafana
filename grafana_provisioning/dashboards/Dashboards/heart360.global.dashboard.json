@@ -729,7 +729,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    HEART360_PATIENTS_CATAGORY.ref_month,\n    sum(cumulative_number_of_patients) cumulative_number_of_patients,\n    sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS) as nb_patients_under_care,\n    sum(nb_new_patients) nb_new_patients\nfrom HEART360_PATIENTS_CATAGORY\nleft outer join heart360_patients_registered\n    on HEART360_PATIENTS_CATAGORY.ref_month = heart360_patients_registered.ref_month \n    and HEART360_PATIENTS_CATAGORY.org_unit_id = heart360_patients_registered.org_unit_id\nwhere HEART360_PATIENTS_CATAGORY.org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\ngroup by 1\n",
+          "rawSql": "SELECT\n  uc.ref_month,\n  SUM(uc.cumulative_number_of_patients) AS cumulative_number_of_patients,\n  SUM(uc.nb_patients_under_care) AS nb_patients_under_care,\n  SUM(cat.nb_patients_newly_registered) AS nb_new_patients\nFROM HEART360_PATIENTS_UNDER_CARE uc\nLEFT JOIN HEART360_PATIENTS_CATAGORY cat ON uc.ref_month = cat.ref_month AND uc.org_unit_id = cat.org_unit_id\nWHERE uc.org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\nGROUP BY uc.ref_month\nORDER BY uc.ref_month;\n",
           "refId": "A",
           "sql": {
             "columns": [
