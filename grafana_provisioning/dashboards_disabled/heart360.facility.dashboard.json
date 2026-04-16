@@ -353,7 +353,7 @@
             }
           },
           "decimals": 0,
-          "displayName": "% Patients with BP \u2265140/90 at latest visit in the past 3 months",
+          "displayName": "% Patients with BP ≥140/90 at latest visit in the past 3 months",
           "mappings": [],
           "max": 100,
           "min": 0,
@@ -552,7 +552,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_no_visit) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_no_visit) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_3M_INCL_VISITS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -776,8 +776,8 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
             "hideFrom": {
               "legend": false,
               "tooltip": false,

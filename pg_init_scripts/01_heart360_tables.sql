@@ -449,6 +449,24 @@ LATEST_BP_BY_MONTH_AND_PATIENT AS (
         ON MOST_RECENT_BP_ENCOUNTER.MOST_RECENT_BP_DATE = BP_ENCOUNTERS.BP_ENCOUNTER_DATE
         AND MOST_RECENT_BP_ENCOUNTER.patient_id = BP_ENCOUNTERS.patient_id
     GROUP BY REF_MONTH, MOST_RECENT_BP_ENCOUNTER.patient_id
+),
+-- Encounters relevant for the HTN "no visit" indicator:
+--   BP encounters + visit-only encounters (no BP AND no BS attached).
+-- BS-only encounters are excluded.
+HTN_RELEVANT_ENCOUNTERS AS (
+    SELECT e.id, e.patient_id, e.encounter_date
+    FROM encounters e
+    WHERE EXISTS (SELECT 1 FROM blood_pressures bp WHERE bp.encounter_id = e.id)
+       OR NOT EXISTS (SELECT 1 FROM blood_sugars bs WHERE bs.encounter_id = e.id)
+),
+LATEST_HTN_BY_MONTH_AND_PATIENT AS (
+    SELECT
+        KNOWN_MONTHS.REF_MONTH,
+        hre.patient_id,
+        DATE_TRUNC('month', MAX(hre.encounter_date)) AS HTN_ENCOUNTER_MONTH
+    FROM HTN_RELEVANT_ENCOUNTERS hre
+    JOIN KNOWN_MONTHS ON DATE_TRUNC('month', hre.encounter_date) <= KNOWN_MONTHS.REF_MONTH
+    GROUP BY KNOWN_MONTHS.REF_MONTH, hre.patient_id
 )
 SELECT
     KNOWN_MONTHS.REF_MONTH,
@@ -462,12 +480,21 @@ SELECT
         WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 0 ELSE 1 END
     ) AS NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS,
     SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 1 WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH THEN 1 ELSE 0 END) AS NB_PATIENTS_LOST_TO_FOLLOW_UP,
+    -- "No visit" counts patients whose latest HTN-relevant encounter
+    -- (BP OR visit-only) is older than 3 months.
     SUM(CASE
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
+        WHEN LATEST_HTN_BY_MONTH_AND_PATIENT.HTN_ENCOUNTER_MONTH IS NULL THEN 0
+        WHEN LATEST_HTN_BY_MONTH_AND_PATIENT.HTN_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
         WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 0
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <= KNOWN_MONTHS.REF_MONTH THEN 1
+        WHEN LATEST_HTN_BY_MONTH_AND_PATIENT.HTN_ENCOUNTER_MONTH + interval '3 month' <= KNOWN_MONTHS.REF_MONTH THEN 1
         ELSE 0 END) AS NB_PATIENTS_NO_VISIT,
+    -- Denominator for the "No visit" graph: includes patients kept under care
+    -- by a visit-only encounter even if they have no BP reading.
+    SUM(CASE
+        WHEN LATEST_HTN_BY_MONTH_AND_PATIENT.HTN_ENCOUNTER_MONTH IS NULL THEN 0
+        WHEN LATEST_HTN_BY_MONTH_AND_PATIENT.HTN_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
+        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 0 ELSE 1 END
+    ) AS NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_3M_INCL_VISITS,
     SUM(CASE
         WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
         WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
@@ -494,6 +521,9 @@ LEFT OUTER JOIN ALIVE_PATIENTS
 LEFT OUTER JOIN LATEST_BP_BY_MONTH_AND_PATIENT
     ON LATEST_BP_BY_MONTH_AND_PATIENT.patient_id = ALIVE_PATIENTS.patient_id
     AND LATEST_BP_BY_MONTH_AND_PATIENT.REF_MONTH = KNOWN_MONTHS.REF_MONTH
+LEFT OUTER JOIN LATEST_HTN_BY_MONTH_AND_PATIENT
+    ON LATEST_HTN_BY_MONTH_AND_PATIENT.patient_id = ALIVE_PATIENTS.patient_id
+    AND LATEST_HTN_BY_MONTH_AND_PATIENT.REF_MONTH = KNOWN_MONTHS.REF_MONTH
 GROUP BY 1, 2
 ORDER BY 1 DESC;
 
@@ -925,11 +955,19 @@ ALL_PATIENTS AS (
   SELECT p.patient_id, p.org_unit_id, p.registration_date, p.death_date
   FROM patients p
 ),
-LAST_BS_VISIT_BEFORE_MONTH AS (
+-- Encounters relevant for the DM "no visit" indicator:
+--   BS encounters + visit-only encounters (no BP AND no BS attached).
+-- BP-only encounters are excluded.
+DM_RELEVANT_ENCOUNTERS AS (
+  SELECT e.id, e.patient_id, e.encounter_date
+  FROM encounters e
+  WHERE EXISTS (SELECT 1 FROM blood_sugars bs WHERE bs.encounter_id = e.id)
+     OR NOT EXISTS (SELECT 1 FROM blood_pressures bp WHERE bp.encounter_id = e.id)
+),
+LAST_DM_VISIT_BEFORE_MONTH AS (
   SELECT km.ref_month, e.patient_id, MAX(e.encounter_date) AS last_visit_date
   FROM KNOWN_MONTHS km
-  JOIN encounters e ON DATE_TRUNC('month', e.encounter_date) <= km.ref_month
-  JOIN blood_sugars bs ON bs.encounter_id = e.id
+  JOIN DM_RELEVANT_ENCOUNTERS e ON DATE_TRUNC('month', e.encounter_date) <= km.ref_month
   GROUP BY km.ref_month, e.patient_id
 )
 SELECT
@@ -938,13 +976,11 @@ SELECT
   COUNT(DISTINCT p.patient_id) FILTER (
     WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= km.ref_month
       AND EXISTS (
-            SELECT 1 FROM encounters e
-            JOIN blood_sugars bs ON bs.encounter_id = e.id
+            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
             WHERE e.patient_id = p.patient_id
         )
       AND EXISTS (
-            SELECT 1 FROM encounters e
-            JOIN blood_sugars bs ON bs.encounter_id = e.id
+            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
             WHERE e.patient_id = p.patient_id
               AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
               AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
@@ -953,13 +989,11 @@ SELECT
   COUNT(DISTINCT p.patient_id) FILTER (
     WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= km.ref_month
       AND EXISTS (
-            SELECT 1 FROM encounters e
-            JOIN blood_sugars bs ON bs.encounter_id = e.id
+            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
             WHERE e.patient_id = p.patient_id
         )
       AND EXISTS (
-            SELECT 1 FROM encounters e
-            JOIN blood_sugars bs ON bs.encounter_id = e.id
+            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
             WHERE e.patient_id = p.patient_id
               AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
               AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
@@ -970,7 +1004,7 @@ FROM KNOWN_MONTHS km
 LEFT JOIN ALL_PATIENTS p
   ON p.registration_date <= km.ref_month
   AND (p.death_date IS NULL OR DATE_TRUNC('month', p.death_date) >= km.ref_month)
-LEFT JOIN LAST_BS_VISIT_BEFORE_MONTH lv
+LEFT JOIN LAST_DM_VISIT_BEFORE_MONTH lv
   ON lv.patient_id = p.patient_id AND lv.ref_month = km.ref_month
 GROUP BY km.ref_month, p.org_unit_id
 ORDER BY km.ref_month;

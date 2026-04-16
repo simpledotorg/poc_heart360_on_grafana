@@ -38,7 +38,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <a target=\"_top\" href=\"/d/heart360demo_per_facility/heart-360-global-dashboard-per-facility?orgId=1&from=now-1y&to=now&timezone=browser&var-Facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Hypertension dashboard\n  </a>\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Diabetes dashboard\n  </span>\n\n  <a target=\"_top\" href=\"/d/heart360_facility_overdue_patients/heart-360-overdue-patients-by-facility?orgId=1&from=now-1y&to=now&timezone=browser&var-facility=${Facility}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Overdue patients list\n  </a>\n\n</div>\n",
+        "content": "<div style=\"\n  display:flex;\n  gap:32px;\n  border-bottom:1px solid #e0e0e0;\n  margin-bottom:16px;\n  font-size:18px;\n\">\n\n  <a target=\"_top\" href=\"/d/heart360demo_per_facility_security?orgId=1&var-Facility=${Facility}&${__url_time_range}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Hypertension dashboard\n  </a>\n\n  <span style=\"\n       padding:8px 0;\n       font-weight:600;\n       color:#000;\n       border-bottom:2px solid #3b82f6;\n     \">\n    Diabetes dashboard\n  </span>\n\n  <a target=\"_top\" href=\"/d/heart360-overdue-secure?orgId=1&var-Facility=${Facility}&${__url_time_range}\"\n     style=\"\n       padding:8px 0;\n       text-decoration:none;\n       color:#555;\n     \">\n    Overdue patients list\n  </a>\n\n</div>\n",
         "mode": "html"
       },
       "pluginVersion": "12.4.2",
@@ -80,8 +80,8 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 12,
-            "gradientMode": "opacity",
+            "fillOpacity": 25,
+            "gradientMode": "scheme",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -173,7 +173,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ref_month AS \"time\",\n  SUM(100.0 * diabetes_controlled) /\n  (0.00000001 + SUM(diabetes_patients_under_care)) AS blood_sugar_control_rate\nFROM HEART360_BLOOD_SUGAR_CONTROLLED\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "rawSql": "SELECT\n  ref_month AS \"time\",\n  SUM(100.0 * diabetes_controlled) /\n  (0.00000001 + SUM(diabetes_patients_under_care)) AS blood_sugar_control_rate\nFROM HEART360_BLOOD_SUGAR_CONTROLLED\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\nGROUP BY ref_month\nORDER BY ref_month;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -336,7 +336,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ref_month AS \"time\",\n\n  SUM(100.0 * uncontrolled_moderate) /\n  (0.00000001 + SUM(diabetes_patients_under_care))\n  AS \"% Patients with RBS 140–199, FBS 126–199 mg/dL, or HbA1c 7–8.9%\",\n\n  SUM(100.0 * uncontrolled_high) /\n  (0.00000001 + SUM(diabetes_patients_under_care))\n  AS \"% Patients with RBS ≥200, FBS ≥200 mg/dL, or HbA1c ≥9%\"\n\nFROM HEART360_BLOOD_SUGAR_SEVERITY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "rawSql": "SELECT\n  ref_month AS \"time\",\n\n  SUM(100.0 * uncontrolled_moderate) /\n  (0.00000001 + SUM(diabetes_patients_under_care))\n  AS \"% Patients with RBS 140–199, FBS 126–199 mg/dL, or HbA1c 7–8.9%\",\n\n  SUM(100.0 * uncontrolled_high) /\n  (0.00000001 + SUM(diabetes_patients_under_care))\n  AS \"% Patients with RBS ≥200, FBS ≥200 mg/dL, or HbA1c ≥9%\"\n\nFROM HEART360_BLOOD_SUGAR_SEVERITY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\nGROUP BY ref_month\nORDER BY ref_month;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -455,7 +455,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n    ref_month AS \"time\",\n    SUM(100.0 * missed_visit) /\n    (0.00000001 + SUM(diabetes_patients_under_care)) AS missed_visit_rate\nFROM HEART360_BLOOD_SUGAR_MISSED_VISITS\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "rawSql": "SELECT\n    ref_month AS \"time\",\n    SUM(100.0 * missed_visit) /\n    (0.00000001 + SUM(diabetes_patients_under_care)) AS missed_visit_rate\nFROM HEART360_BLOOD_SUGAR_MISSED_VISITS\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\nGROUP BY ref_month\nORDER BY ref_month;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -545,7 +545,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  (SUM(diabetes_controlled) * 100.0 / NULLIF(SUM(diabetes_patients_under_care), 0)) AS value\nFROM HEART360_BLOOD_SUGAR_CONTROLLED\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_CONTROLLED\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
+          "rawSql": "SELECT\n  (SUM(diabetes_controlled) * 100.0 / NULLIF(SUM(diabetes_patients_under_care), 0)) AS value\nFROM HEART360_BLOOD_SUGAR_CONTROLLED\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_CONTROLLED\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
           "refId": "A",
           "sql": {
             "columns": [
@@ -627,7 +627,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  SUM(diabetes_controlled) AS value\nFROM HEART360_BLOOD_SUGAR_CONTROLLED\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_CONTROLLED\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
+          "rawSql": "SELECT\n  SUM(diabetes_controlled) AS value\nFROM HEART360_BLOOD_SUGAR_CONTROLLED\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_CONTROLLED\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
           "refId": "A",
           "sql": {
             "columns": [
@@ -709,7 +709,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  (SUM(uncontrolled_moderate + uncontrolled_high) * 100.0 / NULLIF(SUM(diabetes_patients_under_care), 0)) AS value\nFROM HEART360_BLOOD_SUGAR_SEVERITY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_SEVERITY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
+          "rawSql": "SELECT\n  (SUM(uncontrolled_moderate + uncontrolled_high) * 100.0 / NULLIF(SUM(diabetes_patients_under_care), 0)) AS value\nFROM HEART360_BLOOD_SUGAR_SEVERITY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_SEVERITY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
           "refId": "A",
           "sql": {
             "columns": [
@@ -791,7 +791,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  SUM(uncontrolled_moderate + uncontrolled_high) AS value\nFROM HEART360_BLOOD_SUGAR_SEVERITY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_SEVERITY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
+          "rawSql": "SELECT\n  SUM(uncontrolled_moderate + uncontrolled_high) AS value\nFROM HEART360_BLOOD_SUGAR_SEVERITY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_SEVERITY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
           "refId": "A",
           "sql": {
             "columns": [
@@ -873,7 +873,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  (SUM(missed_visit) * 100.0 / NULLIF(SUM(diabetes_patients_under_care), 0)) AS value\nFROM HEART360_BLOOD_SUGAR_MISSED_VISITS\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_MISSED_VISITS\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
+          "rawSql": "SELECT\n  (SUM(missed_visit) * 100.0 / NULLIF(SUM(diabetes_patients_under_care), 0)) AS value\nFROM HEART360_BLOOD_SUGAR_MISSED_VISITS\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_MISSED_VISITS\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
           "refId": "A",
           "sql": {
             "columns": [
@@ -955,7 +955,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  SUM(missed_visit) AS value\nFROM HEART360_BLOOD_SUGAR_MISSED_VISITS\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_MISSED_VISITS\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
+          "rawSql": "SELECT\n  SUM(missed_visit) AS value\nFROM HEART360_BLOOD_SUGAR_MISSED_VISITS\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_BLOOD_SUGAR_MISSED_VISITS\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\n  );",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1107,7 +1107,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ref_month AS \"time\",\n  SUM(100.0 * bp_controlled_140_90) /\n  (0.00000001 + SUM(dm_patients_under_care)) AS \"Patients with BP <140/90\",\n  SUM(100.0 * bp_controlled_130_80) /\n  (0.00000001 + SUM(dm_patients_under_care)) AS \"Patients with BP <130/80\"\nFROM HEART360_DM_BP_CONTROL\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "rawSql": "SELECT\n  ref_month AS \"time\",\n  SUM(100.0 * bp_controlled_140_90) /\n  (0.00000001 + SUM(dm_patients_under_care)) AS \"Patients with BP <140/90\",\n  SUM(100.0 * bp_controlled_130_80) /\n  (0.00000001 + SUM(dm_patients_under_care)) AS \"Patients with BP <130/80\"\nFROM HEART360_DM_BP_CONTROL\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\nGROUP BY ref_month\nORDER BY ref_month;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1151,8 +1151,8 @@
             "barAlignment": 0,
             "barWidthFactor": 0.6,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -1160,7 +1160,7 @@
             },
             "insertNulls": false,
             "lineInterpolation": "linear",
-            "lineWidth": 1,
+            "lineWidth": 2,
             "pointSize": 5,
             "scaleDistribution": {
               "type": "linear"
@@ -1240,7 +1240,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ref_month,\n  (100.0 * SUM(COALESCE(nb_patients_lost_to_follow_up, 0))) /\n  NULLIF(SUM(cumulative_dm_patients), 0) AS lost_to_follow_up_pct\nFROM HEART360_DM_PATIENTS_UNDER_CARE\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "rawSql": "SELECT\n  ref_month,\n  (100.0 * SUM(COALESCE(nb_patients_lost_to_follow_up, 0))) /\n  NULLIF(SUM(cumulative_dm_patients), 0) AS lost_to_follow_up_pct\nFROM HEART360_DM_PATIENTS_UNDER_CARE\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\nGROUP BY ref_month\nORDER BY ref_month;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1424,7 +1424,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  uc.ref_month,\n  SUM(uc.cumulative_number_of_patients) AS cumulative_dm_patients,\n  SUM(uc.nb_patients_under_care) AS nb_dm_patients_under_care,\n  SUM(cat.nb_patients_newly_registered) AS nb_new_dm_patients\nFROM HEART360_PATIENTS_UNDER_CARE uc\nLEFT JOIN HEART360_PATIENTS_CATAGORY cat ON uc.ref_month = cat.ref_month AND uc.org_unit_id = cat.org_unit_id\nWHERE uc.org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY uc.ref_month\nORDER BY uc.ref_month;",
+          "rawSql": "SELECT\n  uc.ref_month,\n  SUM(uc.cumulative_number_of_patients) AS cumulative_dm_patients,\n  SUM(uc.nb_patients_under_care) AS nb_dm_patients_under_care,\n  SUM(cat.nb_patients_newly_registered) AS nb_new_dm_patients\nFROM HEART360_PATIENTS_UNDER_CARE uc\nLEFT JOIN HEART360_PATIENTS_CATAGORY cat ON uc.ref_month = cat.ref_month AND uc.org_unit_id = cat.org_unit_id\nWHERE uc.org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) AND $isAllowed > 0\nGROUP BY uc.ref_month\nORDER BY uc.ref_month;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1472,6 +1472,26 @@
         "regexApplyTo": "value",
         "sort": 1,
         "type": "query"
+      },
+      {
+        "current": {
+          "text": "1",
+          "value": "1"
+        },
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-grafana"
+        },
+        "definition": "\nSELECT \n    count(*) as is_allowed\nFROM \"user\" u\nleft outer join team_member tm on tm.user_id = u.id\nleft outer join team t on tm.team_id = t.id\nWHERE \n   u.id = ${__user.id} \n   AND \n     (t.name IN (\n        'heart360tk_facility_view_patients_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_aggregated_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL')\n     OR u.is_admin)",
+        "hide": 2,
+        "name": "isAllowed",
+        "options": [],
+        "query": "\nSELECT \n    count(*) as is_allowed\nFROM \"user\" u\nleft outer join team_member tm on tm.user_id = u.id\nleft outer join team t on tm.team_id = t.id\nWHERE \n   u.id = ${__user.id} \n   AND \n     (t.name IN (\n        'heart360tk_facility_view_patients_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_aggregated_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL')\n     OR u.is_admin)",
+        "refresh": 2,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 1,
+        "type": "query"
       }
     ]
   },
@@ -1481,8 +1501,8 @@
   },
   "timepicker": {},
   "timezone": "browser ",
-  "title": "HEARTS360 Diabetes Dashboard by Facility",
-  "uid": "diabetes_dashboard",
-  "version": 7,
+  "title": "HEARTS360 Diabetes Dashboard Per Facility (With Security)",
+  "uid": "diabetes_dashboard_secure",
+  "version": 1,
   "weekStart": ""
 }

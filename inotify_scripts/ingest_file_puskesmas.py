@@ -195,6 +195,17 @@ RETURNING id;
     cur.execute(sql)
     return cur.fetchone()[0]
 
+def encounter_exists(cur, patient_id_sql, encounter_date):
+    """Check if an encounter already exists for this patient on this date."""
+    sql = f"""
+SELECT 1 FROM encounters
+WHERE patient_id = {patient_id_sql}
+  AND encounter_date = {to_sql_literal(encounter_date, target_type='TIMESTAMP')}
+LIMIT 1;
+"""
+    cur.execute(sql)
+    return cur.fetchone() is not None
+
 def execute_insert_bp(cur, encounter_id, systolic, diastolic):
     """Insert blood pressure for an encounter."""
     if systolic is None and diastolic is None:
@@ -324,14 +335,6 @@ def ingest_and_execute(file_path):
             if blood_sugar_value is not None and not blood_sugar_type:
                 blood_sugar_type = 'RBS'
 
-            # Validate: Skip if no clinical data (no BP and no blood sugar)
-            if (record.get('sistole') is None and
-                record.get('diastole') is None and
-                blood_sugar_value is None):
-                print(f"\n--- SKIPPING RECORD (NO CLINICAL DATA) ---", file=sys.stderr)
-                print(f"Skipping record #{total_processed} - no BP and no blood sugar data", file=sys.stderr)
-                continue
-
             # Parse all date fields
             birth_date_parsed = parse_date_field(record.get('tgl_lahir'))
             registration_date_parsed = parse_date_field(record.get('tanggal_pendaftaran'))
@@ -388,6 +391,9 @@ def ingest_and_execute(file_path):
                     if has_bs:
                         bs_enc_id = execute_insert_encounter(cur, patient_id_sql, dm_followup_parsed, org_unit_id)
                         execute_insert_bs(cur, bs_enc_id, blood_sugar_type, blood_sugar_value)
+                    if not has_bp and not has_bs:
+                        # Visit-only encounter when both followup dates present but no clinical data
+                        execute_insert_encounter(cur, patient_id_sql, htn_followup_parsed, org_unit_id)
                 else:
                     # SINGLE encounter — use priority chain
                     encounter_datetime_parsed = (
@@ -395,9 +401,19 @@ def ingest_and_execute(file_path):
                         dm_followup_parsed or
                         fallback_encounter
                     )
-                    enc_id = execute_insert_encounter(cur, patient_id_sql, encounter_datetime_parsed, org_unit_id)
-                    execute_insert_bp(cur, enc_id, record.get('sistole'), record.get('diastole'))
-                    execute_insert_bs(cur, enc_id, blood_sugar_type, blood_sugar_value)
+                    # Skip duplicate visit-only encounters when falling back to registration_date
+                    is_registration_fallback = (
+                        not htn_followup_parsed and
+                        not dm_followup_parsed and
+                        not kunjungan_terakhir_parsed
+                    )
+                    if is_registration_fallback and not has_bp and not has_bs:
+                        if not encounter_exists(cur, patient_id_sql, encounter_datetime_parsed):
+                            execute_insert_encounter(cur, patient_id_sql, encounter_datetime_parsed, org_unit_id)
+                    else:
+                        enc_id = execute_insert_encounter(cur, patient_id_sql, encounter_datetime_parsed, org_unit_id)
+                        execute_insert_bp(cur, enc_id, record.get('sistole'), record.get('diastole'))
+                        execute_insert_bs(cur, enc_id, blood_sugar_type, blood_sugar_value)
 
                 success_inserts += 1
 
