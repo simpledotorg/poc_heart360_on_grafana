@@ -18,7 +18,7 @@ datasources:
       database: heart360tk_database
       # Use a secure connection if needed, but 'disable' is common for Docker environments
       sslmode: disable
-      searchPath: public
+      searchPath: heart360tk_schema,public
       # Postgres plugin requires this for time series
       timescaledb: false
       maxOpenConns: 100

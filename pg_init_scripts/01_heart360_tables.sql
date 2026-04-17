@@ -1,5 +1,30 @@
 SET ROLE heart360tk;
-SET SEARCH_PATH = heart360tk_schema;
+SET search_path TO heart360tk_schema;
+-- ============================================================================
+-- ORG_UNITS: Dynamic hierarchy table (replaces fixed facilities table)
+-- Level 0 = root/country, 1 = region, 2 = district, etc.
+-- Hierarchy depth is determined purely by ingestion data, not schema.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS org_units (
+    id          SERIAL PRIMARY KEY,
+    name        VARCHAR(255) NOT NULL,
+    level       INTEGER NOT NULL,
+    parent_id   INTEGER REFERENCES org_units(id)
+);
+
+-- Unique constraints: handle NULL parent_id (root nodes) separately
+CREATE UNIQUE INDEX IF NOT EXISTS org_units_unique_root
+    ON org_units(name, level) WHERE parent_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS org_units_unique_child
+    ON org_units(name, level, parent_id) WHERE parent_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_org_units_parent_id ON org_units(parent_id);
+CREATE INDEX IF NOT EXISTS idx_org_units_level ON org_units(level);
+CREATE INDEX IF NOT EXISTS idx_org_units_name ON org_units(name);
+
+-- ============================================================================
+-- CORE DATA TABLES
+-- ============================================================================
 
 -- 1. Patients Table
 CREATE TABLE IF NOT EXISTS patients (
@@ -10,158 +35,410 @@ CREATE TABLE IF NOT EXISTS patients (
     patient_status      VARCHAR(10) NOT NULL CHECK (patient_status IN ('DEAD', 'ALIVE')),
     registration_date   TIMESTAMP NOT NULL,
     birth_date          Date,
-    death_date          DATE,           -- Nullable
-    facility            VARCHAR(255),
-    region              VARCHAR(255)
+    death_date          DATE,
+    org_unit_id         INTEGER REFERENCES org_units(id)
 );
 
--- 2. BP Encounters Table
-CREATE TABLE IF NOT EXISTS bp_encounters (
-    encounter_id        bigint PRIMARY KEY,
-    patient_id          bigint NOT NULL REFERENCES patients(patient_id),
-    encounter_date      TIMESTAMP NOT NULL,
-    diastolic_bp        NUMERIC,
-    systolic_bp         NUMERIC
+CREATE INDEX IF NOT EXISTS idx_patients_org_unit_id ON patients(org_unit_id);
+
+-- 2. Drop old BP Encounters Table (if exists)
+DROP TABLE IF EXISTS bp_encounters CASCADE;
+
+-- 3. Encounters Table
+CREATE TABLE encounters (
+    id              BIGSERIAL PRIMARY KEY,
+    patient_id      BIGINT NOT NULL REFERENCES patients(patient_id),
+    encounter_date  TIMESTAMP NOT NULL,
+    org_unit_id     INTEGER REFERENCES org_units(id),
+    UNIQUE(patient_id, encounter_date)
 );
 
--- 3. Patient Calls
-CREATE TABLE IF NOT EXISTS reminder_calls (
-    patient_id          bigint NOT NULL REFERENCES patients(patient_id),
-    call_date           TIMESTAMP NOT NULL,
-    Call_result         VARCHAR(255)
+CREATE INDEX IF NOT EXISTS idx_encounters_patient_id ON encounters(patient_id);
+CREATE INDEX IF NOT EXISTS idx_encounters_encounter_date ON encounters(encounter_date);
+CREATE INDEX IF NOT EXISTS idx_encounters_org_unit_id ON encounters(org_unit_id);
+
+-- 4. Blood Pressures Table
+CREATE TABLE blood_pressures (
+    id           BIGSERIAL PRIMARY KEY,
+    encounter_id BIGINT NOT NULL REFERENCES encounters(id) ON DELETE CASCADE,
+    systolic_bp  NUMERIC,
+    diastolic_bp NUMERIC,
+    UNIQUE (encounter_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_blood_pressures_encounter_id ON blood_pressures(encounter_id);
+
+-- 5. Blood Sugars Table
+CREATE TABLE blood_sugars (
+    id                BIGSERIAL PRIMARY KEY,
+    encounter_id      BIGINT NOT NULL REFERENCES encounters(id) ON DELETE CASCADE,
+    blood_sugar_type  VARCHAR(50) DEFAULT 'RBS',
+    blood_sugar_value NUMERIC,
+    UNIQUE (encounter_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_blood_sugars_encounter_id ON blood_sugars(encounter_id);
+
+-- 6. Scheduled Visits Table
+CREATE TABLE IF NOT EXISTS scheduled_visits (
+    scheduled_id   BIGSERIAL PRIMARY KEY,
+    patient_id     BIGINT NOT NULL REFERENCES patients(patient_id),
+    scheduled_date DATE NOT NULL,
+    org_unit_id    INTEGER REFERENCES org_units(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_scheduled_visits_unique ON scheduled_visits(patient_id, scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_scheduled_visits_patient_id ON scheduled_visits(patient_id);
+CREATE INDEX IF NOT EXISTS idx_scheduled_visits_scheduled_date ON scheduled_visits(scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_scheduled_visits_org_unit_id ON scheduled_visits(org_unit_id);
+
+-- 7. Call Results Table
+CREATE TABLE IF NOT EXISTS call_results (
+    call_id        BIGSERIAL PRIMARY KEY,
+    patient_id     BIGINT NOT NULL REFERENCES patients(patient_id),
+    call_date      DATE NOT NULL,
+    result_type    VARCHAR(255),
+    removed_reason VARCHAR(255),
+    org_unit_id    INTEGER REFERENCES org_units(id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_call_results_unique ON call_results(patient_id, call_date);
+CREATE INDEX IF NOT EXISTS idx_call_results_patient_id ON call_results(patient_id);
+CREATE INDEX IF NOT EXISTS idx_call_results_call_date ON call_results(call_date);
+CREATE INDEX IF NOT EXISTS idx_call_results_org_unit_id ON call_results(org_unit_id);
 
 
+-- ============================================================================
+-- HELPER FUNCTIONS FOR DYNAMIC HIERARCHY
+-- ============================================================================
 
-drop view IF EXISTS HEART360_PATIENTS_REGISTERED;
-drop view IF EXISTS HEART360_PATIENTS_UNDER_CARE;
-drop view IF EXISTS HEART360_PATIENTS_CATAGORY;
-drop view IF EXISTS HEART360_OVERDUE_PATIENTS;
---
--- HEART360_PATIENTS_REGISTERED
---
-CREATE OR REPLACE VIEW HEART360_PATIENTS_REGISTERED as
+-- Returns all descendant org_unit IDs (including the given ID itself)
+CREATE OR REPLACE FUNCTION get_descendant_ids(p_parent_id INTEGER)
+RETURNS TABLE(id INTEGER)
+LANGUAGE sql STABLE
+AS $$
+    WITH RECURSIVE descendants AS (
+        SELECT ou.id FROM org_units ou WHERE ou.id = p_parent_id
+        UNION ALL
+        SELECT o.id FROM org_units o JOIN descendants d ON o.parent_id = d.id
+    )
+    SELECT d.id FROM descendants d;
+$$;
+
+-- Returns the ancestor name of a given org_unit at a specific level
+CREATE OR REPLACE FUNCTION get_ancestor_name(p_org_unit_id INTEGER, p_target_level INTEGER)
+RETURNS VARCHAR
+LANGUAGE sql STABLE
+AS $$
+    WITH RECURSIVE ancestors AS (
+        SELECT ou.id, ou.name, ou.level, ou.parent_id
+        FROM org_units ou WHERE ou.id = p_org_unit_id
+        UNION ALL
+        SELECT o.id, o.name, o.level, o.parent_id
+        FROM org_units o JOIN ancestors a ON a.parent_id = o.id
+    )
+    SELECT a.name FROM ancestors a WHERE a.level = p_target_level LIMIT 1;
+$$;
+
+-- Upsert a single org_unit and return its ID
+CREATE OR REPLACE FUNCTION upsert_org_unit(p_name VARCHAR, p_level INTEGER, p_parent_id INTEGER)
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_id INTEGER;
+BEGIN
+    IF p_parent_id IS NULL THEN
+        INSERT INTO org_units (name, level, parent_id)
+        VALUES (p_name, p_level, NULL)
+        ON CONFLICT (name, level) WHERE parent_id IS NULL
+        DO NOTHING;
+
+        SELECT ou.id INTO v_id FROM org_units ou
+        WHERE ou.name = p_name AND ou.level = p_level AND ou.parent_id IS NULL;
+    ELSE
+        INSERT INTO org_units (name, level, parent_id)
+        VALUES (p_name, p_level, p_parent_id)
+        ON CONFLICT (name, level, parent_id) WHERE parent_id IS NOT NULL
+        DO NOTHING;
+
+        SELECT ou.id INTO v_id FROM org_units ou
+        WHERE ou.name = p_name AND ou.level = p_level AND ou.parent_id = p_parent_id;
+    END IF;
+
+    RETURN v_id;
+END;
+$$;
+
+-- Upsert an entire hierarchy chain and return the leaf org_unit ID
+-- p_names: array of org_unit names from top to bottom
+-- p_levels: array of corresponding levels
+CREATE OR REPLACE FUNCTION upsert_org_unit_chain(p_names VARCHAR[], p_levels INTEGER[])
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_parent_id INTEGER := NULL;
+    v_id INTEGER;
+    i INTEGER;
+BEGIN
+    FOR i IN 1..array_length(p_names, 1) LOOP
+        v_id := upsert_org_unit(p_names[i], p_levels[i], v_parent_id);
+        v_parent_id := v_id;
+    END LOOP;
+    RETURN v_id;
+END;
+$$;
+
+
+-- Returns the breadcrumb path for a given org_unit as a string like "Region > District > Facility"
+CREATE OR REPLACE FUNCTION get_breadcrumb_path(p_org_unit_id INTEGER)
+RETURNS TEXT
+LANGUAGE sql STABLE
+AS $$
+    WITH RECURSIVE ancestors AS (
+        SELECT ou.id, ou.name, ou.level, ou.parent_id
+        FROM org_units ou WHERE ou.id = p_org_unit_id
+        UNION ALL
+        SELECT o.id, o.name, o.level, o.parent_id
+        FROM org_units o JOIN ancestors a ON a.parent_id = o.id
+    )
+    SELECT string_agg(name, ' > ' ORDER BY level)
+    FROM ancestors;
+$$;
+
+-- ============================================================================
+-- ORG_UNIT_LINEAGE VIEW
+-- For each org_unit, lists all its ancestors (including itself).
+-- Used by Grafana queries to filter/group by any hierarchy level.
+-- ============================================================================
+CREATE OR REPLACE VIEW org_unit_lineage AS
+WITH RECURSIVE lineage AS (
+    SELECT ou.id AS org_unit_id, ou.id AS ancestor_id
+    FROM org_units ou
+    UNION ALL
+    SELECT l.org_unit_id, o.parent_id
+    FROM lineage l
+    JOIN org_units o ON l.ancestor_id = o.id
+    WHERE o.parent_id IS NOT NULL
+)
+SELECT
+    l.org_unit_id,
+    l.ancestor_id,
+    o.level AS ancestor_level,
+    o.name AS ancestor_name
+FROM lineage l
+JOIN org_units o ON l.ancestor_id = o.id;
+
+
+-- ============================================================================
+-- HIERARCHY_CONFIG: Maps each level to a display name and Grafana variable name.
+-- Adding a row here + a matching Grafana variable makes the level appear
+-- automatically in drill-down URLs, breadcrumbs, and level labels.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS hierarchy_config (
+    level        INTEGER PRIMARY KEY,
+    display_name VARCHAR(100) NOT NULL,
+    var_name     VARCHAR(50)  NOT NULL
+);
+
+-- Seed default levels (upsert so re-running is safe)
+INSERT INTO hierarchy_config (level, display_name, var_name) VALUES
+    (1,  'Region',   'region'),
+    (2,  'District', 'district'),
+    (3,  'Facility',      'facility'),
+    (4,  'Sub-Facility',  'sub_facility'),
+    (5,  'Village',  'village'),
+    (6,  'Level 6',  'level_6'),
+    (7,  'Level 7',  'level_7'),
+    (8,  'Level 8',  'level_8'),
+    (9,  'Level 9',  'level_9'),
+    (10, 'Level 10', 'level_10')
+ON CONFLICT (level) DO UPDATE
+    SET display_name = EXCLUDED.display_name,
+        var_name     = EXCLUDED.var_name;
+
+-- ============================================================================
+-- build_drill_url(child_org_unit_id)
+-- Dynamically builds a Grafana drill-down URL from the org_unit lineage,
+-- using hierarchy_config to map levels to variable names.
+-- Works for ANY hierarchy depth — no hard-coded level references.
+-- ============================================================================
+CREATE OR REPLACE FUNCTION build_drill_url(p_child_id INTEGER)
+RETURNS TEXT
+LANGUAGE sql STABLE
+AS $$
+    SELECT '/d/heart360_drilldown?' ||
+           string_agg(
+               'var-' || hc.var_name || '=' || lin.ancestor_id::text,
+               '&' ORDER BY hc.level
+           )
+    FROM org_unit_lineage lin
+    JOIN hierarchy_config hc ON lin.ancestor_level = hc.level
+    WHERE lin.org_unit_id = p_child_id;
+$$;
+
+-- ============================================================================
+-- get_child_level_name(parent_org_unit_id)
+-- Returns the display name of the CHILD level for a given org_unit.
+-- ============================================================================
+CREATE OR REPLACE FUNCTION get_child_level_name(p_org_unit_id INTEGER)
+RETURNS TEXT
+LANGUAGE sql STABLE
+AS $$
+    SELECT COALESCE(
+        (SELECT CASE WHEN ou.level + 1 > 4 THEN 'Sub-unit'
+                     ELSE hc.display_name END
+         FROM org_units ou
+         LEFT JOIN hierarchy_config hc ON hc.level = ou.level + 1
+         WHERE ou.id = p_org_unit_id),
+        'Sub-unit'
+    );
+$$;
+
+
+-- ============================================================================
+-- DROP OLD VIEWS
+-- ============================================================================
+DROP VIEW IF EXISTS HEART360_PATIENTS_REGISTERED CASCADE;
+DROP VIEW IF EXISTS HEART360_PATIENTS_UNDER_CARE CASCADE;
+DROP VIEW IF EXISTS HEART360_PATIENTS_CATAGORY CASCADE;
+DROP VIEW IF EXISTS HEART360_OVERDUE_PATIENTS CASCADE;
+DROP VIEW IF EXISTS HEART360_OVERDUE_START_OF_MONTH CASCADE;
+DROP VIEW IF EXISTS HEART360_OVERDUE_PATIENTS_CALLED CASCADE;
+DROP VIEW IF EXISTS HEART360_OVERDUE_RETURNED_TO_CARE CASCADE;
+DROP VIEW IF EXISTS HEART360_BLOOD_SUGAR_CONTROLLED CASCADE;
+DROP VIEW IF EXISTS HEART360_BLOOD_SUGAR_SEVERITY CASCADE;
+DROP VIEW IF EXISTS HEART360_BLOOD_SUGAR_MISSED_VISITS CASCADE;
+DROP VIEW IF EXISTS HEART360_COHORT_PATIENT_DETAILS CASCADE;
+DROP VIEW IF EXISTS HEART360_DM_PATIENTS_UNDER_CARE CASCADE;
+
+
+-- ============================================================================
+-- VIEW 1: HEART360_PATIENTS_REGISTERED
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_PATIENTS_REGISTERED AS
 WITH
 KNOWN_MONTHS AS (
-  SELECT
-    date_trunc('month', series_date)::date AS REF_MONTH
-  FROM
-    generate_series(
-        date_trunc('month', (SELECT min(REGISTRATION_DATE) from patients)),
-        date_trunc('month', current_date),
-        '1 month'::interval
-    ) AS t(series_date)
+  SELECT date_trunc('month', series_date)::date AS REF_MONTH
+  FROM generate_series(
+      date_trunc('month', (SELECT min(REGISTRATION_DATE) FROM patients)),
+      date_trunc('month', current_date),
+      '1 month'::interval
+  ) AS t(series_date)
 ),
 PATIENTS_BY_MONTH AS (
     SELECT
-        DATE_TRUNC('month',REGISTRATION_DATE) AS REF_MONTH,
-        facility,
+        DATE_TRUNC('month', REGISTRATION_DATE) AS REF_MONTH,
+        p.org_unit_id,
         count(*) AS NB_NEW_PATIENTS
-    FROM patients
-    WHERE PATIENT_STATUS <> 'dead'
-    GROUP BY DATE_TRUNC('month',REGISTRATION_DATE), facility
+    FROM patients p
+    WHERE LOWER(patient_status) <> 'dead'
+      AND EXISTS (
+          SELECT 1 FROM encounters e
+          JOIN blood_pressures bp ON bp.encounter_id = e.id
+          WHERE e.patient_id = p.patient_id
+      )
+    GROUP BY DATE_TRUNC('month', REGISTRATION_DATE), p.org_unit_id
 )
 SELECT
     KNOWN_MONTHS.REF_MONTH,
-    REFERENCE_BEFORE.facility,
+    REFERENCE_BEFORE.org_unit_id,
     sum(REFERENCE_BEFORE.NB_NEW_PATIENTS) AS CUMULATIVE_NUMBER_OF_PATIENTS,
-    sum(case when KNOWN_MONTHS.REF_MONTH = REFERENCE_BEFORE.REF_MONTH then NB_NEW_PATIENTS else null end) AS NB_NEW_PATIENTS
+    sum(CASE WHEN KNOWN_MONTHS.REF_MONTH = REFERENCE_BEFORE.REF_MONTH THEN NB_NEW_PATIENTS ELSE NULL END) AS NB_NEW_PATIENTS
 FROM KNOWN_MONTHS
-LEFT OUTER JOIN PATIENTS_BY_MONTH REFERENCE_BEFORE ON KNOWN_MONTHS.REF_MONTH >= REFERENCE_BEFORE.REF_MONTH
+LEFT OUTER JOIN PATIENTS_BY_MONTH REFERENCE_BEFORE
+    ON KNOWN_MONTHS.REF_MONTH >= REFERENCE_BEFORE.REF_MONTH
 GROUP BY 1, 2
 ORDER BY KNOWN_MONTHS.REF_MONTH DESC;
 
---
--- HEART360_PATIENTS_UNDER_CARE
---
-CREATE OR REPLACE VIEW HEART360_PATIENTS_UNDER_CARE as
+
+-- ============================================================================
+-- VIEW 2: HEART360_PATIENTS_UNDER_CARE
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_PATIENTS_UNDER_CARE AS
 WITH
 KNOWN_MONTHS AS (
-  SELECT
-    date_trunc('month', series_date)::date AS REF_MONTH
-  FROM
-    generate_series(
-        date_trunc('month', (SELECT min(REGISTRATION_DATE) from patients)),
-        date_trunc('month', current_date),
-        '1 month'::interval
-    ) AS t(series_date)
+  SELECT date_trunc('month', series_date)::date AS REF_MONTH
+  FROM generate_series(
+      date_trunc('month', (SELECT min(REGISTRATION_DATE) FROM patients)),
+      date_trunc('month', current_date),
+      '1 month'::interval
+  ) AS t(series_date)
 ),
 ALIVE_PATIENTS AS (
     SELECT
-        DATE_TRUNC('month',REGISTRATION_DATE) AS REGISTRATION_MONTH,
-        facility,
-        patient_id
-    FROM patients
-    WHERE PATIENT_STATUS <> 'dead'
+        DATE_TRUNC('month', REGISTRATION_DATE) AS REGISTRATION_MONTH,
+        p.org_unit_id,
+        p.patient_id
+    FROM patients p
+    WHERE LOWER(patient_status) <> 'dead'
 ),
-BP_ENCOUNTERS AS (
-    SELECT
-        patient_id,
-        DATE_TRUNC('month',ENCOUNTER_DATE) AS BP_ENCOUNTER_MONTH
-    FROM BP_ENCOUNTERS
+ALL_ENCOUNTERS AS (
+    SELECT e.patient_id,
+           DATE_TRUNC('month', e.encounter_date) AS ENCOUNTER_MONTH
+    FROM encounters e
 )
 SELECT
     KNOWN_MONTHS.REF_MONTH,
-    ALIVE_PATIENTS.facility,
-    sum(CASE WHEN BP_ENCOUNTERS.patient_id IS NULL THEN 1 ELSE NULL END ) AS NB_PATIENTS_LOST_TO_FOLLOW_UP,
-    count(DISTINCT(BP_ENCOUNTERS.patient_id)) AS NB_PATIENTS_UNDER_CARE,
-    count(DISTINCT(ALIVE_PATIENTS.patient_id)) AS CUMULATIVE_NUMBER_OF_PATIENTS
+    ALIVE_PATIENTS.org_unit_id,
+    sum(CASE WHEN ALL_ENCOUNTERS.patient_id IS NULL THEN 1 ELSE NULL END) AS NB_PATIENTS_LOST_TO_FOLLOW_UP,
+    count(DISTINCT ALL_ENCOUNTERS.patient_id) AS NB_PATIENTS_UNDER_CARE,
+    count(DISTINCT ALIVE_PATIENTS.patient_id) AS CUMULATIVE_NUMBER_OF_PATIENTS
 FROM KNOWN_MONTHS
 LEFT OUTER JOIN ALIVE_PATIENTS
     ON ALIVE_PATIENTS.REGISTRATION_MONTH <= KNOWN_MONTHS.REF_MONTH
-LEFT OUTER JOIN BP_ENCOUNTERS
-    ON BP_ENCOUNTERS.patient_id = ALIVE_PATIENTS.patient_id
-        AND BP_ENCOUNTER_MONTH <= KNOWN_MONTHS.REF_MONTH
-        AND BP_ENCOUNTER_MONTH + interval '12 month'> KNOWN_MONTHS.REF_MONTH
+LEFT OUTER JOIN ALL_ENCOUNTERS
+    ON ALL_ENCOUNTERS.patient_id = ALIVE_PATIENTS.patient_id
+        AND ENCOUNTER_MONTH <= KNOWN_MONTHS.REF_MONTH
+        AND ENCOUNTER_MONTH + interval '12 month' > KNOWN_MONTHS.REF_MONTH
 GROUP BY 1, 2
 ORDER BY KNOWN_MONTHS.REF_MONTH DESC;
 
 
-
---
--- HEART360_PATIENTS_CATAGORY
---
-CREATE OR REPLACE VIEW HEART360_PATIENTS_CATAGORY as
+-- ============================================================================
+-- VIEW 3: HEART360_PATIENTS_CATAGORY
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_PATIENTS_CATAGORY AS
 WITH
 KNOWN_MONTHS AS (
-  SELECT
-    date_trunc('month', series_date)::date AS REF_MONTH
-  FROM
-    generate_series(
-        date_trunc('month', (SELECT min(REGISTRATION_DATE) from patients)),
-        date_trunc('month', current_date),       -- The current date/time is converted to the start of the current month
-        '1 month'::interval
-    ) AS t(series_date)
+  SELECT date_trunc('month', series_date)::date AS REF_MONTH
+  FROM generate_series(
+      date_trunc('month', (SELECT min(REGISTRATION_DATE) FROM patients)),
+      date_trunc('month', current_date),
+      '1 month'::interval
+  ) AS t(series_date)
 ),
 ALIVE_PATIENTS AS (
     SELECT
-        DATE_TRUNC('month',REGISTRATION_DATE) AS REGISTRATION_MONTH,
-        facility,
-        patient_id AS patient_id
-    FROM patients
-    WHERE PATIENT_STATUS <> 'dead'
+        DATE_TRUNC('month', REGISTRATION_DATE) AS REGISTRATION_MONTH,
+        p.org_unit_id,
+        p.patient_id AS patient_id
+    FROM patients p
+    WHERE LOWER(patient_status) <> 'dead'
 ),
 BP_ENCOUNTERS AS (
     SELECT
-        encounter_id as id,
-        patient_id,
-        systolic_bp as systolic,
-        diastolic_bp as diastolic,
-        encounter_date  AS BP_ENCOUNTER_DATE,
-        DATE_TRUNC('month',encounter_date)  AS BP_ENCOUNTER_MONTH
-    FROM bp_encounters
+        e.id AS id,
+        e.patient_id,
+        bp.systolic_bp AS systolic,
+        bp.diastolic_bp AS diastolic,
+        e.encounter_date AS BP_ENCOUNTER_DATE,
+        DATE_TRUNC('month', e.encounter_date) AS BP_ENCOUNTER_MONTH
+    FROM encounters e
+    LEFT JOIN blood_pressures bp ON e.id = bp.encounter_id
 ),
 LATEST_BP_BY_MONTH_AND_PATIENT AS (
     WITH MOST_RECENT_BP_ENCOUNTER AS (
         SELECT
             KNOWN_MONTHS.REF_MONTH,
-            MOST_RECENT_BP_ENCOUNTER.patient_id,
-            MAX(MOST_RECENT_BP_ENCOUNTER.BP_ENCOUNTER_DATE) AS MOST_RECENT_BP_DATE
-        FROM bp_encounters MOST_RECENT_BP_ENCOUNTER
-        JOIN KNOWN_MONTHS
-            ON DATE_TRUNC('month', MOST_RECENT_BP_ENCOUNTER.BP_ENCOUNTER_DATE) <= KNOWN_MONTHS.REF_MONTH
-        GROUP BY KNOWN_MONTHS.REF_MONTH, patient_id)
+            e.patient_id,
+            MAX(e.encounter_date) AS MOST_RECENT_BP_DATE
+        FROM encounters e
+        JOIN blood_pressures bp ON bp.encounter_id = e.id
+        JOIN KNOWN_MONTHS ON DATE_TRUNC('month', e.encounter_date) <= KNOWN_MONTHS.REF_MONTH
+        GROUP BY KNOWN_MONTHS.REF_MONTH, e.patient_id
+    )
     SELECT
         REF_MONTH, MOST_RECENT_BP_ENCOUNTER.patient_id,
         MAX(systolic) AS systolic,
@@ -172,192 +449,772 @@ LATEST_BP_BY_MONTH_AND_PATIENT AS (
         ON MOST_RECENT_BP_ENCOUNTER.MOST_RECENT_BP_DATE = BP_ENCOUNTERS.BP_ENCOUNTER_DATE
         AND MOST_RECENT_BP_ENCOUNTER.patient_id = BP_ENCOUNTERS.patient_id
     GROUP BY REF_MONTH, MOST_RECENT_BP_ENCOUNTER.patient_id
+),
+-- Encounters relevant for the HTN "no visit" indicator:
+--   BP encounters + visit-only encounters (no BP AND no BS attached).
+-- BS-only encounters are excluded.
+HTN_RELEVANT_ENCOUNTERS AS (
+    SELECT e.id, e.patient_id, e.encounter_date
+    FROM encounters e
+    WHERE EXISTS (SELECT 1 FROM blood_pressures bp WHERE bp.encounter_id = e.id)
+       OR NOT EXISTS (SELECT 1 FROM blood_sugars bs WHERE bs.encounter_id = e.id)
+),
+LATEST_HTN_BY_MONTH_AND_PATIENT AS (
+    SELECT
+        KNOWN_MONTHS.REF_MONTH,
+        hre.patient_id,
+        DATE_TRUNC('month', MAX(hre.encounter_date)) AS HTN_ENCOUNTER_MONTH
+    FROM HTN_RELEVANT_ENCOUNTERS hre
+    JOIN KNOWN_MONTHS ON DATE_TRUNC('month', hre.encounter_date) <= KNOWN_MONTHS.REF_MONTH
+    GROUP BY KNOWN_MONTHS.REF_MONTH, hre.patient_id
 )
 SELECT
     KNOWN_MONTHS.REF_MONTH,
-    ALIVE_PATIENTS.facility,
-    count(*) as TOTAL_NUMBER_OF_PATIENTS,
-    SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0 WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH then 0 else 1 end) as NB_PATIENTS_UNDER_CARE,
-    SUM(CASE WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 1 else 0 end ) AS NB_PATIENTS_NEWLY_REGISTERED,
+    ALIVE_PATIENTS.org_unit_id,
+    count(*) AS TOTAL_NUMBER_OF_PATIENTS,
+    SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0 WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH THEN 0 ELSE 1 END) AS NB_PATIENTS_UNDER_CARE,
+    SUM(CASE WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 1 ELSE 0 END) AS NB_PATIENTS_NEWLY_REGISTERED,
     SUM(CASE
         WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <=  KNOWN_MONTHS.REF_MONTH then 0
-        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 0 else 1 end 
-        ) AS NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS,
-    SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 1 WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH then 1 else 0 end) as NB_PATIENTS_LOST_TO_FOLLOW_UP,
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
+        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 0 ELSE 1 END
+    ) AS NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS,
+    SUM(CASE WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 1 WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH THEN 1 ELSE 0 END) AS NB_PATIENTS_LOST_TO_FOLLOW_UP,
+    -- "No visit" counts patients whose latest HTN-relevant encounter
+    -- (BP OR visit-only) is older than 3 months.
     SUM(CASE
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <=  KNOWN_MONTHS.REF_MONTH then 0
+        WHEN LATEST_HTN_BY_MONTH_AND_PATIENT.HTN_ENCOUNTER_MONTH IS NULL THEN 0
+        WHEN LATEST_HTN_BY_MONTH_AND_PATIENT.HTN_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
         WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 0
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <=  KNOWN_MONTHS.REF_MONTH then 1
-        ELSE 0 END ) as NB_PATIENTS_NO_VISIT,
+        WHEN LATEST_HTN_BY_MONTH_AND_PATIENT.HTN_ENCOUNTER_MONTH + interval '3 month' <= KNOWN_MONTHS.REF_MONTH THEN 1
+        ELSE 0 END) AS NB_PATIENTS_NO_VISIT,
+    -- Denominator for the "No visit" graph: includes patients kept under care
+    -- by a visit-only encounter even if they have no BP reading.
+    SUM(CASE
+        WHEN LATEST_HTN_BY_MONTH_AND_PATIENT.HTN_ENCOUNTER_MONTH IS NULL THEN 0
+        WHEN LATEST_HTN_BY_MONTH_AND_PATIENT.HTN_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
+        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 0 ELSE 1 END
+    ) AS NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_3M_INCL_VISITS,
     SUM(CASE
         WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <=  KNOWN_MONTHS.REF_MONTH then 0
-        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 0
-        WHEN systolic > 140 OR diastolic > 90 then 1
-        ELSE 0 END ) AS NB_PATIENTS_UNCONTROLLED,
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
+        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 0
+        WHEN systolic >= 140 OR diastolic >= 90 THEN 1
+        ELSE 0 END) AS NB_PATIENTS_UNCONTROLLED,
     SUM(CASE
         WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <=  KNOWN_MONTHS.REF_MONTH then 0
-        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
+        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 0
         WHEN systolic IS NULL OR diastolic IS NULL THEN 0
-        WHEN systolic > 140 OR diastolic > 90 then 0
-        ELSE 1 END ) AS NB_PATIENTS_CONTROLLED,
+        WHEN systolic >= 140 OR diastolic >= 90 THEN 0
+        ELSE 1 END) AS NB_PATIENTS_CONTROLLED,
     SUM(CASE
         WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH IS NULL THEN 0
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <=  KNOWN_MONTHS.REF_MONTH then 0
-        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH then 0
-        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <=  KNOWN_MONTHS.REF_MONTH then 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '12 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
+        WHEN ALIVE_PATIENTS.REGISTRATION_MONTH + interval '3 month' > KNOWN_MONTHS.REF_MONTH THEN 0
+        WHEN LATEST_BP_BY_MONTH_AND_PATIENT.BP_ENCOUNTER_MONTH + interval '3 month' <= KNOWN_MONTHS.REF_MONTH THEN 0
         WHEN systolic IS NULL OR diastolic IS NULL THEN 1
-        ELSE 0 END ) AS NB_PATIENTS_VISIT_NO_BP
+        ELSE 0 END) AS NB_PATIENTS_VISIT_NO_BP
 FROM KNOWN_MONTHS
 LEFT OUTER JOIN ALIVE_PATIENTS
     ON ALIVE_PATIENTS.REGISTRATION_MONTH <= KNOWN_MONTHS.REF_MONTH
 LEFT OUTER JOIN LATEST_BP_BY_MONTH_AND_PATIENT
     ON LATEST_BP_BY_MONTH_AND_PATIENT.patient_id = ALIVE_PATIENTS.patient_id
     AND LATEST_BP_BY_MONTH_AND_PATIENT.REF_MONTH = KNOWN_MONTHS.REF_MONTH
+LEFT OUTER JOIN LATEST_HTN_BY_MONTH_AND_PATIENT
+    ON LATEST_HTN_BY_MONTH_AND_PATIENT.patient_id = ALIVE_PATIENTS.patient_id
+    AND LATEST_HTN_BY_MONTH_AND_PATIENT.REF_MONTH = KNOWN_MONTHS.REF_MONTH
 GROUP BY 1, 2
 ORDER BY 1 DESC;
 
 
---
--- View for overdue patients
---
-CREATE OR REPLACE VIEW HEART360_OVERDUE_PATIENTS as
-WITH MOST_RECENT_ENCOUNTER as (
-    select * from bp_encounters where (patient_id, encounter_date) in (
-    select 
-        patient_id, 
-        max(encounter_date) as last_encounter_date
-from bp_encounters
-    group by patient_id)),
-MOST_RECENT_CALL as (
-    select * from reminder_calls where (patient_id, call_date) in (select 
-        patient_id, 
-        max(call_date) as last_call_date
-from reminder_calls
-    group by patient_id))
-select 
-    patients.patient_id,
-    patients.patient_name, 
-    patients.registration_date,
-    patients.birth_date,
-    patients.gender,
-    patients.phone_number,
-    patients.facility,
-    patients.region,
-    MOST_RECENT_ENCOUNTER.encounter_date as last_visit_date,
-    MOST_RECENT_ENCOUNTER.diastolic_bp as last_bp_diastolic,
-    MOST_RECENT_ENCOUNTER.systolic_bp as last_bp_systolic,
-    call_date as last_call_date,
-    call_result as last_call_result
-from patients
-left outer join MOST_RECENT_ENCOUNTER on patients.patient_id= MOST_RECENT_ENCOUNTER.patient_id
-left outer join MOST_RECENT_CALL on patients.patient_id= MOST_RECENT_CALL.patient_id and call_date > encounter_date
-;
-
-
---
--- View for Patient Cohort Classification
---
-CREATE OR REPLACE VIEW HEART360_COHORT_PATIENT_DETAILS as
-WITH patients_quarter as (SELECT
-    patient_id, facility,
-    date_trunc('quarter', registration_date) as registration_quarter,
-    date_trunc('quarter', registration_date) + interval '6 month' as cohort_validation_month,
-    registration_date
-FROM patients),
-LAST_BP_IN_INTERVAL as (
-    select *
-    from bp_encounters 
-    where encounter_id in (
-        select max(encounter_id) as encounter_id
-        from bp_encounters
-        where (patient_id, encounter_date) in (
-            SELECT 
-                patients_quarter.patient_id, 
-                max(encounter_date) as most_recent_bp 
-            from bp_encounters
-            join patients_quarter 
-                on patients_quarter.patient_id=bp_encounters.patient_id
-                and bp_encounters.encounter_date < patients_quarter.cohort_validation_month
-            group by patients_quarter.patient_id)
-        group by patient_id))
-select 
-    patients_quarter.patient_id, 
-    facility, 
-    registration_quarter,
-    case 
-        when encounter_date IS NULL then 'missed visit'
-        when cohort_validation_month > encounter_date + interval '3 month'  then 'missed visit' 
-        when diastolic_bp <  90 and  systolic_bp < 140 then 'controlled'
-        else 'uncontrolled' end as status_at_end_of_interval
-from patients_quarter 
-left outer join LAST_BP_IN_INTERVAL on LAST_BP_IN_INTERVAL.patient_id = patients_quarter.patient_id
-;
-
-
-
-
---
--- POC SPECIFIC INSERT STATEMENT
---
-CREATE SEQUENCE IF NOT EXISTS bp_encounters_encounter_id_seq START WITH 6000000;
-
-CREATE OR REPLACE FUNCTION insert_heart360_data(
-    p_patient_id        bigint,
-    p_patient_name      VARCHAR,
-    p_gender            VARCHAR,
-    p_phone_number      VARCHAR,
-    p_birth_date        DATE,
-    p_facility          VARCHAR,
-    p_region            VARCHAR,
-    p_encounter_datetime TIMESTAMP,
-    p_diastolic_bp      NUMERIC,
-    p_systolic_bp       NUMERIC
+-- ============================================================================
+-- VIEW 4: HEART360_OVERDUE_PATIENTS
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_OVERDUE_PATIENTS AS
+WITH MOST_RECENT_ENCOUNTER AS (
+    SELECT DISTINCT ON (e.patient_id)
+        e.patient_id,
+        e.encounter_date,
+        bp.systolic_bp,
+        bp.diastolic_bp
+    FROM encounters e
+    LEFT JOIN blood_pressures bp ON e.id = bp.encounter_id
+    WHERE (e.patient_id, e.encounter_date) IN (
+        SELECT patient_id, MAX(encounter_date)
+        FROM encounters
+        GROUP BY patient_id
+    )
+    ORDER BY e.patient_id, e.encounter_date DESC, e.id DESC, COALESCE(bp.id, 0) DESC
+),
+MOST_RECENT_CALL AS (
+    SELECT DISTINCT ON (patient_id) *
+    FROM call_results
+    WHERE (patient_id, call_date) IN (
+        SELECT patient_id, MAX(call_date)
+        FROM call_results
+        GROUP BY patient_id
+    )
+    ORDER BY patient_id, call_date DESC, call_id DESC
 )
-RETURNS void
+SELECT
+    p.patient_id,
+    p.patient_name,
+    p.registration_date,
+    p.birth_date,
+    p.gender,
+    p.phone_number,
+    p.org_unit_id,
+    mre.encounter_date AS last_visit_date,
+    mre.diastolic_bp AS last_bp_diastolic,
+    mre.systolic_bp AS last_bp_systolic,
+    mrc.call_date::TIMESTAMP AS last_call_date,
+    mrc.result_type AS last_call_result,
+    mrc.removed_reason
+FROM patients p
+LEFT JOIN MOST_RECENT_ENCOUNTER mre ON p.patient_id = mre.patient_id
+LEFT JOIN MOST_RECENT_CALL mrc
+    ON p.patient_id = mrc.patient_id
+    AND (mre.encounter_date IS NULL OR mrc.call_date::TIMESTAMP > mre.encounter_date)
+WHERE (mrc.result_type IS NULL OR LOWER(mrc.result_type) <> 'removed_from_overdue_list');
+
+
+-- ============================================================================
+-- VIEW 5: HEART360_COHORT_PATIENT_DETAILS
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_COHORT_PATIENT_DETAILS AS
+WITH patients_quarter AS (
+    SELECT
+        p.patient_id,
+        p.org_unit_id,
+        date_trunc('quarter', registration_date) AS registration_quarter,
+        date_trunc('quarter', registration_date) + interval '6 month' AS cohort_validation_month,
+        registration_date
+    FROM patients p
+),
+LAST_BP_IN_INTERVAL AS (
+    SELECT
+        e.patient_id,
+        e.encounter_date,
+        bp.systolic_bp,
+        bp.diastolic_bp
+    FROM encounters e
+    LEFT JOIN blood_pressures bp ON e.id = bp.encounter_id
+    WHERE e.id IN (
+        SELECT max(e2.id) AS encounter_id
+        FROM encounters e2
+        WHERE (e2.patient_id, e2.encounter_date) IN (
+            SELECT
+                patients_quarter.patient_id,
+                max(e3.encounter_date) AS most_recent_bp
+            FROM encounters e3
+            JOIN patients_quarter
+                ON patients_quarter.patient_id = e3.patient_id
+                AND e3.encounter_date < patients_quarter.cohort_validation_month
+            GROUP BY patients_quarter.patient_id
+        )
+        GROUP BY e2.patient_id
+    )
+)
+SELECT
+    patients_quarter.patient_id,
+    patients_quarter.org_unit_id,
+    registration_quarter,
+    CASE
+        WHEN encounter_date IS NULL THEN 'missed visit'
+        WHEN cohort_validation_month > encounter_date + interval '3 month' THEN 'missed visit'
+        WHEN diastolic_bp < 90 AND systolic_bp < 140 THEN 'controlled'
+        ELSE 'uncontrolled'
+    END AS status_at_end_of_interval
+FROM patients_quarter
+LEFT OUTER JOIN LAST_BP_IN_INTERVAL ON LAST_BP_IN_INTERVAL.patient_id = patients_quarter.patient_id;
+
+
+-- ============================================================================
+-- VIEW 6: HEART360_OVERDUE_START_OF_MONTH
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_OVERDUE_START_OF_MONTH AS
+WITH REF_MONTHS AS (
+  SELECT generate_series(
+      date_trunc('month', (SELECT MIN(registration_date) FROM patients)),
+      date_trunc('month', CURRENT_DATE),
+      interval '1 month'
+  )::date AS ref_month
+),
+PATIENTS_UNDER_CARE AS (
+  SELECT rm.ref_month, p.patient_id
+  FROM REF_MONTHS rm
+  JOIN patients p
+    ON p.registration_date <= rm.ref_month - INTERVAL '3 months'
+   AND p.patient_status = 'ALIVE'
+   AND p.death_date IS NULL
+  WHERE EXISTS (
+      SELECT 1 FROM encounters be
+      WHERE be.patient_id = p.patient_id
+        AND be.encounter_date >= rm.ref_month - INTERVAL '12 months'
+        AND be.encounter_date < rm.ref_month
+  )
+),
+LATEST_SCHEDULED AS (
+  SELECT rm.ref_month, sv.patient_id, MAX(sv.scheduled_date) AS scheduled_date
+  FROM REF_MONTHS rm
+  JOIN scheduled_visits sv ON sv.scheduled_date < rm.ref_month
+  GROUP BY rm.ref_month, sv.patient_id
+),
+RETURNED_BEFORE_MONTH AS (
+  SELECT DISTINCT ls.ref_month, ls.patient_id
+  FROM LATEST_SCHEDULED ls
+  JOIN encounters be
+    ON be.patient_id = ls.patient_id
+   AND be.encounter_date >= ls.scheduled_date
+   AND be.encounter_date < ls.ref_month
+),
+REMOVED_BEFORE_MONTH AS (
+  SELECT DISTINCT rm.ref_month, cr.patient_id
+  FROM REF_MONTHS rm
+  JOIN call_results cr ON cr.call_date < rm.ref_month
+  WHERE LOWER(cr.result_type) = 'removed_from_overdue_list'
+)
+SELECT
+  ls.ref_month,
+  p.org_unit_id,
+  COUNT(DISTINCT ls.patient_id) AS overdue_on_first
+FROM LATEST_SCHEDULED ls
+JOIN PATIENTS_UNDER_CARE puc
+  ON puc.patient_id = ls.patient_id AND puc.ref_month = ls.ref_month
+JOIN patients p ON p.patient_id = ls.patient_id
+LEFT JOIN RETURNED_BEFORE_MONTH rbm
+  ON rbm.patient_id = ls.patient_id AND rbm.ref_month = ls.ref_month
+LEFT JOIN REMOVED_BEFORE_MONTH rmb
+  ON rmb.patient_id = ls.patient_id AND rmb.ref_month = ls.ref_month
+WHERE p.phone_number IS NOT NULL
+  AND LENGTH(REGEXP_REPLACE(p.phone_number, '[^0-9]', '', 'g')) >= 8
+  AND rbm.patient_id IS NULL
+  AND rmb.patient_id IS NULL
+GROUP BY ls.ref_month, p.org_unit_id
+ORDER BY ls.ref_month;
+
+
+-- ============================================================================
+-- VIEW 7: HEART360_OVERDUE_PATIENTS_CALLED
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_OVERDUE_PATIENTS_CALLED AS
+WITH FIRST_CALLS AS (
+  SELECT DISTINCT ON (cr.patient_id, date_trunc('month', cr.call_date))
+    cr.patient_id,
+    date_trunc('month', cr.call_date)::date AS ref_month,
+    cr.call_date,
+    cr.result_type,
+    cr.removed_reason
+  FROM call_results cr
+  ORDER BY cr.patient_id, date_trunc('month', cr.call_date), cr.call_date ASC
+)
+SELECT
+  fc.ref_month,
+  p.org_unit_id,
+  COUNT(DISTINCT fc.patient_id) AS overdue_patients_called
+FROM FIRST_CALLS fc
+JOIN patients p ON p.patient_id = fc.patient_id
+WHERE p.patient_status = 'ALIVE'
+  AND NOT (
+    LOWER(fc.result_type) = 'removed_from_overdue_list'
+    AND LOWER(fc.removed_reason) = 'died'
+  )
+GROUP BY fc.ref_month, p.org_unit_id
+ORDER BY fc.ref_month;
+
+
+-- ============================================================================
+-- VIEW 8: HEART360_OVERDUE_RETURNED_TO_CARE
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_OVERDUE_RETURNED_TO_CARE AS
+WITH FIRST_CALLS AS (
+    SELECT DISTINCT ON (cr.patient_id, date_trunc('month', cr.call_date))
+        cr.patient_id,
+        date_trunc('month', cr.call_date)::date AS ref_month,
+        cr.call_date,
+        cr.call_date + INTERVAL '15 days' AS window_end
+    FROM call_results cr
+    ORDER BY cr.patient_id, date_trunc('month', cr.call_date), cr.call_date ASC
+),
+RETURNED AS (
+    SELECT DISTINCT fc.patient_id, fc.ref_month
+    FROM FIRST_CALLS fc
+    JOIN encounters be
+      ON be.patient_id = fc.patient_id
+     AND be.encounter_date >= fc.call_date
+     AND be.encounter_date <= fc.window_end
+)
+SELECT
+    r.ref_month,
+    p.org_unit_id,
+    COUNT(DISTINCT r.patient_id) AS overdue_returned_to_care
+FROM RETURNED r
+JOIN patients p ON p.patient_id = r.patient_id
+WHERE p.patient_status = 'ALIVE'
+GROUP BY r.ref_month, p.org_unit_id
+ORDER BY r.ref_month;
+
+
+-- ============================================================================
+-- VIEW 9: HEART360_BLOOD_SUGAR_CONTROLLED
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_BLOOD_SUGAR_CONTROLLED AS
+WITH REF_MONTHS AS (
+    SELECT generate_series(
+        date_trunc('month', (SELECT MIN(registration_date) FROM patients)),
+        date_trunc('month', CURRENT_DATE),
+        interval '1 month'
+    )::date AS ref_month
+),
+ALL_PATIENTS AS (
+    SELECT p.patient_id, p.org_unit_id, p.registration_date, p.death_date
+    FROM patients p
+),
+BS_ENCOUNTERS AS (
+    SELECT e.patient_id, e.encounter_date, bs.blood_sugar_type, bs.blood_sugar_value
+    FROM encounters e
+    JOIN blood_sugars bs ON bs.encounter_id = e.id
+),
+LATEST_BS AS (
+    SELECT rm.ref_month, e.patient_id, MAX(e.encounter_date) AS latest_bs_date
+    FROM REF_MONTHS rm
+    JOIN BS_ENCOUNTERS e ON DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+    GROUP BY rm.ref_month, e.patient_id
+),
+LATEST_BS_VALUES AS (
+    SELECT lb.ref_month, e.patient_id, e.encounter_date, e.blood_sugar_type, e.blood_sugar_value
+    FROM LATEST_BS lb
+    JOIN BS_ENCOUNTERS e
+        ON lb.patient_id = e.patient_id AND lb.latest_bs_date = e.encounter_date
+)
+SELECT
+    rm.ref_month,
+    p.org_unit_id,
+    COUNT(DISTINCT p.patient_id) FILTER (
+        WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= rm.ref_month
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+            )
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+                AND DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+                AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > rm.ref_month
+            )
+    ) AS diabetes_patients_under_care,
+    COUNT(DISTINCT p.patient_id) FILTER (
+        WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= rm.ref_month
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+            )
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+                AND DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+                AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > rm.ref_month
+            )
+            AND DATE_TRUNC('month', lbv.encounter_date) + interval '3 month' > rm.ref_month
+            AND (
+                (LOWER(lbv.blood_sugar_type) IN ('rbs', 'random') AND lbv.blood_sugar_value < 140)
+                OR (LOWER(lbv.blood_sugar_type) IN ('fbs', 'fasting') AND lbv.blood_sugar_value < 126)
+                OR (LOWER(lbv.blood_sugar_type) = 'hba1c' AND lbv.blood_sugar_value < 7)
+            )
+    ) AS diabetes_controlled
+FROM REF_MONTHS rm
+LEFT JOIN ALL_PATIENTS p
+    ON p.registration_date <= rm.ref_month
+    AND (p.death_date IS NULL OR DATE_TRUNC('month', p.death_date) >= rm.ref_month)
+LEFT JOIN LATEST_BS_VALUES lbv
+    ON lbv.patient_id = p.patient_id AND lbv.ref_month = rm.ref_month
+GROUP BY rm.ref_month, p.org_unit_id
+ORDER BY rm.ref_month;
+
+
+-- ============================================================================
+-- VIEW 10: HEART360_BLOOD_SUGAR_SEVERITY
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_BLOOD_SUGAR_SEVERITY AS
+WITH KNOWN_MONTHS AS (
+  SELECT date_trunc('month', series_date)::date AS ref_month
+  FROM generate_series(
+      date_trunc('month', (SELECT min(registration_date) FROM patients)),
+      date_trunc('month', current_date),
+      interval '1 month'
+  ) AS t(series_date)
+),
+ALL_PATIENTS AS (
+  SELECT p.patient_id, p.org_unit_id, p.registration_date, p.death_date
+  FROM patients p
+),
+BS_ENCOUNTERS AS (
+  SELECT e.patient_id, e.encounter_date, bs.blood_sugar_type, bs.blood_sugar_value
+  FROM encounters e
+  JOIN blood_sugars bs ON bs.encounter_id = e.id
+),
+LATEST_BS AS (
+  SELECT km.ref_month, e.patient_id, MAX(e.encounter_date) AS latest_bs_date
+  FROM KNOWN_MONTHS km
+  JOIN BS_ENCOUNTERS e ON DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+  GROUP BY km.ref_month, e.patient_id
+),
+LATEST_BS_VALUES AS (
+  SELECT lb.ref_month, e.patient_id, e.encounter_date, e.blood_sugar_type, e.blood_sugar_value
+  FROM LATEST_BS lb
+  JOIN BS_ENCOUNTERS e ON lb.patient_id = e.patient_id AND lb.latest_bs_date = e.encounter_date
+)
+SELECT
+  km.ref_month,
+  p.org_unit_id,
+  COUNT(DISTINCT p.patient_id) FILTER (
+    WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= km.ref_month
+      AND EXISTS (
+            SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
+            WHERE e.patient_id = p.patient_id
+        )
+      AND EXISTS (
+            SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
+            WHERE e.patient_id = p.patient_id
+              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
+        )
+  ) AS diabetes_patients_under_care,
+  COUNT(DISTINCT p.patient_id) FILTER (
+    WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= km.ref_month
+      AND EXISTS (
+            SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
+            WHERE e.patient_id = p.patient_id
+        )
+      AND EXISTS (
+            SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
+            WHERE e.patient_id = p.patient_id
+              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
+        )
+      AND DATE_TRUNC('month', lbv.encounter_date) + interval '3 month' > km.ref_month
+      AND (
+           (LOWER(lbv.blood_sugar_type) IN ('rbs', 'random') AND lbv.blood_sugar_value >= 140 AND lbv.blood_sugar_value <= 199)
+        OR (LOWER(lbv.blood_sugar_type) IN ('fbs', 'fasting') AND lbv.blood_sugar_value >= 126 AND lbv.blood_sugar_value <= 199)
+        OR (LOWER(lbv.blood_sugar_type) = 'hba1c' AND lbv.blood_sugar_value >= 7 AND lbv.blood_sugar_value <= 8.9)
+      )
+  ) AS uncontrolled_moderate,
+  COUNT(DISTINCT p.patient_id) FILTER (
+    WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= km.ref_month
+      AND EXISTS (
+            SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
+            WHERE e.patient_id = p.patient_id
+        )
+      AND EXISTS (
+            SELECT 1 FROM encounters e
+            JOIN blood_sugars bs ON bs.encounter_id = e.id
+            WHERE e.patient_id = p.patient_id
+              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
+        )
+      AND DATE_TRUNC('month', lbv.encounter_date) + interval '3 month' > km.ref_month
+      AND (
+           (LOWER(lbv.blood_sugar_type) IN ('rbs', 'random') AND lbv.blood_sugar_value >= 200)
+        OR (LOWER(lbv.blood_sugar_type) IN ('fbs', 'fasting') AND lbv.blood_sugar_value >= 200)
+        OR (LOWER(lbv.blood_sugar_type) = 'hba1c' AND lbv.blood_sugar_value >= 9)
+      )
+  ) AS uncontrolled_high
+FROM KNOWN_MONTHS km
+LEFT JOIN ALL_PATIENTS p
+  ON p.registration_date <= km.ref_month
+  AND (p.death_date IS NULL OR DATE_TRUNC('month', p.death_date) >= km.ref_month)
+LEFT JOIN LATEST_BS_VALUES lbv
+  ON lbv.patient_id = p.patient_id AND lbv.ref_month = km.ref_month
+GROUP BY km.ref_month, p.org_unit_id
+ORDER BY km.ref_month;
+
+
+-- ============================================================================
+-- VIEW 11: HEART360_BLOOD_SUGAR_MISSED_VISITS
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_BLOOD_SUGAR_MISSED_VISITS AS
+WITH KNOWN_MONTHS AS (
+  SELECT date_trunc('month', series_date)::date AS ref_month
+  FROM generate_series(
+      date_trunc('month', (SELECT min(registration_date) FROM patients)),
+      date_trunc('month', current_date),
+      interval '1 month'
+  ) AS t(series_date)
+),
+ALL_PATIENTS AS (
+  SELECT p.patient_id, p.org_unit_id, p.registration_date, p.death_date
+  FROM patients p
+),
+-- Encounters relevant for the DM "no visit" indicator:
+--   BS encounters + visit-only encounters (no BP AND no BS attached).
+-- BP-only encounters are excluded.
+DM_RELEVANT_ENCOUNTERS AS (
+  SELECT e.id, e.patient_id, e.encounter_date
+  FROM encounters e
+  WHERE EXISTS (SELECT 1 FROM blood_sugars bs WHERE bs.encounter_id = e.id)
+     OR NOT EXISTS (SELECT 1 FROM blood_pressures bp WHERE bp.encounter_id = e.id)
+),
+LAST_DM_VISIT_BEFORE_MONTH AS (
+  SELECT km.ref_month, e.patient_id, MAX(e.encounter_date) AS last_visit_date
+  FROM KNOWN_MONTHS km
+  JOIN DM_RELEVANT_ENCOUNTERS e ON DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+  GROUP BY km.ref_month, e.patient_id
+)
+SELECT
+  km.ref_month,
+  p.org_unit_id,
+  COUNT(DISTINCT p.patient_id) FILTER (
+    WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= km.ref_month
+      AND EXISTS (
+            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
+            WHERE e.patient_id = p.patient_id
+        )
+      AND EXISTS (
+            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
+            WHERE e.patient_id = p.patient_id
+              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
+        )
+  ) AS diabetes_patients_under_care,
+  COUNT(DISTINCT p.patient_id) FILTER (
+    WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= km.ref_month
+      AND EXISTS (
+            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
+            WHERE e.patient_id = p.patient_id
+        )
+      AND EXISTS (
+            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
+            WHERE e.patient_id = p.patient_id
+              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
+        )
+      AND DATE_TRUNC('month', lv.last_visit_date) + interval '3 month' <= km.ref_month
+  ) AS missed_visit
+FROM KNOWN_MONTHS km
+LEFT JOIN ALL_PATIENTS p
+  ON p.registration_date <= km.ref_month
+  AND (p.death_date IS NULL OR DATE_TRUNC('month', p.death_date) >= km.ref_month)
+LEFT JOIN LAST_DM_VISIT_BEFORE_MONTH lv
+  ON lv.patient_id = p.patient_id AND lv.ref_month = km.ref_month
+GROUP BY km.ref_month, p.org_unit_id
+ORDER BY km.ref_month;
+
+
+-- ============================================================================
+-- VIEW 12: HEART360_DM_PATIENTS_UNDER_CARE
+-- DM patients under care, cumulative registrations, and monthly registrations
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_DM_PATIENTS_UNDER_CARE AS
+WITH
+KNOWN_MONTHS AS (
+  SELECT date_trunc('month', series_date)::date AS ref_month
+  FROM generate_series(
+      date_trunc('month', (SELECT MIN(registration_date) FROM patients)),
+      date_trunc('month', CURRENT_DATE),
+      '1 month'::interval
+  ) AS t(series_date)
+),
+ALIVE_PATIENTS AS (
+  SELECT
+      DATE_TRUNC('month', p.registration_date)::date AS registration_month,
+      p.org_unit_id,
+      p.patient_id
+  FROM patients p
+  WHERE LOWER(p.patient_status) <> 'dead'
+),
+ALL_ENCOUNTERS AS (
+  SELECT e.patient_id,
+         DATE_TRUNC('month', e.encounter_date) AS encounter_month
+  FROM encounters e
+)
+SELECT
+    km.ref_month,
+    ap.org_unit_id,
+    COUNT(DISTINCT CASE
+      WHEN ae.patient_id IS NOT NULL THEN ap.patient_id
+    END) AS nb_dm_patients_under_care,
+    COUNT(DISTINCT ap.patient_id) AS cumulative_dm_patients,
+    COUNT(DISTINCT ap.patient_id) FILTER (
+      WHERE ap.registration_month = km.ref_month
+    ) AS nb_new_dm_patients,
+    SUM(CASE WHEN ae.patient_id IS NULL THEN 1 ELSE NULL END) AS nb_patients_lost_to_follow_up
+FROM KNOWN_MONTHS km
+LEFT JOIN ALIVE_PATIENTS ap
+    ON ap.registration_month <= km.ref_month
+LEFT JOIN ALL_ENCOUNTERS ae
+    ON ae.patient_id = ap.patient_id
+    AND ae.encounter_month <= km.ref_month
+    AND ae.encounter_month + interval '12 month' > km.ref_month
+GROUP BY km.ref_month, ap.org_unit_id
+ORDER BY km.ref_month DESC;
+
+
+-- ============================================================================
+-- VIEW 13: HEART360_DM_BP_CONTROL
+-- DM patients with controlled BP at their latest visit in the past 3 months
+-- ============================================================================
+CREATE OR REPLACE VIEW HEART360_DM_BP_CONTROL AS
+WITH REF_MONTHS AS (
+    SELECT generate_series(
+        date_trunc('month', (SELECT MIN(registration_date) FROM patients)),
+        date_trunc('month', CURRENT_DATE),
+        interval '1 month'
+    )::date AS ref_month
+),
+ALL_PATIENTS AS (
+    SELECT p.patient_id, p.org_unit_id, p.registration_date, p.death_date
+    FROM patients p
+),
+LATEST_BP AS (
+    SELECT rm.ref_month, e.patient_id, MAX(e.encounter_date) AS latest_bp_date
+    FROM REF_MONTHS rm
+    JOIN encounters e ON DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+    JOIN blood_pressures bp ON bp.encounter_id = e.id
+    GROUP BY rm.ref_month, e.patient_id
+),
+LATEST_BP_VALUES AS (
+    SELECT lb.ref_month, lb.patient_id, lb.latest_bp_date AS encounter_date,
+           MAX(bp.systolic_bp) AS systolic_bp, MAX(bp.diastolic_bp) AS diastolic_bp
+    FROM LATEST_BP lb
+    JOIN encounters e ON e.patient_id = lb.patient_id AND e.encounter_date = lb.latest_bp_date
+    JOIN blood_pressures bp ON bp.encounter_id = e.id
+    GROUP BY lb.ref_month, lb.patient_id, lb.latest_bp_date
+)
+SELECT
+    rm.ref_month,
+    p.org_unit_id,
+    COUNT(DISTINCT p.patient_id) FILTER (
+        WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= rm.ref_month
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+            )
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+                AND DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+                AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > rm.ref_month
+            )
+    ) AS dm_patients_under_care,
+    COUNT(DISTINCT p.patient_id) FILTER (
+        WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= rm.ref_month
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+            )
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+                AND DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+                AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > rm.ref_month
+            )
+            AND lbp.encounter_date IS NOT NULL
+            AND DATE_TRUNC('month', lbp.encounter_date) + interval '3 month' > rm.ref_month
+            AND lbp.systolic_bp < 140 AND lbp.diastolic_bp < 90
+    ) AS bp_controlled_140_90,
+    COUNT(DISTINCT p.patient_id) FILTER (
+        WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= rm.ref_month
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+            )
+            AND EXISTS (
+                SELECT 1 FROM encounters e
+                JOIN blood_sugars bs ON bs.encounter_id = e.id
+                WHERE e.patient_id = p.patient_id
+                AND DATE_TRUNC('month', e.encounter_date) <= rm.ref_month
+                AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > rm.ref_month
+            )
+            AND lbp.encounter_date IS NOT NULL
+            AND DATE_TRUNC('month', lbp.encounter_date) + interval '3 month' > rm.ref_month
+            AND lbp.systolic_bp < 130 AND lbp.diastolic_bp < 80
+    ) AS bp_controlled_130_80
+FROM REF_MONTHS rm
+LEFT JOIN ALL_PATIENTS p
+    ON p.registration_date <= rm.ref_month
+    AND (p.death_date IS NULL OR DATE_TRUNC('month', p.death_date) >= rm.ref_month)
+LEFT JOIN LATEST_BP_VALUES lbp
+    ON lbp.patient_id = p.patient_id AND lbp.ref_month = rm.ref_month
+GROUP BY rm.ref_month, p.org_unit_id
+ORDER BY rm.ref_month;
+
+
+-- ============================================================================
+-- TRIGGER: Update patient status when call_results indicates death
+-- ============================================================================
+CREATE OR REPLACE FUNCTION update_patient_status_on_death()
+RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    -- 1. Patients Table Logic
-    IF EXISTS (SELECT 1 FROM patients WHERE patient_id = p_patient_id) THEN
-        -- Patient exists: Update registration_date if the new encounter date is earlier (more recent)
+    IF LOWER(TRIM(COALESCE(NEW.result_type, ''))) = 'removed_from_overdue_list'
+        AND LOWER(TRIM(COALESCE(NEW.removed_reason, ''))) = 'died' THEN
         UPDATE patients
-        SET
-            registration_date = p_encounter_datetime
-        WHERE
-            patient_id = p_patient_id
-            AND registration_date > p_encounter_datetime;
-
-    ELSE
-        -- Patient does not exist: Insert the new patient (Concise format)
-        INSERT INTO patients (patient_id, patient_name, gender, phone_number, patient_status, registration_date, birth_date, facility, region)
-        VALUES (p_patient_id, p_patient_name, p_gender, p_phone_number, 'ALIVE', p_encounter_datetime::DATE, p_birth_date, p_facility, p_region);
+        SET patient_status = 'DEAD',
+            death_date = COALESCE(death_date, NEW.call_date)
+        WHERE patient_id = NEW.patient_id
+          AND patient_status = 'ALIVE';
+        RAISE NOTICE 'Patient % marked as DEAD', NEW.patient_id;
     END IF;
-
-    ---
-    -- 2. BP Encounters Table Logic
-    ---
-
-    -- Check if the specific (patient_id, encounter_date) pair already exists
-    IF EXISTS (
-        SELECT 1
-        FROM bp_encounters
-        WHERE
-            patient_id = p_patient_id
-            AND encounter_date = p_encounter_datetime
-    ) THEN
-        -- If it exists, do nothing (as requested)
-        RAISE NOTICE 'BP encounter for patient % on % already exists. Skipping insertion.', p_patient_id, p_encounter_datetime;
-    ELSE
-        -- If it does not exist, insert the new encounter (Concise format)
-        INSERT INTO bp_encounters (patient_id, encounter_id, encounter_date, diastolic_bp, systolic_bp)
-        VALUES (p_patient_id, nextval('bp_encounters_encounter_id_seq'), p_encounter_datetime, p_diastolic_bp, p_systolic_bp);
-    END IF;
-
+    RETURN NEW;
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trigger_update_patient_status_on_death ON reminder_calls;
+DROP TRIGGER IF EXISTS trigger_update_patient_status_on_death ON call_results;
 
+CREATE TRIGGER trigger_update_patient_status_on_death
+    AFTER INSERT OR UPDATE ON call_results
+    FOR EACH ROW
+    EXECUTE FUNCTION update_patient_status_on_death();
+
+-- Drop deprecated tables
+DROP TABLE IF EXISTS reminder_calls CASCADE;
+DROP TABLE IF EXISTS facilities CASCADE;
+
+
+-- ============================================================================
+-- ADMIN PROCEDURE: H360TK_ADMIN_CLEAN_DATA
+-- Clears all patient and organizational data for a fresh start.
+-- Usage:  CALL heart360tk_schema.H360TK_ADMIN_CLEAN_DATA();
+-- ============================================================================
+CREATE OR REPLACE PROCEDURE H360TK_ADMIN_CLEAN_DATA()
+LANGUAGE plpgsql AS $$
+BEGIN
+    SET search_path TO heart360tk_schema;
+
+    TRUNCATE TABLE
+        blood_pressures,
+        blood_sugars,
+        scheduled_visits,
+        call_results,
+        encounters,
+        patients,
+        org_units
+    CASCADE;
+
+    ALTER SEQUENCE org_units_id_seq RESTART WITH 1;
+    ALTER SEQUENCE encounters_id_seq RESTART WITH 1;
+    ALTER SEQUENCE blood_pressures_id_seq RESTART WITH 1;
+    ALTER SEQUENCE blood_sugars_id_seq RESTART WITH 1;
+    ALTER SEQUENCE scheduled_visits_scheduled_id_seq RESTART WITH 1;
+    ALTER SEQUENCE call_results_call_id_seq RESTART WITH 1;
+
+    RAISE NOTICE 'All data cleared and sequences reset.';
+END;
+$$;

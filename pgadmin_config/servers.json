@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Heart360 Database",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "heart360tk_database",
+      "Username": "heart360tk",
+      "SSLMode": "prefer",
+      "PassFile": "/tmp/pgpass"
+    }
+  }
+}

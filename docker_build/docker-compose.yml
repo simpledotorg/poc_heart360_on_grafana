@@ -12,3 +12,7 @@ services:
     build: 
       context: ..
       dockerfile: docker_build/heart360.fileproc.docker
+  pgadmin:
+    build:
+      context: ..
+      dockerfile: docker_build/heart360.pgadmin.docker
