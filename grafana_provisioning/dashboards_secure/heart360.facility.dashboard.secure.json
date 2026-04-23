@@ -1517,6 +1517,23 @@
         "type": "query"
       },
       {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-hypertension"
+        },
+        "definition": "SELECT replace(lower(trim(name)), ' ', '_') FROM org_units WHERE id = ${Facility}::int",
+        "hide": 2,
+        "name": "FacilityTeamName",
+        "options": [],
+        "query": "SELECT replace(lower(trim(name)), ' ', '_') FROM org_units WHERE id = ${Facility}::int",
+        "refresh": 2,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 1,
+        "type": "query"
+      },
+      {
         "current": {
           "text": "1",
           "value": "1"
@@ -1525,11 +1542,11 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-grafana"
         },
-        "definition": "\nSELECT \n    count(*) as is_allowed\nFROM \"user\" u\nleft outer join team_member tm on tm.user_id = u.id\nleft outer join team t on tm.team_id = t.id\nWHERE \n   u.id = ${__user.id} \n   AND \n     (t.name IN (\n        'heart360tk_facility_view_patients_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_aggregated_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL')\n     OR u.is_admin)",
+        "definition": "\nSELECT \n    count(*) as is_allowed\nFROM \"user\" u\nleft outer join team_member tm on tm.user_id = u.id\nleft outer join team t on tm.team_id = t.id\nWHERE \n   u.id = ${__user.id} \n   AND \n     (t.name IN (\n        'heart360tk_facility_view_patients_'   || '${FacilityTeamName}', \n        'heart360tk_facility_view_aggregated_' || '${FacilityTeamName}', \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL')\n     OR u.is_admin)",
         "hide": 2,
         "name": "isAllowed",
         "options": [],
-        "query": "\nSELECT \n    count(*) as is_allowed\nFROM \"user\" u\nleft outer join team_member tm on tm.user_id = u.id\nleft outer join team t on tm.team_id = t.id\nWHERE \n   u.id = ${__user.id} \n   AND \n     (t.name IN (\n        'heart360tk_facility_view_patients_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_aggregated_' || trim ( lower ('${Facility}' )), \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL')\n     OR u.is_admin)",
+        "query": "\nSELECT \n    count(*) as is_allowed\nFROM \"user\" u\nleft outer join team_member tm on tm.user_id = u.id\nleft outer join team t on tm.team_id = t.id\nWHERE \n   u.id = ${__user.id} \n   AND \n     (t.name IN (\n        'heart360tk_facility_view_patients_'   || '${FacilityTeamName}', \n        'heart360tk_facility_view_aggregated_' || '${FacilityTeamName}', \n        'heart360tk_facility_view_patients_ALL',\n        'heart360tk_facility_view_aggregated_ALL')\n     OR u.is_admin)",
         "refresh": 2,
         "regex": "",
         "regexApplyTo": "value",
