@@ -21,15 +21,92 @@
   "links": [],
   "panels": [
     {
+      "datasource": {
+        "uid": "postgres-hypertension"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "options": {
+        "afterRender": "",
+        "content": "{{#if (eq isAllowed 0)}}\n  <div style=\"color: #e02424; background: rgba(224, 36, 36, 0.05); border-left: 4px solid #e02424; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; border-radius: 2px; line-height: 1.4;\">\n    <span>\u26a0\ufe0f</span>\n    <span>\n      <strong>Access Denied:</strong> Ask admin to add to one of these teams: \n      <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875;\">heart360tk_facility_view_patients_{{FacilityTeamName}}</span> or <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875;\">heart360tk_facility_view_aggregated_{{FacilityTeamName}}</span>\n    </span>\n  </div>\n{{/if}}",
+        "contentPartials": [],
+        "defaultContent": "The query didn't return any results.",
+        "editor": {
+          "format": "auto",
+          "language": "markdown"
+        },
+        "editors": [],
+        "externalStyles": [],
+        "helpers": "",
+        "renderMode": "everyRow",
+        "styles": "",
+        "wrap": true
+      },
+      "pluginVersion": "6.2.0",
+      "targets": [
+        {
+          "dataset": "heart360tk_database",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  LOWER('$Facility') as \"Facility\",\n  '$FacilityTeamName' as \"FacilityTeamName\",\n  $isAllowed as \"isAllowed\"",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "",
+      "transparent": true,
+      "type": "marcusolsson-dynamictext-panel"
+    },
+    {
       "fieldConfig": {
         "defaults": {},
         "overrides": []
       },
       "gridPos": {
         "h": 2,
-        "w": 16,
+        "w": 24,
         "x": 0,
-        "y": 0
+        "y": 2
       },
       "id": 11,
       "options": {
@@ -52,7 +129,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 2
+        "y": 4
       },
       "id": 5,
       "title": "Overview indicators",
@@ -125,7 +202,7 @@
         "h": 10,
         "w": 23,
         "x": 0,
-        "y": 3
+        "y": 5
       },
       "id": 1,
       "options": {
@@ -184,7 +261,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 15
       },
       "id": 6,
       "title": "Program management indicators",
@@ -260,7 +337,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 14
+        "y": 16
       },
       "id": 2,
       "options": {
@@ -352,7 +429,7 @@
             }
           },
           "decimals": 0,
-          "displayName": "% Patients with BP ≥140/90 at latest visit in the past 3 months",
+          "displayName": "% Patients with BP \u2265140/90 at latest visit in the past 3 months",
           "mappings": [],
           "max": 100,
           "min": 0,
@@ -396,7 +473,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 14
+        "y": 16
       },
       "id": 3,
       "options": {
@@ -528,7 +605,7 @@
         "h": 8,
         "w": 7,
         "x": 16,
-        "y": 14
+        "y": 16
       },
       "id": 4,
       "options": {
@@ -708,7 +785,7 @@
         "h": 8,
         "w": 16,
         "x": 0,
-        "y": 22
+        "y": 24
       },
       "id": 7,
       "options": {
@@ -857,7 +934,7 @@
         "h": 8,
         "w": 7,
         "x": 16,
-        "y": 22
+        "y": 24
       },
       "id": 8,
       "options": {
@@ -910,7 +987,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 32
       },
       "id": 16,
       "title": "Overdue patients",
@@ -992,7 +1069,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 31
+        "y": 33
       },
       "id": 17,
       "options": {
@@ -1127,7 +1204,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 31
+        "y": 33
       },
       "id": 18,
       "options": {
@@ -1262,7 +1339,7 @@
         "h": 8,
         "w": 7,
         "x": 16,
-        "y": 31
+        "y": 33
       },
       "id": 19,
       "options": {
@@ -1315,7 +1392,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 39
+        "y": 41
       },
       "id": 15,
       "title": "Cohort",
@@ -1433,7 +1510,7 @@
         "h": 13,
         "w": 23,
         "x": 0,
-        "y": 40
+        "y": 42
       },
       "id": 14,
       "options": {
