@@ -1,0 +1,118 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "code": {
+          "language": "html",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<div id=\"h360-router\" style=\"padding:24px;text-align:center;color:#9ca3af;font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px\">Loading…</div>\n<script>\n(function(){\n  try {\n    var isGlobal = '${UserIsGlobal}' === '1';\n    var facilityId = '${UserFacilityId}';\n    if (isGlobal) {\n      window.top.location.replace('/d/heart360_drilldown?orgId=1');\n    } else if (facilityId && facilityId !== '' && facilityId !== 'null') {\n      window.top.location.replace('/d/heart360demo_per_facility_security?orgId=1&var-Facility=' + facilityId);\n    }\n  } catch(e) { console.error('HEARTS360 home redirect failed:', e); }\n})();\n</script>",
+        "mode": "html"
+      },
+      "pluginVersion": "12.4.1",
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    }
+  ],
+  "preload": false,
+  "schemaVersion": 42,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-grafana"
+        },
+        "definition": "SELECT COALESCE(MIN(regexp_replace(t.name, '^heart360tk_facility_view_(patients|aggregated)_', '')), '')\nFROM \"user\" u\nLEFT JOIN team_member tm ON tm.user_id = u.id\nLEFT JOIN team t ON tm.team_id = t.id\nWHERE u.id = ${__user.id}\n  AND t.name LIKE 'heart360tk_facility_view_%'\n  AND t.name NOT LIKE '%_ALL'",
+        "hide": 2,
+        "name": "UserFacilitySlug",
+        "options": [],
+        "query": "SELECT COALESCE(MIN(regexp_replace(t.name, '^heart360tk_facility_view_(patients|aggregated)_', '')), '')\nFROM \"user\" u\nLEFT JOIN team_member tm ON tm.user_id = u.id\nLEFT JOIN team t ON tm.team_id = t.id\nWHERE u.id = ${__user.id}\n  AND t.name LIKE 'heart360tk_facility_view_%'\n  AND t.name NOT LIKE '%_ALL'",
+        "refresh": 1,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-hypertension"
+        },
+        "definition": "SELECT COALESCE((\n  SELECT id::text FROM org_units\n  WHERE replace(lower(trim(name)), ' ', '_') = '${UserFacilitySlug}'\n  LIMIT 1\n), '')",
+        "hide": 2,
+        "name": "UserFacilityId",
+        "options": [],
+        "query": "SELECT COALESCE((\n  SELECT id::text FROM org_units\n  WHERE replace(lower(trim(name)), ' ', '_') = '${UserFacilitySlug}'\n  LIMIT 1\n), '')",
+        "refresh": 1,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-grafana"
+        },
+        "definition": "SELECT CASE WHEN (u.is_admin OR EXISTS (\n  SELECT 1 FROM team_member tm\n  JOIN team t ON tm.team_id = t.id\n  WHERE tm.user_id = u.id AND t.name LIKE '%_ALL'\n)) THEN 1 ELSE 0 END\nFROM \"user\" u WHERE u.id = ${__user.id}",
+        "hide": 2,
+        "name": "UserIsGlobal",
+        "options": [],
+        "query": "SELECT CASE WHEN (u.is_admin OR EXISTS (\n  SELECT 1 FROM team_member tm\n  JOIN team t ON tm.team_id = t.id\n  WHERE tm.user_id = u.id AND t.name LIKE '%_ALL'\n)) THEN 1 ELSE 0 END\nFROM \"user\" u WHERE u.id = ${__user.id}",
+        "refresh": 1,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "HEARTS360 Home",
+  "uid": "heart360-home",
+  "version": 1,
+  "weekStart": ""
+}
