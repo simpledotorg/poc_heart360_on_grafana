@@ -233,7 +233,7 @@
               "type": "linear"
             },
             "showPoints": "never",
-            "showValues": true,
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -286,7 +286,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "light-orange",
+                  "fixedColor": "rgb(249, 233, 150)",
                   "mode": "fixed"
                 }
               }
@@ -303,6 +303,48 @@
                 "value": {
                   "fixedColor": "light-yellow",
                   "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "% Total Uncontrolled"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "points"
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 1
+              },
+              {
+                "id": "custom.showValues",
+                "value": "always"
+              },
+              {
+                "id": "custom.stacking",
+                "value": {
+                  "group": "A",
+                  "mode": "none"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "transparent",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": true,
+                  "tooltip": true,
+                  "viz": false
                 }
               }
             ]
@@ -336,7 +378,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  ref_month AS \"time\",\n\n  SUM(100.0 * uncontrolled_moderate) /\n  (0.00000001 + SUM(diabetes_patients_under_care))\n  AS \"% Patients with RBS 140–199, FBS 126–199 mg/dL, or HbA1c 7–8.9%\",\n\n  SUM(100.0 * uncontrolled_high) /\n  (0.00000001 + SUM(diabetes_patients_under_care))\n  AS \"% Patients with RBS ≥200, FBS ≥200 mg/dL, or HbA1c ≥9%\"\n\nFROM HEART360_BLOOD_SUGAR_SEVERITY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
+          "rawSql": "SELECT\n  ref_month AS \"time\",\n\n  SUM(100.0 * uncontrolled_moderate) /\n  (0.00000001 + SUM(diabetes_patients_under_care))\n  AS \"% Patients with RBS 140–199, FBS 126–199 mg/dL, or HbA1c 7–8.9%\",\n\n  SUM(100.0 * uncontrolled_high) /\n  (0.00000001 + SUM(diabetes_patients_under_care))\n  AS \"% Patients with RBS ≥200, FBS ≥200 mg/dL, or HbA1c ≥9%\",\n\n  SUM(100.0 * (uncontrolled_moderate + uncontrolled_high)) /\n  (0.00000001 + SUM(diabetes_patients_under_care))\n  AS \"% Total Uncontrolled\"\n\nFROM HEART360_BLOOD_SUGAR_SEVERITY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY ref_month\nORDER BY ref_month;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -369,7 +411,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "fixedColor": "#ffa500",
+            "fixedColor": "#ED6300",
             "mode": "shades",
             "seriesBy": "last"
           },

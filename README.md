@@ -106,6 +106,10 @@ Wait 30-60 seconds for all services to initialize.
 2. The file should be automatically processed
 3. Check Grafana dashboard - data should appear within a few seconds
 
+#### Step 6: Set Up User Access
+
+- **[User Access Setup Guide](docs/user-access-setup-guide.md)** — How to add users and control which facility's data they can see.
+
 ### Updating the System
 
 To get the latest changes from the repository:
