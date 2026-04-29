@@ -52,7 +52,7 @@
       "id": 2,
       "options": {
         "afterRender": "",
-        "content": "{{#if (eq isAllowed 0)}}\n  <div style=\"color: #e02424; background: rgba(224, 36, 36, 0.05); border-left: 4px solid #e02424; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; border-radius: 2px; line-height: 1.4;\">\n    <span>\u26a0\ufe0f</span>\n    <span>\n      <strong>Access Denied:</strong> Ask admin to add to team: \n      <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875;\">heart360tk_facility_view_patients_{{Facility}}</span>\n    </span>\n  </div>\n{{/if}}",
+        "content": "{{#if (eq isAllowed 0)}}\n  <div style=\"color: #e02424; background: rgba(224, 36, 36, 0.05); border-left: 4px solid #e02424; padding: 8px 14px; font-size: 13px; display: flex; align-items: center; gap: 8px; border-radius: 2px; line-height: 1.4;\">\n    <span>\u26a0\ufe0f</span>\n    <span>\n      <strong>Access Denied:</strong> Ask admin to add to team: \n      <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875;\">heart360tk_facility_view_patients_{{FacilityTeamName}}</span>\n    </span>\n  </div>\n{{/if}}",
         "contentPartials": [],
         "defaultContent": "The query didn't return any results.",
         "editor": {
@@ -73,7 +73,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  LOWER('$Facility') as \"Facility\",\n  $isAllowed as \"isAllowed\"",
+          "rawSql": "SELECT\n  LOWER('$Facility') as \"Facility\",\n  '$FacilityTeamName' as \"FacilityTeamName\",\n  $isAllowed as \"isAllowed\"",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1455,6 +1455,22 @@
         "sort": 1
       },
       {
+        "current": {},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "postgres-hypertension"
+        },
+        "definition": "SELECT replace(lower(trim(name)), ' ', '_') FROM org_units WHERE id = ${Facility}::int",
+        "hide": 2,
+        "name": "FacilityTeamName",
+        "options": [],
+        "query": "SELECT replace(lower(trim(name)), ' ', '_') FROM org_units WHERE id = ${Facility}::int",
+        "refresh": 2,
+        "regex": "",
+        "type": "query",
+        "sort": 1
+      },
+      {
         "current": {
           "text": "3",
           "value": "3"
@@ -1463,12 +1479,12 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-grafana"
         },
-        "definition": "SELECT \n    count(tm.team_id) as is_allowed\nFROM \"user\" u\nLEFT OUTER JOIN team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN team t ON tm.team_id = t.id\nWHERE \n    u.id = ${__user.id}\n    AND (\n        t.name IN (\n            'heart360tk_facility_view_patients_' || trim(lower('${Facility}')),\n            'heart360tk_facility_view_patients_ALL'\n        )\n        OR u.is_admin\n    )",
+        "definition": "SELECT \n    count(*) as is_allowed\nFROM \"user\" u\nLEFT OUTER JOIN team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN team t ON tm.team_id = t.id\nWHERE \n    u.id = ${__user.id}\n    AND (\n        t.name IN (\n            'heart360tk_facility_view_patients_' || '${FacilityTeamName}',\n            'heart360tk_facility_view_patients_ALL'\n        )\n        OR u.is_admin\n    )",
         "description": "",
         "hide": 2,
         "name": "isAllowed",
         "options": [],
-        "query": "SELECT \n    count(tm.team_id) as is_allowed\nFROM \"user\" u\nLEFT OUTER JOIN team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN team t ON tm.team_id = t.id\nWHERE \n    u.id = ${__user.id}\n    AND (\n        t.name IN (\n            'heart360tk_facility_view_patients_' || trim(lower('${Facility}')),\n            'heart360tk_facility_view_patients_ALL'\n        )\n        OR u.is_admin\n    )",
+        "query": "SELECT \n    count(*) as is_allowed\nFROM \"user\" u\nLEFT OUTER JOIN team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN team t ON tm.team_id = t.id\nWHERE \n    u.id = ${__user.id}\n    AND (\n        t.name IN (\n            'heart360tk_facility_view_patients_' || '${FacilityTeamName}',\n            'heart360tk_facility_view_patients_ALL'\n        )\n        OR u.is_admin\n    )",
         "refresh": 1,
         "regex": "",
         "type": "query",

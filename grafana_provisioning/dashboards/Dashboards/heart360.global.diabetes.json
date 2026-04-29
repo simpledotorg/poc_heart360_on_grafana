@@ -233,7 +233,7 @@
               "type": "linear"
             },
             "showPoints": "never",
-            "showValues": true,
+            "showValues": false,
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -286,7 +286,7 @@
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "light-orange",
+                  "fixedColor": "rgb(249, 233, 150)",
                   "mode": "fixed"
                 }
               }
@@ -303,6 +303,48 @@
                 "value": {
                   "fixedColor": "light-yellow",
                   "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "% Total Uncontrolled"
+            },
+            "properties": [
+              {
+                "id": "custom.drawStyle",
+                "value": "points"
+              },
+              {
+                "id": "custom.pointSize",
+                "value": 1
+              },
+              {
+                "id": "custom.showValues",
+                "value": "always"
+              },
+              {
+                "id": "custom.stacking",
+                "value": {
+                  "group": "A",
+                  "mode": "none"
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "transparent",
+                  "mode": "fixed"
+                }
+              },
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": true,
+                  "tooltip": true,
+                  "viz": false
                 }
               }
             ]
@@ -336,7 +378,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "WITH months AS (\n  SELECT generate_series(\n    date_trunc('month', $__timeFrom()::timestamp),\n    date_trunc('month', $__timeTo()::timestamp),\n    '1 month'::interval\n  )::date AS ref_month\n)\nSELECT\n  months.ref_month AS \"time\",\n\n  COALESCE(SUM(100.0 * s.uncontrolled_moderate) / NULLIF(SUM(s.diabetes_patients_under_care), 0), 0)\n  AS \"% Patients with RBS 140–199, FBS 126–199 mg/dL, or HbA1c 7–8.9%\",\n\n  COALESCE(SUM(100.0 * s.uncontrolled_high) / NULLIF(SUM(s.diabetes_patients_under_care), 0), 0)\n  AS \"% Patients with RBS ≥200, FBS ≥200 mg/dL, or HbA1c ≥9%\"\n\nFROM months\nLEFT JOIN HEART360_BLOOD_SUGAR_SEVERITY s\n  ON s.ref_month = months.ref_month\n  AND s.org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\nGROUP BY months.ref_month\nORDER BY months.ref_month;",
+          "rawSql": "WITH months AS (\n  SELECT generate_series(\n    date_trunc('month', $__timeFrom()::timestamp),\n    date_trunc('month', $__timeTo()::timestamp),\n    '1 month'::interval\n  )::date AS ref_month\n)\nSELECT\n  months.ref_month AS \"time\",\n\n  COALESCE(SUM(100.0 * s.uncontrolled_moderate) / NULLIF(SUM(s.diabetes_patients_under_care), 0), 0)\n  AS \"% Patients with RBS 140–199, FBS 126–199 mg/dL, or HbA1c 7–8.9%\",\n\n  COALESCE(SUM(100.0 * s.uncontrolled_high) / NULLIF(SUM(s.diabetes_patients_under_care), 0), 0)\n  AS \"% Patients with RBS ≥200, FBS ≥200 mg/dL, or HbA1c ≥9%\",\n\n  COALESCE(SUM(100.0 * (s.uncontrolled_moderate + s.uncontrolled_high)) / NULLIF(SUM(s.diabetes_patients_under_care), 0), 0)\n  AS \"% Total Uncontrolled\"\n\nFROM months\nLEFT JOIN HEART360_BLOOD_SUGAR_SEVERITY s\n  ON s.ref_month = months.ref_month\n  AND s.org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\nGROUP BY months.ref_month\nORDER BY months.ref_month;",
           "refId": "A",
           "sql": {
             "columns": [
@@ -369,7 +411,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "fixedColor": "#ffa500",
+            "fixedColor": "#ED6300",
             "mode": "shades",
             "seriesBy": "last"
           },
