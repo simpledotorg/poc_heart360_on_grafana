@@ -1466,7 +1466,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  uc.ref_month,\n  SUM(uc.cumulative_number_of_patients) AS cumulative_dm_patients,\n  SUM(uc.nb_patients_under_care) AS nb_dm_patients_under_care,\n  SUM(cat.nb_patients_newly_registered) AS nb_new_dm_patients\nFROM HEART360_PATIENTS_UNDER_CARE uc\nLEFT JOIN HEART360_PATIENTS_CATAGORY cat ON uc.ref_month = cat.ref_month AND uc.org_unit_id = cat.org_unit_id\nWHERE uc.org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY uc.ref_month\nORDER BY uc.ref_month;",
+          "rawSql": "SELECT\n  uc.ref_month,\n  SUM(uc.cumulative_number_of_patients) AS cumulative_dm_patients,\n  SUM(uc.nb_patients_under_care) AS nb_dm_patients_under_care,\n  SUM(cat.nb_patients_newly_registered) AS nb_new_dm_patients\nFROM HEART360_PATIENTS_UNDER_CARE uc\nLEFT JOIN HEART360_PATIENTS_CATEGORY cat ON uc.ref_month = cat.ref_month AND uc.org_unit_id = cat.org_unit_id\nWHERE uc.org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int))\nGROUP BY uc.ref_month\nORDER BY uc.ref_month;",
           "refId": "A",
           "sql": {
             "columns": [
