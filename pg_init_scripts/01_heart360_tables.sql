@@ -1225,9 +1225,10 @@ BEGIN
         SELECT matviewname FROM pg_matviews WHERE schemaname = 'heart360tk_reporting'
     LOOP
         BEGIN
-            start_time := now();
+            start_time := clock_timestamp();
+            RAISE NOTICE 'Refreshing %', mv.matviewname;
             EXECUTE format('REFRESH MATERIALIZED VIEW CONCURRENTLY heart360tk_reporting.%I', mv.matviewname);
-            end_time := now();
+            end_time := clock_timestamp();
 
             INSERT INTO heart360tk_reporting.matview_refresh_log (matview_name, last_refreshed_at, refresh_duration, status)
             VALUES (mv.matviewname, end_time, end_time - start_time, 'success')
