@@ -24,7 +24,7 @@ services:
   postgres:
     build:
       context: .
-      dockerfile: docker_build/heart360.pg_cron.docker
+      dockerfile: docker_build/heart360.pg_database.docker
     container_name: postgres
     ports:
       - 5432:5432
