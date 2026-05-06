@@ -952,22 +952,40 @@ WITH KNOWN_MONTHS AS (
   ) AS t(series_date)
 ),
 ALL_PATIENTS AS (
-  SELECT p.patient_id, p.org_unit_id, p.registration_date, p.death_date
-  FROM patients p
+  SELECT patient_id, org_unit_id, registration_date, death_date
+  FROM patients
 ),
--- Encounters relevant for the DM "no visit" indicator:
---   BS encounters + visit-only encounters (no BP AND no BS attached).
--- BP-only encounters are excluded.
 DM_RELEVANT_ENCOUNTERS AS (
-  SELECT e.id, e.patient_id, e.encounter_date
+  SELECT
+    e.patient_id,
+    date_trunc('month', e.encounter_date)::date AS encounter_month,
+    e.encounter_date
   FROM encounters e
-  WHERE EXISTS (SELECT 1 FROM blood_sugars bs WHERE bs.encounter_id = e.id)
-     OR NOT EXISTS (SELECT 1 FROM blood_pressures bp WHERE bp.encounter_id = e.id)
+  WHERE EXISTS (
+    SELECT 1 FROM blood_sugars bs WHERE bs.encounter_id = e.id
+  )
+  OR NOT EXISTS (
+    SELECT 1 FROM blood_pressures bp WHERE bp.encounter_id = e.id
+  )
 ),
-LAST_DM_VISIT_BEFORE_MONTH AS (
-  SELECT km.ref_month, e.patient_id, MAX(e.encounter_date) AS last_visit_date
+PATIENT_MONTHLY_ACTIVE AS (
+  SELECT
+    km.ref_month,
+    e.patient_id
   FROM KNOWN_MONTHS km
-  JOIN DM_RELEVANT_ENCOUNTERS e ON DATE_TRUNC('month', e.encounter_date) <= km.ref_month
+  JOIN DM_RELEVANT_ENCOUNTERS e
+    ON e.encounter_month <= km.ref_month
+   AND e.encounter_month + interval '12 month' > km.ref_month
+  GROUP BY km.ref_month, e.patient_id
+),
+LAST_VISIT_PER_MONTH AS (
+  SELECT
+    km.ref_month,
+    e.patient_id,
+    MAX(e.encounter_date) AS last_visit_date
+  FROM KNOWN_MONTHS km
+  JOIN DM_RELEVANT_ENCOUNTERS e
+    ON e.encounter_month <= km.ref_month
   GROUP BY km.ref_month, e.patient_id
 )
 SELECT
@@ -975,37 +993,23 @@ SELECT
   p.org_unit_id,
   COUNT(DISTINCT p.patient_id) FILTER (
     WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= km.ref_month
-      AND EXISTS (
-            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
-            WHERE e.patient_id = p.patient_id
-        )
-      AND EXISTS (
-            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
-            WHERE e.patient_id = p.patient_id
-              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
-              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
-        )
+      AND pma.patient_id IS NOT NULL
   ) AS diabetes_patients_under_care,
   COUNT(DISTINCT p.patient_id) FILTER (
     WHERE DATE_TRUNC('month', p.registration_date) + interval '3 month' <= km.ref_month
-      AND EXISTS (
-            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
-            WHERE e.patient_id = p.patient_id
-        )
-      AND EXISTS (
-            SELECT 1 FROM DM_RELEVANT_ENCOUNTERS e
-            WHERE e.patient_id = p.patient_id
-              AND DATE_TRUNC('month', e.encounter_date) <= km.ref_month
-              AND DATE_TRUNC('month', e.encounter_date) + interval '12 month' > km.ref_month
-        )
+      AND pma.patient_id IS NOT NULL
       AND DATE_TRUNC('month', lv.last_visit_date) + interval '3 month' <= km.ref_month
   ) AS missed_visit
 FROM KNOWN_MONTHS km
 LEFT JOIN ALL_PATIENTS p
   ON p.registration_date <= km.ref_month
   AND (p.death_date IS NULL OR DATE_TRUNC('month', p.death_date) >= km.ref_month)
-LEFT JOIN LAST_DM_VISIT_BEFORE_MONTH lv
-  ON lv.patient_id = p.patient_id AND lv.ref_month = km.ref_month
+LEFT JOIN PATIENT_MONTHLY_ACTIVE pma
+  ON pma.patient_id = p.patient_id
+  AND pma.ref_month = km.ref_month
+LEFT JOIN LAST_VISIT_PER_MONTH lv
+  ON lv.patient_id = p.patient_id
+  AND lv.ref_month = km.ref_month
 GROUP BY km.ref_month, p.org_unit_id
 ORDER BY km.ref_month;
 
