@@ -302,7 +302,7 @@ $$;
 -- ============================================================================
 DROP VIEW IF EXISTS HEART360_PATIENTS_REGISTERED CASCADE;
 DROP VIEW IF EXISTS HEART360_PATIENTS_UNDER_CARE CASCADE;
-DROP VIEW IF EXISTS HEART360_PATIENTS_CATAGORY CASCADE;
+DROP VIEW IF EXISTS HEART360_PATIENTS_CATEGORY CASCADE;
 DROP VIEW IF EXISTS HEART360_OVERDUE_PATIENTS CASCADE;
 DROP VIEW IF EXISTS HEART360_OVERDUE_START_OF_MONTH CASCADE;
 DROP VIEW IF EXISTS HEART360_OVERDUE_PATIENTS_CALLED CASCADE;
@@ -397,9 +397,9 @@ ORDER BY KNOWN_MONTHS.REF_MONTH DESC;
 
 
 -- ============================================================================
--- VIEW 3: HEART360_PATIENTS_CATAGORY
+-- VIEW 3: HEART360_PATIENTS_CATEGORY
 -- ============================================================================
-CREATE OR REPLACE VIEW HEART360_PATIENTS_CATAGORY AS
+CREATE OR REPLACE VIEW HEART360_PATIENTS_CATEGORY AS
 WITH
 KNOWN_MONTHS AS (
   SELECT date_trunc('month', series_date)::date AS REF_MONTH
@@ -1153,6 +1153,108 @@ LEFT JOIN LATEST_BP_VALUES lbp
 GROUP BY rm.ref_month, p.org_unit_id
 ORDER BY rm.ref_month;
 
+-- ============================================================================
+-- Materialized view for saving precalculated data
+-- ============================================================================
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_PATIENTS_CATEGORY;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_PATIENTS_REGISTERED;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_CONTROLLED;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_SEVERITY;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_MISSED_VISITS;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_DM_BP_CONTROL;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_UNDER_CARE;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_OVERDUE_START_OF_MONTH;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE;
+DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_CATEGORY AS SELECT * FROM heart360tk_schema.HEART360_PATIENTS_CATEGORY;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE AS SELECT * FROM heart360tk_schema.HEART360_PATIENTS_UNDER_CARE;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_REGISTERED AS SELECT * FROM heart360tk_schema.HEART360_PATIENTS_REGISTERED;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_CONTROLLED AS SELECT * FROM heart360tk_schema.HEART360_BLOOD_SUGAR_CONTROLLED;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_SEVERITY AS SELECT * FROM heart360tk_schema.HEART360_BLOOD_SUGAR_SEVERITY;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_MISSED_VISITS AS SELECT * FROM heart360tk_schema.HEART360_BLOOD_SUGAR_MISSED_VISITS;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_DM_BP_CONTROL AS SELECT * FROM heart360tk_schema.HEART360_DM_BP_CONTROL;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_UNDER_CARE AS SELECT * FROM heart360tk_schema.HEART360_DM_PATIENTS_UNDER_CARE;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_PATIENTS;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_START_OF_MONTH AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_START_OF_MONTH;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_PATIENTS_CALLED;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_RETURNED_TO_CARE;
+CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS AS SELECT * FROM heart360tk_schema.HEART360_COHORT_PATIENT_DETAILS;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_cat_org_month ON heart360tk_reporting.HEART360_PATIENTS_CATEGORY (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_under_care_org_month ON heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_registered_org_month ON heart360tk_reporting.HEART360_PATIENTS_REGISTERED (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_registered_org_month ON heart360tk_reporting.HEART360_PATIENTS_REGISTERED (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bs_controlled_org_month ON heart360tk_reporting.HEART360_BLOOD_SUGAR_CONTROLLED (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bs_severity_org_month ON heart360tk_reporting.HEART360_BLOOD_SUGAR_SEVERITY (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_bs_missed_visits_org_month ON heart360tk_reporting.HEART360_BLOOD_SUGAR_MISSED_VISITS (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_bp_control_org_month ON heart360tk_reporting.HEART360_DM_BP_CONTROL (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_pat_under_care_org_month ON heart360tk_reporting.HEART360_DM_PATIENTS_UNDER_CARE (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_patient_id ON heart360tk_reporting.HEART360_OVERDUE_PATIENTS (patient_id);
+CREATE INDEX IF NOT EXISTS idx_overdue_org_last_visit ON heart360tk_reporting.HEART360_OVERDUE_PATIENTS (org_unit_id, last_visit_date);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_start_month_org_month ON heart360tk_reporting.HEART360_OVERDUE_START_OF_MONTH (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_called_org_month ON heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_returned_org_month ON heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE (org_unit_id, ref_month);
+CREATE INDEX IF NOT EXISTS idx_cohort_org_quarter ON heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS (org_unit_id, registration_quarter);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_cohort_patient_id ON heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS (patient_id);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.matview_refresh_log (
+    matview_name text PRIMARY KEY,
+    last_refreshed_at timestamp,
+    refresh_duration interval,
+    status text
+);
+
+-- =======================================================================================
+-- Function to refresh all materialized views and log the refresh status and duration:
+-- =======================================================================================
+
+CREATE OR REPLACE FUNCTION heart360tk_reporting.refresh_all_matviews()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    mv RECORD;
+    start_time timestamp;
+    end_time timestamp;
+BEGIN
+    FOR mv IN
+        SELECT matviewname FROM pg_matviews WHERE schemaname = 'heart360tk_reporting'
+    LOOP
+        BEGIN
+            start_time := clock_timestamp();
+            RAISE NOTICE 'Refreshing %', mv.matviewname;
+            EXECUTE format('REFRESH MATERIALIZED VIEW CONCURRENTLY heart360tk_reporting.%I', mv.matviewname);
+            end_time := clock_timestamp();
+
+            INSERT INTO heart360tk_reporting.matview_refresh_log (matview_name, last_refreshed_at, refresh_duration, status)
+            VALUES (mv.matviewname, end_time, end_time - start_time, 'success')
+            ON CONFLICT (matview_name)
+            DO UPDATE SET
+                last_refreshed_at = EXCLUDED.last_refreshed_at,
+                refresh_duration = EXCLUDED.refresh_duration,
+                status = EXCLUDED.status;
+
+        EXCEPTION WHEN OTHERS THEN
+            INSERT INTO heart360tk_reporting.matview_refresh_log (matview_name, last_refreshed_at, refresh_duration, status)
+            VALUES (mv.matviewname, now(), NULL, 'failed: ' || SQLERRM)
+            ON CONFLICT (matview_name)
+            DO UPDATE SET
+                last_refreshed_at = EXCLUDED.last_refreshed_at,
+                refresh_duration = EXCLUDED.refresh_duration,
+                status = EXCLUDED.status;
+        END;
+    END LOOP;
+END;
+$$;
+
+-- ============================================================================
+-- pg_cron: Schedule the refresh of all materialized views every hour
+-- ============================================================================
+SELECT cron.schedule('refresh_matviews_every_hour', '0 * * * *', 'SELECT heart360tk_reporting.refresh_all_matviews();');
 
 -- ============================================================================
 -- TRIGGER: Update patient status when call_results indicates death

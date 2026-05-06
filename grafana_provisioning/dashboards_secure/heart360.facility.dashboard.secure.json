@@ -231,7 +231,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select\n  ref_month,\n  sum(nb_patients_controlled) nb_patients_controlled\nfrom heart360_patients_catagory\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) and $isAllowed  >0 \ngroup by 1",
+          "rawSql": "select\n  ref_month,\n  sum(nb_patients_controlled) nb_patients_controlled\nfrom heart360_patients_category\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) and $isAllowed  >0 \ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -360,7 +360,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_controlled) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) and $isAllowed  >0 \ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_controlled) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as Control_rate\nfrom HEART360_PATIENTS_CATEGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) and $isAllowed  >0 \ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -496,7 +496,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select ref_month,\n    sum(100.00 * nb_patients_uncontrolled) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as uncontrolled_pct\nfrom HEART360_PATIENTS_CATAGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) and $isAllowed > 0\ngroup by 1",
+          "rawSql": "select ref_month,\n    sum(100.00 * nb_patients_uncontrolled) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS)) as uncontrolled_pct\nfrom HEART360_PATIENTS_CATEGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) and $isAllowed > 0\ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -628,7 +628,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_no_visit) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_3M_INCL_VISITS)) as Control_rate\nfrom HEART360_PATIENTS_CATAGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) and $isAllowed  >0 \ngroup by 1",
+          "rawSql": "select \n    ref_month,\n    sum(100.00 * nb_patients_no_visit) / (0.00000001 + sum(NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_3M_INCL_VISITS)) as Control_rate\nfrom HEART360_PATIENTS_CATEGORY\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids($Facility::int)) and $isAllowed  >0 \ngroup by 1",
           "refId": "A",
           "sql": {
             "columns": [

@@ -22,11 +22,20 @@ services:
       - GF_USERS_DEFAULT_THEME=light
       - GF_USERS_HOME_PAGE=/d/heart360-home?orgId=1
   postgres:
-    image: postgres:16-alpine
+    build:
+      context: .
+      dockerfile: docker_build/heart360.pg_database.docker
     container_name: postgres
     ports:
       - 5432:5432
     restart: unless-stopped
+    # POSTGRES_INITDB_ARGS goes to initdb, not the running server — pg_cron must load during init scripts too.
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_cron
+      - -c
+      - cron.database_name=heart360tk_database
     environment:
       - POSTGRES_USER=h360tk_root
       - POSTGRES_PASSWORD=NGE5ZjljYjM1ZWEyNDI5N2I0YmZiZGM0

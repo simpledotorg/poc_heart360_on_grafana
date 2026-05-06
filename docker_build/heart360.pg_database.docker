@@ -1,5 +1,22 @@
 FROM postgres:16-alpine
 
+# Stock postgres:16-alpine does not ship pg_cron; build from source (matches extensions used in pg_init_scripts).
+RUN apk add --no-cache --virtual .build-deps build-base postgresql-dev git && \
+    cd /tmp && \
+    git clone --depth 1 https://github.com/citusdata/pg_cron.git && \
+    cd pg_cron && \
+    make with_llvm=0 && \
+    make install with_llvm=0 && \
+    cd / && \
+    rm -rf /tmp/pg_cron && \
+    apk del .build-deps
+
+# pg_cron must be preloaded; initdb copies postgresql.conf.sample into the new data directory.
+RUN echo >> /usr/local/share/postgresql/postgresql.conf.sample && \
+    echo '# pg_cron' >> /usr/local/share/postgresql/postgresql.conf.sample && \
+    echo "shared_preload_libraries = 'pg_cron'" >> /usr/local/share/postgresql/postgresql.conf.sample && \
+    echo "cron.database_name = 'heart360tk_database'" >> /usr/local/share/postgresql/postgresql.conf.sample
+
 COPY ./pg_init_scripts/00_schemas.sql          docker-entrypoint-initdb.d/00_schemas.sql
 COPY ./pg_init_scripts/01_heart360_tables.sql  docker-entrypoint-initdb.d/01_heart360_tables.sql
 
