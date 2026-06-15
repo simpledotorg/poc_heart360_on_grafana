@@ -1,8 +1,8 @@
-In order to launch this poc:
+In order to launch this h360tk_grafana_core:
 
 ```
-git clone git@github.com:simpledotorg/poc_heart360_on_grafana.git
-cd poc_heart360_on_grafana
+git clone git@github.com:simpledotorg/h360tk_grafana_core.git
+cd h360tk_grafana_core
 docker compose up -d
 ```
 
@@ -69,8 +69,8 @@ brew install --cask dockerOpen Docker Desktop application and wait for it to sta
 
 #### Step 2: Launch HEARTS360 Toolkit
 ```
-git clone git@github.com:simpledotorg/poc_heart360_on_grafana.git
-cd poc_heart360_on_grafana
+git clone git@github.com:simpledotorg/h360tk_grafana_core.git
+cd h360tk_grafana_core
 docker compose up -d
 ```
 `docker compose up -d` command will:
