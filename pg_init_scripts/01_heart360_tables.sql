@@ -1275,36 +1275,143 @@ GROUP BY rm.ref_month, p.org_unit_id
 ORDER BY rm.ref_month;
 
 -- ============================================================================
--- Materialized view for saving precalculated data
+-- Reporting tables for saving precalculated data
 -- ============================================================================
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_PATIENTS_CATEGORY;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_PATIENTS_REGISTERED;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_CONTROLLED;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_SEVERITY;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_MISSED_VISITS;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_DM_BP_CONTROL;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_UNDER_CARE;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_OVERDUE_START_OF_MONTH;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE;
-DROP MATERIALIZED VIEW IF EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS;
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_CATEGORY AS SELECT * FROM heart360tk_schema.HEART360_PATIENTS_CATEGORY;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE AS SELECT * FROM heart360tk_schema.HEART360_PATIENTS_UNDER_CARE;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_REGISTERED AS SELECT * FROM heart360tk_schema.HEART360_PATIENTS_REGISTERED;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_CONTROLLED AS SELECT * FROM heart360tk_schema.HEART360_BLOOD_SUGAR_CONTROLLED;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_SEVERITY AS SELECT * FROM heart360tk_schema.HEART360_BLOOD_SUGAR_SEVERITY;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_MISSED_VISITS AS SELECT * FROM heart360tk_schema.HEART360_BLOOD_SUGAR_MISSED_VISITS;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_DM_BP_CONTROL AS SELECT * FROM heart360tk_schema.HEART360_DM_BP_CONTROL;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_UNDER_CARE AS SELECT * FROM heart360tk_schema.HEART360_DM_PATIENTS_UNDER_CARE;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_PATIENTS;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_START_OF_MONTH AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_START_OF_MONTH;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_PATIENTS_CALLED;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_RETURNED_TO_CARE;
-CREATE MATERIALIZED VIEW IF NOT EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS AS SELECT * FROM heart360tk_schema.HEART360_COHORT_PATIENT_DETAILS;
+DROP TABLE IF EXISTS heart360tk_reporting.IMPORT_FACILITY_MAPPING;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_PATIENTS_CATEGORY;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_PATIENTS_REGISTERED;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_CONTROLLED;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_SEVERITY;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_MISSED_VISITS;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_DM_BP_CONTROL;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_UNDER_CARE;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_OVERDUE_START_OF_MONTH;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE;
+DROP TABLE IF EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS;
 
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.IMPORT_FACILITY_MAPPING (
+    leaf_node_key character varying(255),
+    leaf_node_facility_id integer,
+    central_node_facility_id integer,
+    last_updated_date timestamp,
+    last_extract_date timestamp
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_CATEGORY (
+    ref_month date,
+    org_unit_id integer,
+    total_number_of_patients bigint,
+    nb_patients_under_care bigint,
+    nb_patients_newly_registered bigint,
+    nb_patients_under_care_registered_before_the_past_3_months bigint,
+    nb_patients_lost_to_follow_up bigint,
+    nb_patients_no_visit bigint,
+    nb_patients_under_care_registered_before_3m_incl_visits bigint,
+    nb_patients_uncontrolled bigint,
+    nb_patients_controlled bigint,
+    nb_patients_visit_no_bp bigint
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE (
+    ref_month date,
+    org_unit_id integer,
+    nb_patients_lost_to_follow_up bigint,
+    nb_patients_under_care bigint,
+    cumulative_number_of_patients bigint
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_REGISTERED (
+    ref_month date,
+    org_unit_id integer,
+    cumulative_number_of_patients numeric,
+    nb_new_patients numeric
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_CONTROLLED (
+    ref_month date,
+    org_unit_id integer,
+    diabetes_patients_under_care bigint,
+    diabetes_controlled bigint
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_SEVERITY (
+    ref_month date,
+    org_unit_id integer,
+    diabetes_patients_under_care bigint,
+    uncontrolled_moderate bigint,
+    uncontrolled_high bigint
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_MISSED_VISITS (
+    ref_month date,
+    org_unit_id integer,
+    diabetes_patients_under_care bigint,
+    missed_visit bigint
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_BP_CONTROL (
+    ref_month date,
+    org_unit_id integer,
+    dm_patients_under_care bigint,
+    bp_controlled_140_90 bigint,
+    bp_controlled_130_80 bigint
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_UNDER_CARE (
+    ref_month date,
+    org_unit_id integer,
+    nb_dm_patients_under_care bigint,
+    cumulative_dm_patients bigint,
+    nb_new_dm_patients bigint,
+    nb_patients_lost_to_follow_up bigint
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS (
+    patient_id bigint,
+    patient_name character varying(255),
+    registration_date timestamp without time zone,
+    birth_date date,
+    gender character varying(255),
+    phone_number character varying(255),
+    org_unit_id integer,
+    last_visit_date timestamp without time zone,
+    last_bp_diastolic numeric,
+    last_bp_systolic numeric,
+    last_call_date timestamp without time zone,
+    last_call_result character varying(255),
+    removed_reason character varying(255)
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_START_OF_MONTH (
+    ref_month date,
+    org_unit_id integer,
+    overdue_on_first bigint
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED (
+    ref_month date,
+    org_unit_id integer,
+    overdue_patients_called bigint
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE (
+    ref_month date,
+    org_unit_id integer,
+    overdue_returned_to_care bigint
+);
+
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS (
+    patient_id bigint,
+    org_unit_id integer,
+    registration_quarter timestamp without time zone,
+    status_at_end_of_interval text
+);
+
+CREATE INDEX IF NOT EXISTS idx_import_facility_mapping_leaf_node_key ON heart360tk_reporting.IMPORT_FACILITY_MAPPING (leaf_node_key);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_cat_org_month ON heart360tk_reporting.HEART360_PATIENTS_CATEGORY (org_unit_id, ref_month);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_under_care_org_month ON heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE (org_unit_id, ref_month);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_registered_org_month ON heart360tk_reporting.HEART360_PATIENTS_REGISTERED (org_unit_id, ref_month);
@@ -1322,57 +1429,78 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_returned_org_month ON heart360tk_r
 CREATE INDEX IF NOT EXISTS idx_cohort_org_quarter ON heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS (org_unit_id, registration_quarter);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_cohort_patient_id ON heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS (patient_id);
 
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.matview_refresh_log (
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.reporting_table_refresh_log (
     id serial PRIMARY KEY,
-    matview_name text NOT NULL,
+    reporting_table_name text NOT NULL,
     last_refreshed_at timestamp NOT NULL DEFAULT now(),
     refresh_duration interval,
     status text NOT NULL,
     refresh_batch_id bigint
 );
 
-CREATE INDEX IF NOT EXISTS idx_refresh_log_matview_name ON heart360tk_reporting.matview_refresh_log (matview_name);
-CREATE INDEX IF NOT EXISTS idx_refresh_log_last_refreshed ON heart360tk_reporting.matview_refresh_log (last_refreshed_at DESC);
-CREATE INDEX IF NOT EXISTS idx_refresh_log_batch ON heart360tk_reporting.matview_refresh_log (refresh_batch_id);
+CREATE INDEX IF NOT EXISTS idx_refresh_log_table_name ON heart360tk_reporting.reporting_table_refresh_log (reporting_table_name);
+CREATE INDEX IF NOT EXISTS idx_refresh_log_last_refreshed ON heart360tk_reporting.reporting_table_refresh_log (last_refreshed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_refresh_log_batch ON heart360tk_reporting.reporting_table_refresh_log (refresh_batch_id);
 
 -- =======================================================================================
--- Function to refresh all materialized views and log the refresh status and duration:
+-- Function to refresh all reporting tables (formerly materialized views) and log the
+-- refresh status and duration. Tables are truncated and repopulated from source views.
+-- Generic approach: define list once, iterate through all tables.
 -- =======================================================================================
 
-CREATE OR REPLACE FUNCTION heart360tk_reporting.refresh_all_matviews()
+CREATE OR REPLACE FUNCTION heart360tk_reporting.refresh_all_reporting_tables()
 RETURNS void
 LANGUAGE plpgsql
 AS $$
 DECLARE
-    mv RECORD;
+    v_batch_id bigint;
     start_time timestamp;
     end_time timestamp;
-    v_batch_id bigint;
+    v_table_name text;
+    v_rows_affected integer;
+    v_tables text[] := ARRAY[
+        'heart360_patients_category',
+        'heart360_patients_under_care',
+        'heart360_patients_registered',
+        'heart360_blood_sugar_controlled',
+        'heart360_blood_sugar_severity',
+        'heart360_blood_sugar_missed_visits',
+        'heart360_dm_bp_control',
+        'heart360_dm_patients_under_care',
+        'heart360_overdue_patients',
+        'heart360_overdue_start_of_month',
+        'heart360_overdue_patients_called',
+        'heart360_overdue_returned_to_care',
+        'heart360_cohort_patient_details'
+    ];
+    i integer;
 BEGIN
-    -- Generate a unique batch id to group all matview refreshes from this cycle
     v_batch_id := EXTRACT(EPOCH FROM clock_timestamp())::bigint;
 
-    FOR mv IN
-        SELECT matviewname FROM pg_matviews WHERE schemaname = 'heart360tk_reporting'
+    FOR i IN 1..array_length(v_tables, 1)
     LOOP
+        v_table_name := v_tables[i];
+
         BEGIN
             start_time := clock_timestamp();
-            RAISE NOTICE 'Refreshing %', mv.matviewname;
-            EXECUTE format('REFRESH MATERIALIZED VIEW CONCURRENTLY heart360tk_reporting.%I', mv.matviewname);
+            RAISE NOTICE 'Refreshing %', v_table_name;
+
+            -- Dynamically truncate and populate the table
+            EXECUTE format('TRUNCATE TABLE heart360tk_reporting.%I', v_table_name);
+            EXECUTE format('INSERT INTO heart360tk_reporting.%I SELECT * FROM heart360tk_schema.%I', v_table_name, v_table_name);
+            GET DIAGNOSTICS v_rows_affected = ROW_COUNT;
+
             end_time := clock_timestamp();
-
-            INSERT INTO heart360tk_reporting.matview_refresh_log
-                (matview_name, last_refreshed_at, refresh_duration, status, refresh_batch_id)
-            VALUES
-                (mv.matviewname, end_time, end_time - start_time, 'success', v_batch_id);
-
+            INSERT INTO heart360tk_reporting.reporting_table_refresh_log
+                (reporting_table_name, last_refreshed_at, refresh_duration, status, refresh_batch_id)
+            VALUES (v_table_name, end_time, end_time - start_time, 'success: ' || v_rows_affected || ' rows', v_batch_id);
         EXCEPTION WHEN OTHERS THEN
-            INSERT INTO heart360tk_reporting.matview_refresh_log
-                (matview_name, last_refreshed_at, refresh_duration, status, refresh_batch_id)
-            VALUES
-                (mv.matviewname, now(), NULL, 'failed: ' || SQLERRM, v_batch_id);
+            INSERT INTO heart360tk_reporting.reporting_table_refresh_log
+                (reporting_table_name, last_refreshed_at, refresh_duration, status, refresh_batch_id)
+            VALUES (v_table_name, now(), NULL, 'failed: ' || SQLERRM, v_batch_id);
         END;
     END LOOP;
+
 END;
 $$;
 
@@ -1380,7 +1508,7 @@ $$;
 -- Single-row status table for the admin dashboard: tracks the most recent refresh attempt
 -- and serves as the queue gate for manual triggers.
 -- =======================================================================================
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.matview_refresh_status (
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.reporting_table_refresh_status (
     id smallint PRIMARY KEY DEFAULT 1 CHECK (id = 1),
     status text NOT NULL DEFAULT 'idle',  -- idle | queued | in_progress | success | failed
     requested_at timestamptz,
@@ -1391,7 +1519,7 @@ CREATE TABLE IF NOT EXISTS heart360tk_reporting.matview_refresh_status (
     job_name text
 );
 
-INSERT INTO heart360tk_reporting.matview_refresh_status (id) VALUES (1)
+INSERT INTO heart360tk_reporting.reporting_table_refresh_status (id) VALUES (1)
 ON CONFLICT (id) DO NOTHING;
 
 -- =======================================================================================
@@ -1417,15 +1545,15 @@ BEGIN
     v_start_time := clock_timestamp();
 
     BEGIN
-        PERFORM heart360tk_reporting.refresh_all_matviews();
-        UPDATE heart360tk_reporting.matview_refresh_status
+        PERFORM heart360tk_reporting.refresh_all_reporting_tables();
+        UPDATE heart360tk_reporting.reporting_table_refresh_status
         SET status = 'success',
             started_at = v_start_time,
             finished_at = clock_timestamp(),
             last_error = NULL
         WHERE id = 1;
     EXCEPTION WHEN OTHERS THEN
-        UPDATE heart360tk_reporting.matview_refresh_status
+        UPDATE heart360tk_reporting.reporting_table_refresh_status
         SET status = 'failed',
             started_at = v_start_time,
             finished_at = clock_timestamp(),
@@ -1451,7 +1579,7 @@ AS $$
 DECLARE
     v_job_name text;
 BEGIN
-    UPDATE heart360tk_reporting.matview_refresh_status
+    UPDATE heart360tk_reporting.reporting_table_refresh_status
     SET status = 'queued',
         requested_at = now(),
         requested_by = p_user,
@@ -1466,7 +1594,7 @@ BEGIN
 
     v_job_name := 'mv_refresh_oneshot_' || extract(epoch from clock_timestamp())::bigint;
 
-    UPDATE heart360tk_reporting.matview_refresh_status
+    UPDATE heart360tk_reporting.reporting_table_refresh_status
     SET job_name = v_job_name
     WHERE id = 1;
 
@@ -1477,10 +1605,10 @@ BEGIN
             DO $body$
             BEGIN
                 IF EXISTS (
-                    SELECT 1 FROM heart360tk_reporting.matview_refresh_status
+                    SELECT 1 FROM heart360tk_reporting.reporting_table_refresh_status
                     WHERE id = 1 AND status = 'queued'
                 ) THEN
-                    UPDATE heart360tk_reporting.matview_refresh_status
+                    UPDATE heart360tk_reporting.reporting_table_refresh_status
                     SET status = 'in_progress', started_at = clock_timestamp()
                     WHERE id = 1;
                     COMMIT;
@@ -1498,7 +1626,7 @@ BEGIN
 END;
 $$;
 
-GRANT SELECT ON heart360tk_reporting.matview_refresh_status TO heart360tk;
+GRANT SELECT ON heart360tk_reporting.reporting_table_refresh_status TO heart360tk;
 GRANT EXECUTE ON FUNCTION heart360tk_reporting.start_async_refresh(text) TO heart360tk;
 GRANT EXECUTE ON FUNCTION heart360tk_reporting.run_refresh_with_status(text) TO heart360tk;
 
@@ -1542,9 +1670,9 @@ GRANT SELECT ON heart360tk_schema.org_unit_lineage TO grafana;
 GRANT EXECUTE ON FUNCTION heart360tk_schema.get_access_groups(integer, varchar) TO grafana;
 
 -- ============================================================================
--- pg_cron: Schedule the refresh of all materialized views every hour
+-- pg_cron: Schedule the refresh of all reporting tables every hour
 -- ============================================================================
-SELECT cron.schedule('refresh_matviews_every_hour', '0 * * * *', 'SELECT heart360tk_reporting.run_refresh_with_status(''cron'');');
+SELECT cron.schedule('refresh_reporting_tables_every_hour', '0 * * * *', 'SELECT heart360tk_reporting.run_refresh_with_status(''cron'');');
 
 -- ============================================================================
 -- VIEW 14: HEART360_DM_PATIENTS_CATAGORY

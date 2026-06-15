@@ -153,7 +153,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT rs.status, (EXTRACT(EPOCH FROM max(rl.last_refreshed_at)) * 1000)::bigint AS last_refreshed_ms, COALESCE(ROUND(EXTRACT(EPOCH FROM (rs.finished_at - rs.started_at))::numeric, 1), 0) AS duration_secs, COALESCE(ROUND(COUNT(CASE WHEN rl.status = 'success' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)), 0)::integer AS success_rate FROM heart360tk_reporting.matview_refresh_status rs LEFT JOIN (SELECT DISTINCT ON (matview_name) matview_name, last_refreshed_at, status FROM heart360tk_reporting.matview_refresh_log ORDER BY matview_name, last_refreshed_at DESC) rl ON true WHERE rs.id = 1 AND $UserIsAdmin = 1 GROUP BY rs.status, rs.finished_at, rs.started_at",
+          "rawSql": "SELECT rs.status, (EXTRACT(EPOCH FROM max(rl.last_refreshed_at)) * 1000)::bigint AS last_refreshed_ms, COALESCE(ROUND(EXTRACT(EPOCH FROM (rs.finished_at - rs.started_at))::numeric, 1), 0) AS duration_secs, COALESCE(ROUND(COUNT(CASE WHEN rl.status = 'success' THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0)), 0)::integer AS success_rate FROM heart360tk_reporting.reporting_table_refresh_status rs LEFT JOIN (SELECT DISTINCT ON (reporting_table_name) reporting_table_name, last_refreshed_at, status FROM heart360tk_reporting.reporting_table_refresh_log ORDER BY reporting_table_name, last_refreshed_at DESC) rl ON true WHERE rs.id = 1 AND $UserIsAdmin = 1 GROUP BY rs.status, rs.finished_at, rs.started_at",
           "refId": "A"
         }
       ],
@@ -192,7 +192,7 @@
       },
       "id": 4,
       "options": {
-        "afterRender": "var el = context.element || context.grafana?.element;\nif (!el) return;\nvar btn = el.querySelector('#h360-refresh-btn');\nif (btn && !btn.disabled) {\n  btn.onclick = async function() {\n    if (!confirm('This will refresh all reporting materialized views. The refresh runs in the background and may take a few minutes. Continue?')) return;\n    this.disabled = true;\n    this.innerHTML = '<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"animation:h360spin 1s linear infinite\"><path d=\"M21 12a9 9 0 1 1-6.219-8.56\"/></svg> Refresh in queue\\u2026';\n    this.style.background = '#d97706';\n    this.style.cursor = 'not-allowed';\n    try {\n      await fetch('/api/ds/query', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ queries: [{ refId: 'A', datasource: { uid: 'postgres-grafana', type: 'grafana-postgresql-datasource' }, rawSql: \"SELECT heart360tk_reporting.start_async_refresh('manual') AS result\", format: 'table', rawQuery: true }], from: '0', to: '0' })\n      });\n    } catch(e) {\n      this.disabled = false;\n      this.innerHTML = '\\u27f3 Refresh Dashboard';\n      this.style.background = '#1f62e0';\n      this.style.cursor = 'pointer';\n      alert('Failed to trigger refresh. Please try again.');\n    }\n  };\n}",
+        "afterRender": "var el = context.element || context.grafana?.element;\nif (!el) return;\nvar btn = el.querySelector('#h360-refresh-btn');\nif (btn && !btn.disabled) {\n  btn.onclick = async function() {\n    if (!confirm('This will refresh all reporting tables. The refresh runs in the background and may take a few minutes. Continue?')) return;\n    this.disabled = true;\n    this.innerHTML = '<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"animation:h360spin 1s linear infinite\"><path d=\"M21 12a9 9 0 1 1-6.219-8.56\"/></svg> Refresh in queue\\u2026';\n    this.style.background = '#d97706';\n    this.style.cursor = 'not-allowed';\n    try {\n      await fetch('/api/ds/query', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ queries: [{ refId: 'A', datasource: { uid: 'postgres-grafana', type: 'grafana-postgresql-datasource' }, rawSql: \"SELECT heart360tk_reporting.start_async_refresh('manual') AS result\", format: 'table', rawQuery: true }], from: '0', to: '0' })\n      });\n    } catch(e) {\n      this.disabled = false;\n      this.innerHTML = '\\u27f3 Refresh Dashboard';\n      this.style.background = '#1f62e0';\n      this.style.cursor = 'pointer';\n      alert('Failed to trigger refresh. Please try again.');\n    }\n  };\n}",
         "content": "<style>@keyframes h360spin{100%{transform:rotate(360deg)}}</style>\n{{#if (eq status 'queued')}}\n<div style=\"display:flex;align-items:center;justify-content:center;padding:20px 0;\">\n  <button id=\"h360-refresh-btn\" disabled style=\"padding:14px 44px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#d97706;color:#fff;cursor:not-allowed;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(217,119,6,.25);letter-spacing:.3px;\">\n    <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"animation:h360spin 1s linear infinite\"><path d=\"M21 12a9 9 0 1 1-6.219-8.56\"/></svg>\n    Refresh in queue\u2026\n  </button>\n</div>\n{{else if (eq status 'in_progress')}}\n<div style=\"display:flex;align-items:center;justify-content:center;padding:20px 0;\">\n  <button id=\"h360-refresh-btn\" disabled style=\"padding:14px 44px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#d97706;color:#fff;cursor:not-allowed;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(217,119,6,.25);letter-spacing:.3px;\">\n    <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"animation:h360spin 1s linear infinite\"><path d=\"M21 12a9 9 0 1 1-6.219-8.56\"/></svg>\n    Refresh in progress\u2026\n  </button>\n</div>\n{{else}}\n<div style=\"display:flex;align-items:center;justify-content:center;padding:20px 0;\">\n  <button id=\"h360-refresh-btn\" style=\"padding:14px 44px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#1f62e0;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(31,98,224,.25);letter-spacing:.3px;transition:background .2s,box-shadow .2s;\" onmouseover=\"this.style.background='#1550b8';this.style.boxShadow='0 4px 12px rgba(31,98,224,.35)'\" onmouseout=\"this.style.background='#1f62e0';this.style.boxShadow='0 2px 8px rgba(31,98,224,.25)'\">\n    &#10227; Refresh Dashboard\n  </button>\n</div>\n{{/if}}",
         "contentPartials": [],
         "defaultContent": "",
@@ -217,7 +217,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT status, CASE WHEN status IN ('queued','in_progress') THEN 1 ELSE 0 END AS is_busy FROM heart360tk_reporting.matview_refresh_status WHERE id = 1 AND $UserIsAdmin = 1",
+          "rawSql": "SELECT status, CASE WHEN status IN ('queued','in_progress') THEN 1 ELSE 0 END AS is_busy FROM heart360tk_reporting.reporting_table_refresh_status WHERE id = 1 AND $UserIsAdmin = 1",
           "refId": "A"
         }
       ],
@@ -260,7 +260,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Materialized View"
+              "options": "Table Name"
             },
             "properties": []
           },
@@ -370,7 +370,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  matview_name AS \"Materialized View\",\n  status       AS \"Last Status\",\n  (EXTRACT(EPOCH FROM last_refreshed_at) * 1000)::bigint AS \"Last Refresh\",\n  CASE WHEN status = 'running' THEN NULL\n       ELSE EXTRACT(EPOCH FROM refresh_duration)\n  END AS \"Last Duration\"\nFROM (\n  SELECT DISTINCT ON (matview_name)\n    matview_name, last_refreshed_at, refresh_duration, status\n  FROM heart360tk_reporting.matview_refresh_log\n  ORDER BY matview_name, last_refreshed_at DESC\n) latest\nWHERE $UserIsAdmin = 1\nORDER BY last_refreshed_at DESC NULLS LAST",
+          "rawSql": "SELECT\n  reporting_table_name AS \"Table Name\",\n  status       AS \"Last Status\",\n  (EXTRACT(EPOCH FROM last_refreshed_at) * 1000)::bigint AS \"Last Refresh\",\n  CASE WHEN status = 'running' THEN NULL\n       ELSE EXTRACT(EPOCH FROM refresh_duration)\n  END AS \"Last Duration\"\nFROM (\n  SELECT DISTINCT ON (reporting_table_name)\n    reporting_table_name, last_refreshed_at, refresh_duration, status\n  FROM heart360tk_reporting.reporting_table_refresh_log\n  ORDER BY reporting_table_name, last_refreshed_at DESC\n) latest\nWHERE $UserIsAdmin = 1\nORDER BY last_refreshed_at DESC NULLS LAST",
           "refId": "A"
         }
       ],
@@ -469,12 +469,12 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  last_refreshed_at AS time,\n  matview_name AS metric,\n  ROUND((EXTRACT(EPOCH FROM COALESCE(refresh_duration, interval '0 seconds')) * 1000)::numeric, 2) AS value\nFROM heart360tk_reporting.matview_refresh_log\nWHERE $UserIsAdmin = 1\n  AND last_refreshed_at BETWEEN $__timeFrom()::timestamp AND $__timeTo()::timestamp\nORDER BY last_refreshed_at",
+          "rawSql": "SELECT\n  last_refreshed_at AS time,\n  reporting_table_name AS metric,\n  ROUND((EXTRACT(EPOCH FROM COALESCE(refresh_duration, interval '0 seconds')) * 1000)::numeric, 2) AS value\nFROM heart360tk_reporting.reporting_table_refresh_log\nWHERE $UserIsAdmin = 1\n  AND last_refreshed_at BETWEEN $__timeFrom()::timestamp AND $__timeTo()::timestamp\nORDER BY last_refreshed_at",
           "refId": "A"
         }
       ],
       "title": "Refresh Time",
-      "description": "Time taken for each matview refresh. X-axis = timestamp, Y-axis = refresh duration. Red threshold line at 5m.",
+      "description": "Time taken for each reporting table refresh. X-axis = timestamp, Y-axis = refresh duration. Red threshold line at 5m.",
       "type": "timeseries"
     },
     {
@@ -562,12 +562,12 @@
           },
           "editorMode": "code",
           "format": "time_series",
-          "rawSql": "SELECT time, metric, value FROM (\n  -- Point 1: The age right before the execution\n  SELECT\n    COALESCE(\n      CASE WHEN refresh_batch_id < 2000000000 THEN to_timestamp(refresh_batch_id) AT TIME ZONE 'UTC' END,\n      last_refreshed_at\n    ) AS time,\n    matview_name AS metric,\n    ROUND(EXTRACT(EPOCH FROM (last_refreshed_at - (\n      SELECT COALESCE(MAX(prev.last_refreshed_at), curr.last_refreshed_at)\n      FROM heart360tk_reporting.matview_refresh_log prev\n      WHERE prev.matview_name = curr.matview_name\n        AND prev.status = 'success'\n        AND prev.last_refreshed_at < curr.last_refreshed_at\n    )))::numeric / 60, 1) AS value\n  FROM heart360tk_reporting.matview_refresh_log curr\n  WHERE $UserIsAdmin = 1\n    AND last_refreshed_at BETWEEN $__timeFrom()::timestamp - INTERVAL '24 hours' AND $__timeTo()::timestamp\n\n  UNION ALL\n\n  -- Point 2: The age right after a successful execution (drops to 0)\n  SELECT\n    COALESCE(\n      CASE WHEN refresh_batch_id < 2000000000 THEN to_timestamp(refresh_batch_id) AT TIME ZONE 'UTC' END,\n      last_refreshed_at\n    ) + interval '1 millisecond' AS time,\n    matview_name AS metric,\n    0.0 AS value\n  FROM heart360tk_reporting.matview_refresh_log curr\n  WHERE $UserIsAdmin = 1\n    AND status = 'success'\n    AND last_refreshed_at BETWEEN $__timeFrom()::timestamp - INTERVAL '24 hours' AND $__timeTo()::timestamp\n\n  UNION ALL\n\n  -- Point 3: Sentinel row at current time showing current age based on the last successful refresh\n  SELECT\n    LEAST(NOW()::timestamp, $__timeTo()::timestamp) AS time,\n    matview_name AS metric,\n    ROUND(EXTRACT(EPOCH FROM (LEAST(NOW()::timestamp, $__timeTo()::timestamp) - last_refreshed_at))::numeric / 60, 1) AS value\n  FROM (\n    SELECT DISTINCT ON (matview_name) matview_name, last_refreshed_at\n    FROM heart360tk_reporting.matview_refresh_log\n    WHERE $UserIsAdmin = 1\n      AND status = 'success'\n    ORDER BY matview_name, last_refreshed_at DESC\n  ) latest\n) combined\nORDER BY time ASC, metric ASC",
+          "rawSql": "SELECT time, metric, value FROM (\n  -- Point 1: The age right before the execution\n  SELECT\n    COALESCE(\n      CASE WHEN refresh_batch_id < 2000000000 THEN to_timestamp(refresh_batch_id) AT TIME ZONE 'UTC' END,\n      last_refreshed_at\n    ) AS time,\n    reporting_table_name AS metric,\n    ROUND(EXTRACT(EPOCH FROM (last_refreshed_at - (\n      SELECT COALESCE(MAX(prev.last_refreshed_at), curr.last_refreshed_at)\n      FROM heart360tk_reporting.reporting_table_refresh_log prev\n      WHERE prev.reporting_table_name = curr.reporting_table_name\n        AND prev.status = 'success'\n        AND prev.last_refreshed_at < curr.last_refreshed_at\n    )))::numeric / 60, 1) AS value\n  FROM heart360tk_reporting.reporting_table_refresh_log curr\n  WHERE $UserIsAdmin = 1\n    AND last_refreshed_at BETWEEN $__timeFrom()::timestamp - INTERVAL '24 hours' AND $__timeTo()::timestamp\n\n  UNION ALL\n\n  -- Point 2: The age right after a successful execution (drops to 0)\n  SELECT\n    COALESCE(\n      CASE WHEN refresh_batch_id < 2000000000 THEN to_timestamp(refresh_batch_id) AT TIME ZONE 'UTC' END,\n      last_refreshed_at\n    ) + interval '1 millisecond' AS time,\n    reporting_table_name AS metric,\n    0.0 AS value\n  FROM heart360tk_reporting.reporting_table_refresh_log curr\n  WHERE $UserIsAdmin = 1\n    AND status = 'success'\n    AND last_refreshed_at BETWEEN $__timeFrom()::timestamp - INTERVAL '24 hours' AND $__timeTo()::timestamp\n\n  UNION ALL\n\n  -- Point 3: Sentinel row at current time showing current age based on the last successful refresh\n  SELECT\n    LEAST(NOW()::timestamp, $__timeTo()::timestamp) AS time,\n    reporting_table_name AS metric,\n    ROUND(EXTRACT(EPOCH FROM (LEAST(NOW()::timestamp, $__timeTo()::timestamp) - last_refreshed_at))::numeric / 60, 1) AS value\n  FROM (\n    SELECT DISTINCT ON (reporting_table_name) reporting_table_name, last_refreshed_at\n    FROM heart360tk_reporting.reporting_table_refresh_log\n    WHERE $UserIsAdmin = 1\n      AND status = 'success'\n    ORDER BY reporting_table_name, last_refreshed_at DESC\n  ) latest\n) combined\nORDER BY time ASC, metric ASC",
           "refId": "A"
         }
       ],
       "title": "Refresh Age",
-      "description": "How stale each matview's data is over time. X-axis = timestamp, Y-axis = minutes since last refresh. Orange threshold at 120m, red at 180m.",
+      "description": "How stale each reporting table's data is over time. X-axis = timestamp, Y-axis = minutes since last refresh. Orange threshold at 120m, red at 180m.",
       "type": "timeseries"
     },
     {
@@ -652,12 +652,12 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT time, metric, value FROM (\n  -- Real refresh log entries\n  SELECT\n    COALESCE(\n      CASE WHEN refresh_batch_id < 2000000000 THEN to_timestamp(refresh_batch_id) AT TIME ZONE 'UTC' END,\n      last_refreshed_at\n    ) AS time,\n    matview_name AS metric,\n    CASE\n      WHEN status = 'success'    THEN 0\n      WHEN status LIKE 'failed%' THEN 1\n      ELSE 2\n    END AS value\n  FROM heart360tk_reporting.matview_refresh_log\n  WHERE $UserIsAdmin = 1\n    AND last_refreshed_at >= $__timeFrom()::timestamp - INTERVAL '24 hours'\n    AND last_refreshed_at <= $__timeTo()::timestamp\n\n  UNION ALL\n\n  -- Sentinel row at current time with NULL value to stop bars from extending into the future\n  SELECT\n    LEAST(NOW()::timestamp, $__timeTo()::timestamp) AS time,\n    matview_name AS metric,\n    NULL::integer AS value\n  FROM (\n    SELECT DISTINCT ON (matview_name) matview_name\n    FROM heart360tk_reporting.matview_refresh_log\n    WHERE $UserIsAdmin = 1\n  ) latest\n) combined\nORDER BY 1 ASC, 2 ASC",
+          "rawSql": "SELECT time, metric, value FROM (\n  -- Real refresh log entries\n  SELECT\n    COALESCE(\n      CASE WHEN refresh_batch_id < 2000000000 THEN to_timestamp(refresh_batch_id) AT TIME ZONE 'UTC' END,\n      last_refreshed_at\n    ) AS time,\n    reporting_table_name AS metric,\n    CASE\n      WHEN status = 'success'    THEN 0\n      WHEN status LIKE 'failed%' THEN 1\n      ELSE 2\n    END AS value\n  FROM heart360tk_reporting.reporting_table_refresh_log\n  WHERE $UserIsAdmin = 1\n    AND last_refreshed_at >= $__timeFrom()::timestamp - INTERVAL '24 hours'\n    AND last_refreshed_at <= $__timeTo()::timestamp\n\n  UNION ALL\n\n  -- Sentinel row at current time with NULL value to stop bars from extending into the future\n  SELECT\n    LEAST(NOW()::timestamp, $__timeTo()::timestamp) AS time,\n    reporting_table_name AS metric,\n    NULL::integer AS value\n  FROM (\n    SELECT DISTINCT ON (reporting_table_name) reporting_table_name\n    FROM heart360tk_reporting.reporting_table_refresh_log\n    WHERE $UserIsAdmin = 1\n  ) latest\n) combined\nORDER BY 1 ASC, 2 ASC",
           "refId": "A"
         }
       ],
       "title": "Refresh Status Over Time",
-      "description": "Status of async materialized view refresh operations",
+      "description": "Status of async reporting table refresh operations",
       "type": "state-timeline"
     },
     {
