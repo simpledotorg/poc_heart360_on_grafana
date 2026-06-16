@@ -1301,115 +1301,19 @@ CREATE TABLE IF NOT EXISTS heart360tk_reporting.IMPORT_FACILITY_MAPPING (
     last_extract_date timestamp
 );
 
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_CATEGORY (
-    ref_month date,
-    org_unit_id integer,
-    total_number_of_patients bigint,
-    nb_patients_under_care bigint,
-    nb_patients_newly_registered bigint,
-    nb_patients_under_care_registered_before_the_past_3_months bigint,
-    nb_patients_lost_to_follow_up bigint,
-    nb_patients_no_visit bigint,
-    nb_patients_under_care_registered_before_3m_incl_visits bigint,
-    nb_patients_uncontrolled bigint,
-    nb_patients_controlled bigint,
-    nb_patients_visit_no_bp bigint
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE (
-    ref_month date,
-    org_unit_id integer,
-    nb_patients_lost_to_follow_up bigint,
-    nb_patients_under_care bigint,
-    cumulative_number_of_patients bigint
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_REGISTERED (
-    ref_month date,
-    org_unit_id integer,
-    cumulative_number_of_patients numeric,
-    nb_new_patients numeric
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_CONTROLLED (
-    ref_month date,
-    org_unit_id integer,
-    diabetes_patients_under_care bigint,
-    diabetes_controlled bigint
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_SEVERITY (
-    ref_month date,
-    org_unit_id integer,
-    diabetes_patients_under_care bigint,
-    uncontrolled_moderate bigint,
-    uncontrolled_high bigint
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_MISSED_VISITS (
-    ref_month date,
-    org_unit_id integer,
-    diabetes_patients_under_care bigint,
-    missed_visit bigint
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_BP_CONTROL (
-    ref_month date,
-    org_unit_id integer,
-    dm_patients_under_care bigint,
-    bp_controlled_140_90 bigint,
-    bp_controlled_130_80 bigint
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_UNDER_CARE (
-    ref_month date,
-    org_unit_id integer,
-    nb_dm_patients_under_care bigint,
-    cumulative_dm_patients bigint,
-    nb_new_dm_patients bigint,
-    nb_patients_lost_to_follow_up bigint
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS (
-    patient_id bigint,
-    patient_name character varying(255),
-    registration_date timestamp without time zone,
-    birth_date date,
-    gender character varying(255),
-    phone_number character varying(255),
-    org_unit_id integer,
-    last_visit_date timestamp without time zone,
-    last_bp_diastolic numeric,
-    last_bp_systolic numeric,
-    last_call_date timestamp without time zone,
-    last_call_result character varying(255),
-    removed_reason character varying(255)
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_START_OF_MONTH (
-    ref_month date,
-    org_unit_id integer,
-    overdue_on_first bigint
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED (
-    ref_month date,
-    org_unit_id integer,
-    overdue_patients_called bigint
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE (
-    ref_month date,
-    org_unit_id integer,
-    overdue_returned_to_care bigint
-);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS (
-    patient_id bigint,
-    org_unit_id integer,
-    registration_quarter timestamp without time zone,
-    status_at_end_of_interval text
-);
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_CATEGORY AS SELECT * FROM heart360tk_schema.HEART360_PATIENTS_CATEGORY where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE AS SELECT * FROM heart360tk_schema.HEART360_PATIENTS_UNDER_CARE where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_REGISTERED AS SELECT * FROM heart360tk_schema.HEART360_PATIENTS_REGISTERED where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_CONTROLLED AS SELECT * FROM heart360tk_schema.HEART360_BLOOD_SUGAR_CONTROLLED where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_SEVERITY AS SELECT * FROM heart360tk_schema.HEART360_BLOOD_SUGAR_SEVERITY where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_BLOOD_SUGAR_MISSED_VISITS AS SELECT * FROM heart360tk_schema.HEART360_BLOOD_SUGAR_MISSED_VISITS where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_BP_CONTROL AS SELECT * FROM heart360tk_schema.HEART360_DM_BP_CONTROL where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_UNDER_CARE AS SELECT * FROM heart360tk_schema.HEART360_DM_PATIENTS_UNDER_CARE where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_PATIENTS where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_START_OF_MONTH AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_START_OF_MONTH where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_PATIENTS_CALLED where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_RETURNED_TO_CARE where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS AS SELECT * FROM heart360tk_schema.HEART360_COHORT_PATIENT_DETAILS where 1=0;
 
 CREATE INDEX IF NOT EXISTS idx_import_facility_mapping_leaf_node_key ON heart360tk_reporting.IMPORT_FACILITY_MAPPING (leaf_node_key);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_cat_org_month ON heart360tk_reporting.HEART360_PATIENTS_CATEGORY (org_unit_id, ref_month);
