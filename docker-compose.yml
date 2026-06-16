@@ -36,6 +36,8 @@ services:
       - shared_preload_libraries=pg_cron
       - -c
       - cron.database_name=heart360tk_database
+      - -c
+      - app.is_central_node=${is_central_node:-false}
     environment:
       - POSTGRES_USER=h360tk_root
       - POSTGRES_PASSWORD=NGE5ZjljYjM1ZWEyNDI5N2I0YmZiZGM0
