@@ -23,6 +23,7 @@ COPY ./pg_init_scripts/01_heart360_tables.sql  docker-entrypoint-initdb.d/01_hea
 COPY ./docker_build/heart360-postgres-entrypoint.sh /usr/local/bin/heart360-postgres-entrypoint.sh
 RUN chmod +x /usr/local/bin/heart360-postgres-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/heart360-postgres-entrypoint.sh"]
+CMD ["postgres"]
 
 ## Default node role; override at runtime via is_central_node env (e.g. from consumer .env).
 ENV is_central_node=false
