@@ -1440,6 +1440,11 @@ DECLARE
     v_lock_acquired boolean;
     v_start_time timestamptz;
 BEGIN
+
+    IF current_setting('app.is_central_node', true) = 'true' THEN
+        RETURN;
+    END IF;
+
     SELECT pg_try_advisory_lock(v_lock_key) INTO v_lock_acquired;
     IF NOT v_lock_acquired THEN
         RAISE NOTICE 'Matview refresh already running (source=%); skipping.', p_source;

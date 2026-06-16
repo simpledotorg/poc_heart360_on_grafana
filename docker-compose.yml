@@ -40,6 +40,7 @@ services:
       - POSTGRES_USER=h360tk_root
       - POSTGRES_PASSWORD=NGE5ZjljYjM1ZWEyNDI5N2I0YmZiZGM0
       - POSTGRES_DB=heart360tk_database
+      - is_central_node=${is_central_node:-false}
     volumes:
       - ./pg_init_scripts:/docker-entrypoint-initdb.d:ro
       - ./data:/var/lib/postgresql/import:ro

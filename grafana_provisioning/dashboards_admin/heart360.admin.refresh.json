@@ -193,7 +193,7 @@
       "id": 4,
       "options": {
         "afterRender": "var el = context.element || context.grafana?.element;\nif (!el) return;\nvar btn = el.querySelector('#h360-refresh-btn');\nif (btn && !btn.disabled) {\n  btn.onclick = async function() {\n    if (!confirm('This will refresh all reporting tables. The refresh runs in the background and may take a few minutes. Continue?')) return;\n    this.disabled = true;\n    this.innerHTML = '<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"animation:h360spin 1s linear infinite\"><path d=\"M21 12a9 9 0 1 1-6.219-8.56\"/></svg> Refresh in queue\\u2026';\n    this.style.background = '#d97706';\n    this.style.cursor = 'not-allowed';\n    try {\n      await fetch('/api/ds/query', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({ queries: [{ refId: 'A', datasource: { uid: 'postgres-grafana', type: 'grafana-postgresql-datasource' }, rawSql: \"SELECT heart360tk_reporting.start_async_refresh('manual') AS result\", format: 'table', rawQuery: true }], from: '0', to: '0' })\n      });\n    } catch(e) {\n      this.disabled = false;\n      this.innerHTML = '\\u27f3 Refresh Dashboard';\n      this.style.background = '#1f62e0';\n      this.style.cursor = 'pointer';\n      alert('Failed to trigger refresh. Please try again.');\n    }\n  };\n}",
-        "content": "<style>@keyframes h360spin{100%{transform:rotate(360deg)}}</style>\n{{#if (eq status 'queued')}}\n<div style=\"display:flex;align-items:center;justify-content:center;padding:20px 0;\">\n  <button id=\"h360-refresh-btn\" disabled style=\"padding:14px 44px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#d97706;color:#fff;cursor:not-allowed;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(217,119,6,.25);letter-spacing:.3px;\">\n    <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"animation:h360spin 1s linear infinite\"><path d=\"M21 12a9 9 0 1 1-6.219-8.56\"/></svg>\n    Refresh in queue\u2026\n  </button>\n</div>\n{{else if (eq status 'in_progress')}}\n<div style=\"display:flex;align-items:center;justify-content:center;padding:20px 0;\">\n  <button id=\"h360-refresh-btn\" disabled style=\"padding:14px 44px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#d97706;color:#fff;cursor:not-allowed;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(217,119,6,.25);letter-spacing:.3px;\">\n    <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"animation:h360spin 1s linear infinite\"><path d=\"M21 12a9 9 0 1 1-6.219-8.56\"/></svg>\n    Refresh in progress\u2026\n  </button>\n</div>\n{{else}}\n<div style=\"display:flex;align-items:center;justify-content:center;padding:20px 0;\">\n  <button id=\"h360-refresh-btn\" style=\"padding:14px 44px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#1f62e0;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(31,98,224,.25);letter-spacing:.3px;transition:background .2s,box-shadow .2s;\" onmouseover=\"this.style.background='#1550b8';this.style.boxShadow='0 4px 12px rgba(31,98,224,.35)'\" onmouseout=\"this.style.background='#1f62e0';this.style.boxShadow='0 2px 8px rgba(31,98,224,.25)'\">\n    &#10227; Refresh Dashboard\n  </button>\n</div>\n{{/if}}",
+        "content": "<style>@keyframes h360spin{100%{transform:rotate(360deg)}}</style>\n{{#unless (eq is_central_node \"true\")}}\n{{#if (eq status 'queued')}}\n<div style=\"display:flex;align-items:center;justify-content:center;padding:20px 0;\">\n  <button id=\"h360-refresh-btn\" disabled style=\"padding:14px 44px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#d97706;color:#fff;cursor:not-allowed;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(217,119,6,.25);letter-spacing:.3px;\">\n    <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"animation:h360spin 1s linear infinite\"><path d=\"M21 12a9 9 0 1 1-6.219-8.56\"/></svg>\n    Refresh in queue\u2026\n  </button>\n</div>\n{{else if (eq status 'in_progress')}}\n<div style=\"display:flex;align-items:center;justify-content:center;padding:20px 0;\">\n  <button id=\"h360-refresh-btn\" disabled style=\"padding:14px 44px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#d97706;color:#fff;cursor:not-allowed;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 6px rgba(217,119,6,.25);letter-spacing:.3px;\">\n    <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"animation:h360spin 1s linear infinite\"><path d=\"M21 12a9 9 0 1 1-6.219-8.56\"/></svg>\n    Refresh in progress\u2026\n  </button>\n</div>\n{{else}}\n<div style=\"display:flex;align-items:center;justify-content:center;padding:20px 0;\">\n  <button id=\"h360-refresh-btn\" style=\"padding:14px 44px;font-size:15px;font-weight:600;border:none;border-radius:8px;background:#1f62e0;color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:10px;box-shadow:0 2px 8px rgba(31,98,224,.25);letter-spacing:.3px;transition:background .2s,box-shadow .2s;\" onmouseover=\"this.style.background='#1550b8';this.style.boxShadow='0 4px 12px rgba(31,98,224,.35)'\" onmouseout=\"this.style.background='#1f62e0';this.style.boxShadow='0 2px 8px rgba(31,98,224,.25)'\">\n    &#10227; Refresh Dashboard\n  </button>\n</div>\n{{/if}}\n{{/unless}}",
         "contentPartials": [],
         "defaultContent": "",
         "editor": {
@@ -217,7 +217,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT status, CASE WHEN status IN ('queued','in_progress') THEN 1 ELSE 0 END AS is_busy FROM heart360tk_reporting.reporting_table_refresh_status WHERE id = 1 AND $UserIsAdmin = 1",
+          "rawSql": "SELECT rs.status, CASE WHEN rs.status IN ('queued','in_progress') THEN 1 ELSE 0 END AS is_busy, current_setting('app.is_central_node', true) AS is_central_node FROM heart360tk_reporting.reporting_table_refresh_status rs WHERE rs.id = 1 AND $UserIsAdmin = 1",
           "refId": "A"
         }
       ],
@@ -696,6 +696,23 @@
         "name": "UserIsAdmin",
         "options": [],
         "query": "SELECT CASE WHEN (u.is_admin OR EXISTS (\n  SELECT 1 FROM team_member tm\n  JOIN team t ON tm.team_id = t.id\n  WHERE tm.user_id = u.id AND t.name LIKE '%\\_ALL' ESCAPE '\\'\n)) THEN 1 ELSE 0 END\nFROM \"user\" u WHERE u.id = ${__user.id}",
+        "refresh": 1,
+        "regex": "",
+        "regexApplyTo": "value",
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres-hypertension"
+        },
+        "definition": "SELECT current_setting('app.is_central_node', true)",
+        "hide": 2,
+        "name": "IsCentralNode",
+        "options": [],
+        "query": "SELECT current_setting('app.is_central_node', true)",
         "refresh": 1,
         "regex": "",
         "regexApplyTo": "value",

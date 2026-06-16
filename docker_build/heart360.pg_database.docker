@@ -20,6 +20,13 @@ RUN echo >> /usr/local/share/postgresql/postgresql.conf.sample && \
 COPY ./pg_init_scripts/00_schemas.sql          docker-entrypoint-initdb.d/00_schemas.sql
 COPY ./pg_init_scripts/01_heart360_tables.sql  docker-entrypoint-initdb.d/01_heart360_tables.sql
 
+COPY ./docker_build/heart360-postgres-entrypoint.sh /usr/local/bin/heart360-postgres-entrypoint.sh
+RUN chmod +x /usr/local/bin/heart360-postgres-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/heart360-postgres-entrypoint.sh"]
+
+## Default node role; override at runtime via is_central_node env (e.g. from consumer .env).
+ENV is_central_node=false
+
 ## Database name, to be used everywhere
 ENV POSTGRES_DB=heart360tk_database
 ENV PGDATABASE=heart360tk_database
