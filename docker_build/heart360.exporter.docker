@@ -4,7 +4,8 @@ WORKDIR /exporter
 
 RUN pip install --no-cache-dir \
         psycopg2-binary==2.9.9 \
-        APScheduler==3.10.4
+        APScheduler==3.10.4 \
+        paramiko==3.5.1
 
 RUN useradd -m exporteruser && \
     chown -R exporteruser /exporter

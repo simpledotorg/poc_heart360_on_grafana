@@ -12,6 +12,7 @@ import psycopg2
 from psycopg2 import sql
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
+import paramiko
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,7 +41,15 @@ SOURCE_KEY       = os.getenv('SOURCE_KEY', '').strip()
 SOURCE_VERSION   = os.getenv('SOURCE_VERSION', '').strip()
 DATA_FORMAT_VERSION = _resolve_data_format_version(SOURCE_VERSION)
 EXPORT_CRON      = os.getenv('EXPORT_CRON', '0 * * * *').strip()
+UPLOAD_PROTOCOL  = os.getenv('UPLOAD_PROTOCOL', 'file').strip().lower()
 UPLOAD_DEST_PATH = os.getenv('UPLOAD_DEST_PATH', '/export').strip()
+
+SFTP_HOST           = os.getenv('SFTP_HOST', '').strip()
+SFTP_PORT           = int(os.getenv('SFTP_PORT', '22').strip())
+SFTP_USER           = os.getenv('SFTP_USER', '').strip()
+SFTP_PASSWORD       = os.getenv('SFTP_PASSWORD', '').strip()
+SFTP_DEST_PATH      = os.getenv('SFTP_DEST_PATH', '/upload').strip()
+SFTP_TIMEOUT_SECONDS = int(os.getenv('SFTP_TIMEOUT', '60').strip())
 
 DEFAULT_EXPORT_TABLES = [
     'heart360_patients_category',
@@ -77,19 +86,35 @@ def validate_config():
         'SOURCE_VERSION':    SOURCE_VERSION,
         'POSTGRES_PASSWORD': DB_CONNECTION_PARAMS['password'],
     }
+
+    if UPLOAD_PROTOCOL == 'sftp':
+        required.update({
+            'SFTP_HOST':     SFTP_HOST,
+            'SFTP_USER':     SFTP_USER,
+            'SFTP_PASSWORD': SFTP_PASSWORD,
+        })
+
     missing = [k for k, v in required.items() if not v]
     if missing:
         log.error("Missing required environment variables: %s", ', '.join(missing))
         sys.exit(1)
 
     log.info("Config validated OK.")
-    log.info("  is_central_node  : %s", is_central_node)
-    log.info("  SOURCE_KEY       : %s", SOURCE_KEY)
-    log.info("  SOURCE_VERSION   : %s", SOURCE_VERSION)
+    log.info("  is_central_node     : %s", is_central_node)
+    log.info("  SOURCE_KEY          : %s", SOURCE_KEY)
+    log.info("  SOURCE_VERSION      : %s", SOURCE_VERSION)
     log.info("  DATA_FORMAT_VERSION : %d", DATA_FORMAT_VERSION)
-    log.info("  EXPORT_CRON      : %s", EXPORT_CRON)
-    log.info("  UPLOAD_DEST_PATH : %s", UPLOAD_DEST_PATH)
-    log.info("  EXPORT_TABLES    : %s", EXPORT_TABLES)
+    log.info("  EXPORT_CRON         : %s", EXPORT_CRON)
+    log.info("  UPLOAD_PROTOCOL     : %s", UPLOAD_PROTOCOL)
+    if UPLOAD_PROTOCOL == 'sftp':
+        log.info("  SFTP_HOST           : %s", SFTP_HOST)
+        log.info("  SFTP_PORT           : %d", SFTP_PORT)
+        log.info("  SFTP_USER           : %s", SFTP_USER)
+        log.info("  SFTP_DEST_PATH      : %s", SFTP_DEST_PATH)
+        log.info("  SFTP_TIMEOUT        : %ds", SFTP_TIMEOUT_SECONDS)
+    else:
+        log.info("  UPLOAD_DEST_PATH    : %s", UPLOAD_DEST_PATH)
+    log.info("  EXPORT_TABLES       : %s", EXPORT_TABLES)
 
 def is_export_enabled():
     if is_central_node:
@@ -247,7 +272,7 @@ def package_zip(tmp_dir):
     return zip_path
 
 
-def upload_zip(zip_path):
+def upload_file(zip_path):
     os.makedirs(UPLOAD_DEST_PATH, exist_ok=True)
     dest = os.path.join(UPLOAD_DEST_PATH, os.path.basename(zip_path))
 
@@ -257,6 +282,62 @@ def upload_zip(zip_path):
 
     log.info("  Zip uploaded to: %s", dest)
     return dest
+
+
+def upload_sftp(zip_path):
+    filename    = os.path.basename(zip_path)
+    remote_path = f"{SFTP_DEST_PATH.rstrip('/')}/{filename}"
+    remote_tmp  = remote_path + '.tmp'
+
+    log.warning(
+        "SFTP host key verification is disabled — "
+        "set a known_hosts file in production for security."
+    )
+
+    transport = None
+    sftp      = None
+    try:
+        transport = paramiko.Transport((SFTP_HOST, SFTP_PORT))
+        transport.banner_timeout  = SFTP_TIMEOUT_SECONDS
+        transport.auth_timeout    = SFTP_TIMEOUT_SECONDS
+        transport.connect(username=SFTP_USER, password=SFTP_PASSWORD)
+
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        sftp.get_channel().settimeout(SFTP_TIMEOUT_SECONDS)
+
+        # Upload to a .tmp path first — atomic rename prevents the importer
+        # from picking up a half-written file if the transfer fails midway.
+        sftp.put(zip_path, remote_tmp)
+        sftp.rename(remote_tmp, remote_path)
+
+        os.remove(zip_path)
+        log.info("  Zip uploaded via SFTP to: %s@%s:%s", SFTP_USER, SFTP_HOST, remote_path)
+
+    except Exception:
+        # Best-effort cleanup of the remote temp file if it was created
+        if sftp is not None:
+            try:
+                sftp.remove(remote_tmp)
+            except Exception:
+                pass
+        raise
+
+    finally:
+        if sftp is not None:
+            try:
+                sftp.close()
+            except Exception:
+                pass
+        if transport is not None:
+            transport.close()
+
+    return remote_path
+
+
+def upload(zip_path):
+    if UPLOAD_PROTOCOL == 'sftp':
+        return upload_sftp(zip_path)
+    return upload_file(zip_path)
 
 
 def run_export():
@@ -274,7 +355,7 @@ def run_export():
         tmp_dir, stats = generate_csvs(conn)
         generate_metadata(tmp_dir, stats, generation_start_epoch=job_start)
         zip_path = package_zip(tmp_dir)
-        destination = upload_zip(zip_path)
+        destination = upload(zip_path)
         log.info("=== Export job completed successfully. Destination: %s ===", destination)
 
     except psycopg2.Error as e:
