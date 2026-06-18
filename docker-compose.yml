@@ -106,9 +106,10 @@ services:
     depends_on:
       - postgres
     environment:
-      - is_central_node=true
+      - is_central_node=false
       - SOURCE_KEY=h360tk_grafana_core
       - EXPORT_CRON=0 * * * *
+      - UPLOAD_PROTOCOL=file
       - UPLOAD_DEST_PATH=/export
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=heart360tk_database

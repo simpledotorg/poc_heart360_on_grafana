@@ -13,6 +13,8 @@ from psycopg2 import sql
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 import paramiko
+import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 
 logging.basicConfig(
     level=logging.INFO,
@@ -44,12 +46,19 @@ EXPORT_CRON      = os.getenv('EXPORT_CRON', '0 * * * *').strip()
 UPLOAD_PROTOCOL  = os.getenv('UPLOAD_PROTOCOL', 'file').strip().lower()
 UPLOAD_DEST_PATH = os.getenv('UPLOAD_DEST_PATH', '/export').strip()
 
-SFTP_HOST           = os.getenv('SFTP_HOST', '').strip()
-SFTP_PORT           = int(os.getenv('SFTP_PORT', '22').strip())
-SFTP_USER           = os.getenv('SFTP_USER', '').strip()
-SFTP_PASSWORD       = os.getenv('SFTP_PASSWORD', '').strip()
-SFTP_DEST_PATH      = os.getenv('SFTP_DEST_PATH', '/upload').strip()
+SFTP_HOST            = os.getenv('SFTP_HOST', '').strip()
+SFTP_PORT            = int(os.getenv('SFTP_PORT', '22').strip())
+SFTP_USER            = os.getenv('SFTP_USER', '').strip()
+SFTP_PASSWORD        = os.getenv('SFTP_PASSWORD', '').strip()
+SFTP_DEST_PATH       = os.getenv('SFTP_DEST_PATH', '/upload').strip()
 SFTP_TIMEOUT_SECONDS = int(os.getenv('SFTP_TIMEOUT', '60').strip())
+
+S3_BUCKET       = os.getenv('S3_BUCKET', '').strip()
+S3_KEY_PREFIX   = os.getenv('S3_KEY_PREFIX', '').strip().strip('/')
+S3_REGION       = os.getenv('S3_REGION', '').strip()
+S3_ACCESS_KEY   = os.getenv('S3_ACCESS_KEY', '').strip()
+S3_SECRET_KEY   = os.getenv('S3_SECRET_KEY', '').strip()
+S3_ENDPOINT_URL = os.getenv('S3_ENDPOINT_URL', '').strip() or None  # optional: MinIO / non-AWS S3
 
 DEFAULT_EXPORT_TABLES = [
     'heart360_patients_category',
@@ -94,6 +103,13 @@ def validate_config():
             'SFTP_PASSWORD': SFTP_PASSWORD,
         })
 
+    if UPLOAD_PROTOCOL == 's3':
+        required.update({
+            'S3_BUCKET':     S3_BUCKET,
+            'S3_ACCESS_KEY': S3_ACCESS_KEY,
+            'S3_SECRET_KEY': S3_SECRET_KEY,
+        })
+
     missing = [k for k, v in required.items() if not v]
     if missing:
         log.error("Missing required environment variables: %s", ', '.join(missing))
@@ -112,6 +128,11 @@ def validate_config():
         log.info("  SFTP_USER           : %s", SFTP_USER)
         log.info("  SFTP_DEST_PATH      : %s", SFTP_DEST_PATH)
         log.info("  SFTP_TIMEOUT        : %ds", SFTP_TIMEOUT_SECONDS)
+    elif UPLOAD_PROTOCOL == 's3':
+        log.info("  S3_BUCKET           : %s", S3_BUCKET)
+        log.info("  S3_KEY_PREFIX       : %s", S3_KEY_PREFIX or '(root)')
+        log.info("  S3_REGION           : %s", S3_REGION or '(default)')
+        log.info("  S3_ENDPOINT_URL     : %s", S3_ENDPOINT_URL or '(AWS default)')
     else:
         log.info("  UPLOAD_DEST_PATH    : %s", UPLOAD_DEST_PATH)
     log.info("  EXPORT_TABLES       : %s", EXPORT_TABLES)
@@ -334,9 +355,37 @@ def upload_sftp(zip_path):
     return remote_path
 
 
+def upload_s3(zip_path):
+    filename   = os.path.basename(zip_path)
+    s3_key     = f"{S3_KEY_PREFIX}/{filename}" if S3_KEY_PREFIX else filename
+    s3_uri     = f"s3://{S3_BUCKET}/{s3_key}"
+
+    kwargs = dict(
+        aws_access_key_id     = S3_ACCESS_KEY,
+        aws_secret_access_key = S3_SECRET_KEY,
+    )
+    if S3_REGION:
+        kwargs['region_name'] = S3_REGION
+    if S3_ENDPOINT_URL:
+        kwargs['endpoint_url'] = S3_ENDPOINT_URL
+
+    try:
+        s3 = boto3.client('s3', **kwargs)
+        s3.upload_file(zip_path, S3_BUCKET, s3_key)
+        os.remove(zip_path)
+        log.info("  Zip uploaded to S3: %s", s3_uri)
+    except (BotoCoreError, ClientError) as e:
+        log.error("  S3 upload failed: %s", e)
+        raise
+
+    return s3_uri
+
+
 def upload(zip_path):
     if UPLOAD_PROTOCOL == 'sftp':
         return upload_sftp(zip_path)
+    if UPLOAD_PROTOCOL == 's3':
+        return upload_s3(zip_path)
     return upload_file(zip_path)
 
 
