@@ -20,11 +20,26 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-NODE_ROLE        = os.getenv('NODE_ROLE', 'leaf').strip().lower()
+VERSION_DATA_FORMAT_MAP: dict[str, int] = {
+    '0.5.0': 1,
+}
+
+def _resolve_data_format_version(source_version: str) -> int:
+    if source_version in VERSION_DATA_FORMAT_MAP:
+        return VERSION_DATA_FORMAT_MAP[source_version]
+
+    log.warning(
+        "SOURCE_VERSION '%s' is not in VERSION_DATA_FORMAT_MAP — "
+        "defaulting to data_format_version=1.",
+        source_version,
+    )
+    return 1
+
+is_central_node  = os.getenv('is_central_node', 'false').strip().lower() == 'true'
 SOURCE_KEY       = os.getenv('SOURCE_KEY', '').strip()
 SOURCE_VERSION   = os.getenv('SOURCE_VERSION', '').strip()
-PROTOCOL_VERSION = int(os.getenv('PROTOCOL_VERSION', '1').strip())
-EXPORT_CRON      = os.getenv('EXPORT_CRON', '0 * * * *').strip()  # default: every hour
+DATA_FORMAT_VERSION = _resolve_data_format_version(SOURCE_VERSION)
+EXPORT_CRON      = os.getenv('EXPORT_CRON', '0 * * * *').strip()
 UPLOAD_DEST_PATH = os.getenv('UPLOAD_DEST_PATH', '/export').strip()
 
 DEFAULT_EXPORT_TABLES = [
@@ -68,17 +83,17 @@ def validate_config():
         sys.exit(1)
 
     log.info("Config validated OK.")
-    log.info("  NODE_ROLE        : %s", NODE_ROLE)
+    log.info("  is_central_node  : %s", is_central_node)
     log.info("  SOURCE_KEY       : %s", SOURCE_KEY)
     log.info("  SOURCE_VERSION   : %s", SOURCE_VERSION)
-    log.info("  PROTOCOL_VERSION : %d", PROTOCOL_VERSION)
+    log.info("  DATA_FORMAT_VERSION : %d", DATA_FORMAT_VERSION)
     log.info("  EXPORT_CRON      : %s", EXPORT_CRON)
     log.info("  UPLOAD_DEST_PATH : %s", UPLOAD_DEST_PATH)
     log.info("  EXPORT_TABLES    : %s", EXPORT_TABLES)
 
 def is_export_enabled():
-    if NODE_ROLE == 'central':
-        log.info("NODE_ROLE=central — export is disabled on this node. Skipping.")
+    if is_central_node:
+        log.info("is_central_node=true — export is disabled on this node. Skipping.")
         return False
     return True
 
@@ -94,11 +109,9 @@ def generate_csvs(conn):
 
     cur = conn.cursor()
     try:
-        # --- Write one CSV per aggregate table ---
         for table_name in EXPORT_TABLES:
             csv_path = os.path.join(tmp_dir, f'{table_name.upper()}.csv')
             try:
-                # Use psycopg2.sql for safe identifier quoting — prevents SQL injection
                 cur.execute(
                     sql.SQL('SELECT * FROM heart360tk_reporting.{}').format(
                         sql.Identifier(table_name)
@@ -118,7 +131,6 @@ def generate_csvs(conn):
                 log.error("  Failed to export table '%s': %s", table_name, e)
                 raise
 
-        # --- Write orgunit.csv (full hierarchy — all levels with parent_id) ---
         orgunit_path = os.path.join(tmp_dir, 'orgunit.csv')
         cur.execute(
             'SELECT id, name, level, parent_id FROM heart360tk_schema.org_units ORDER BY level, id'
@@ -131,7 +143,6 @@ def generate_csvs(conn):
             writer.writerow(col_names)
             writer.writerows(rows)
 
-        # Count only facility-level org units (level=3) for metadata check
         facility_level = 3
         try:
             cur.execute(
@@ -185,10 +196,10 @@ def generate_metadata(tmp_dir, stats, generation_start_epoch):
     generation_duration = round(now_epoch - generation_start_epoch, 2)
 
     metadata = {
-        'protocol_version':            PROTOCOL_VERSION,
+        'data_format_version':         DATA_FORMAT_VERSION,
         'source_key':                  SOURCE_KEY,
         'source_h360tk_version':       SOURCE_VERSION,
-        'generated_at':          now_human,
+        'generated_at':                now_human,
         'generated_at_epoch':          int(now_epoch),
         'generation_duration_seconds': generation_duration,
         'facility_count':              stats['facility_count'],
@@ -220,11 +231,9 @@ def package_zip(tmp_dir):
                     zf.write(file_path, arcname=filename)
                     log.info("  Added to zip: %s", filename)
 
-        # Atomic rename — only appears at final path once fully written
         os.rename(zip_tmp_path, zip_path)
 
     except Exception:
-        # Remove partial zip if something went wrong
         if os.path.exists(zip_tmp_path):
             os.remove(zip_tmp_path)
         raise
@@ -302,7 +311,7 @@ if __name__ == '__main__':
     validate_config()
 
     if not is_export_enabled():
-        log.info("Exporter is disabled (NODE_ROLE=central). Container will exit.")
+        log.info("Exporter is disabled (is_central_node=true). Container will exit.")
         sys.exit(0)
 
     start_scheduler()

@@ -106,10 +106,8 @@ services:
     depends_on:
       - postgres
     environment:
-      - PROTOCOL_VERSION=1
-      - NODE_ROLE=leaf
+      - is_central_node=true
       - SOURCE_KEY=h360tk_grafana_core
-      - SOURCE_VERSION=0.5.0
       - EXPORT_CRON=0 * * * *
       - UPLOAD_DEST_PATH=/export
       - POSTGRES_HOST=postgres
