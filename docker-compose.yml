@@ -101,6 +101,8 @@ services:
     build:
       context: .
       dockerfile: docker_build/heart360.exporter.docker
+      args:
+        SOURCE_VERSION: ${SOURCE_VERSION:-}
     container_name: h360tk-exporter
     restart: unless-stopped
     depends_on:

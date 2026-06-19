@@ -24,6 +24,8 @@ jobs:
           password: ${{ secrets.DOCKERHUB_SIMPLEDOTORG_ACCESS_TOCKEN }}
       - name: Build Docker Image
         run: |
+          cd .github/workflows && . ./getenv.sh && cd -
+          export SOURCE_VERSION="${BRANCH_NAME}"
           cd docker_build
           docker compose --project-name heart360tk build
 

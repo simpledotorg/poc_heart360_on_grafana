@@ -1,5 +1,9 @@
 FROM python:3.12-slim
 
+# SOURCE_VERSION is injected at build time by CI (from the git branch / release tag).
+# It becomes an immutable ENV inside the image — node operators cannot misconfigure it.
+ARG SOURCE_VERSION=
+
 WORKDIR /exporter
 
 RUN pip install --no-cache-dir \
@@ -17,7 +21,7 @@ COPY ./exporter_scripts/exporter.py ./exporter.py
 
 ENV is_central_node=false
 ENV SOURCE_KEY=__CHANGE_THIS__
-ENV SOURCE_VERSION=__CHANGE_THIS__
+ENV SOURCE_VERSION=$SOURCE_VERSION
 ENV UPLOAD_PROTOCOL=file
 ENV POSTGRES_HOST=postgres
 ENV POSTGRES_DB=heart360tk_database

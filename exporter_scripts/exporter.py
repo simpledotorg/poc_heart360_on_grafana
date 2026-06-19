@@ -90,9 +90,17 @@ DB_CONNECTION_PARAMS = {
 }
 
 def validate_config():
+    # SOURCE_VERSION is baked into the image at build time (ARG → ENV).
+    # If it's missing, the image was built without passing the build arg.
+    if not SOURCE_VERSION:
+        log.warning(
+            "SOURCE_VERSION is empty — image was likely built without "
+            "--build-arg SOURCE_VERSION=<version>. "
+            "Metadata will report this version as-is.",
+        )
+
     required = {
         'SOURCE_KEY':        SOURCE_KEY,
-        'SOURCE_VERSION':    SOURCE_VERSION,
         'POSTGRES_PASSWORD': DB_CONNECTION_PARAMS['password'],
     }
 
