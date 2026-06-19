@@ -27,13 +27,13 @@ VERSION_DATA_FORMAT_MAP: dict[str, int] = {
     '0.5.0': 1,
 }
 
-def _resolve_data_format_version(source_version: str) -> int:
+def _resolve_import_export_version(source_version: str) -> int:
     if source_version in VERSION_DATA_FORMAT_MAP:
         return VERSION_DATA_FORMAT_MAP[source_version]
 
     log.warning(
         "SOURCE_VERSION '%s' is not in VERSION_DATA_FORMAT_MAP — "
-        "defaulting to data_format_version=1.",
+        "defaulting to import_export_version=1.",
         source_version,
     )
     return 1
@@ -41,7 +41,7 @@ def _resolve_data_format_version(source_version: str) -> int:
 is_central_node  = os.getenv('is_central_node', 'false').strip().lower() == 'true'
 SOURCE_KEY       = os.getenv('SOURCE_KEY', '').strip()
 SOURCE_VERSION   = os.getenv('SOURCE_VERSION', '').strip()
-DATA_FORMAT_VERSION = _resolve_data_format_version(SOURCE_VERSION)
+IMPORT_EXPORT_VERSION = _resolve_import_export_version(SOURCE_VERSION)
 EXPORT_CRON      = os.getenv('EXPORT_CRON', '0 * * * *').strip()
 UPLOAD_PROTOCOL  = os.getenv('UPLOAD_PROTOCOL', 'file').strip().lower()
 UPLOAD_DEST_PATH = os.getenv('UPLOAD_DEST_PATH', '/export').strip()
@@ -119,7 +119,7 @@ def validate_config():
     log.info("  is_central_node     : %s", is_central_node)
     log.info("  SOURCE_KEY          : %s", SOURCE_KEY)
     log.info("  SOURCE_VERSION      : %s", SOURCE_VERSION)
-    log.info("  DATA_FORMAT_VERSION : %d", DATA_FORMAT_VERSION)
+    log.info("  IMPORT_EXPORT_VERSION : %d", IMPORT_EXPORT_VERSION)
     log.info("  EXPORT_CRON         : %s", EXPORT_CRON)
     log.info("  UPLOAD_PROTOCOL     : %s", UPLOAD_PROTOCOL)
     if UPLOAD_PROTOCOL == 'sftp':
@@ -242,7 +242,7 @@ def generate_metadata(tmp_dir, stats, generation_start_epoch):
     generation_duration = round(now_epoch - generation_start_epoch, 2)
 
     metadata = {
-        'data_format_version':         DATA_FORMAT_VERSION,
+        'import_export_version':       IMPORT_EXPORT_VERSION,
         'source_key':                  SOURCE_KEY,
         'source_h360tk_version':       SOURCE_VERSION,
         'generated_at':                now_human,
