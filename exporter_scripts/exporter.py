@@ -389,6 +389,33 @@ def upload(zip_path):
     return upload_file(zip_path)
 
 
+def log_export_run(started_at, status, duration_seconds=None,
+                   destination=None, error_message=None):
+    try:
+        with psycopg2.connect(**DB_CONNECTION_PARAMS) as conn:
+            conn.autocommit = True
+            with conn.cursor() as cur:
+                cur.execute(
+                    '''
+                    INSERT INTO heart360tk_reporting.export_run_log
+                        (source_key, started_at, finished_at, status,
+                         duration_seconds, destination, error_message)
+                    VALUES (%s, %s, NOW(), %s, %s, %s, %s)
+                    ''',
+                    (
+                        SOURCE_KEY,
+                        datetime.fromtimestamp(started_at, tz=timezone.utc),
+                        status,
+                        duration_seconds,
+                        destination,
+                        error_message,
+                    )
+                )
+        log.info("  Export run logged to DB — status=%s, duration=%.2fs", status, duration_seconds or 0)
+    except Exception as e:
+        log.warning("Could not write export run log to DB (non-fatal): %s", e)
+
+
 def run_export():
     if not is_export_enabled():
         return
@@ -396,22 +423,37 @@ def run_export():
     log.info("=== Export job started (source_key=%s) ===", SOURCE_KEY)
     job_start = time.time()
 
-    conn = None
+    conn        = None
+    destination = None
+
     try:
         conn = psycopg2.connect(**DB_CONNECTION_PARAMS)
         conn.autocommit = True
 
         tmp_dir, stats = generate_csvs(conn)
         generate_metadata(tmp_dir, stats, generation_start_epoch=job_start)
-        zip_path = package_zip(tmp_dir)
+        zip_path    = package_zip(tmp_dir)
         destination = upload(zip_path)
-        log.info("=== Export job completed successfully. Destination: %s ===", destination)
 
-    except psycopg2.Error as e:
-        log.error("Database connection error: %s", e)
+        duration = round(time.time() - job_start, 2)
+        log_export_run(
+            started_at       = job_start,
+            status           = 'success',
+            duration_seconds = duration,
+            destination      = destination,
+        )
+        log.info("=== Export job completed successfully in %.2fs. Destination: %s ===",
+                 duration, destination)
 
     except Exception as e:
+        duration = round(time.time() - job_start, 2)
         log.error("Export job failed: %s", e, exc_info=True)
+        log_export_run(
+            started_at       = job_start,
+            status           = 'failed',
+            duration_seconds = duration,
+            error_message    = str(e),
+        )
 
     finally:
         if conn:
