@@ -19,6 +19,7 @@ class ImportVersion1(BaseImportVersion):
         'heart360_overdue_start_of_month',
         'heart360_overdue_patients_called',
         'heart360_overdue_returned_to_care',
+        'heart360_dm_patients_category',
         'heart360_cohort_patient_details',
     ]
 
