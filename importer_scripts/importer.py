@@ -212,16 +212,6 @@ def load_metadata(extract_dir: str) -> dict:
     return metadata
 
 
-def validate_zip_name(zip_name: str, source_key: str) -> None:
-    expected_name = f'{source_key}.zip'
-    if zip_name != expected_name:
-        log.warning(
-            'Zip filename %s does not match expected naming convention %s',
-            zip_name,
-            expected_name,
-        )
-
-
 def import_zip_file(conn, zip_path: str, zip_name: str) -> str:
     extract_dir = tempfile.mkdtemp(prefix='h360tk_import_')
     try:
@@ -231,8 +221,6 @@ def import_zip_file(conn, zip_path: str, zip_name: str) -> str:
         metadata = load_metadata(extract_dir)
         source_key = metadata['source_key']
         version = int(metadata['import_export_version'])
-
-        validate_zip_name(zip_name, source_key)
 
         importer = get_importer(version)
         importer.import_zip(conn, extract_dir, metadata)
@@ -274,7 +262,7 @@ def run_import():
         for zip_name in zip_names:
             zip_start = time.time()
             local_zip_path = os.path.join(work_dir, zip_name)
-            source_key = os.path.splitext(zip_name)[0]
+            source_key = None
 
             try:
                 download_sftp_zip(zip_name, local_zip_path)
@@ -300,14 +288,13 @@ def run_import():
                 conn.rollback()
                 duration = round(time.time() - zip_start, 2)
                 log.error(
-                    'Failed to import zip %s (source_key=%s): %s',
+                    'Failed to import zip %s: %s',
                     zip_name,
-                    source_key,
                     e,
                     exc_info=True,
                 )
                 log_import_run(
-                    source_key=source_key,
+                    source_key=source_key or zip_name,
                     started_at=zip_start,
                     status='failed',
                     duration_seconds=duration,
