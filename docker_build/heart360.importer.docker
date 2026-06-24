@@ -1,0 +1,24 @@
+FROM python:3.12-slim
+
+WORKDIR /importer
+
+RUN pip install --no-cache-dir \
+        psycopg2-binary==2.9.9 \
+        APScheduler==3.10.4
+
+RUN useradd -m importeruser && \
+    chown -R importeruser /importer
+
+USER importeruser
+
+COPY ./importer_scripts/importer.py ./importer.py
+
+ENV IMPORT_AGGREAGATE_DATA=false
+ENV IMPORT_FOLDER_PATH=/export
+ENV IMPORT_PROTOCOL=sftp
+ENV POSTGRES_HOST=postgres
+ENV POSTGRES_DB=heart360tk_database
+ENV POSTGRES_USER=heart360tk
+ENV POSTGRES_PASSWORD=__CHANGE_THIS__
+
+CMD ["python3", "./importer.py"]

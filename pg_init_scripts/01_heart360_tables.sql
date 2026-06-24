@@ -1338,6 +1338,28 @@ CREATE INDEX IF NOT EXISTS idx_export_run_log_source_key
 
 GRANT INSERT, SELECT ON heart360tk_reporting.export_run_log TO heart360tk;
 GRANT USAGE ON SEQUENCE heart360tk_reporting.export_run_log_id_seq TO heart360tk;
+
+-- ============================================================================
+-- Importer run audit log — one row per import execution (success or failure).
+-- Allows detecting leaf nodes for which import fails.
+-- ============================================================================
+DROP TABLE IF EXISTS heart360tk_reporting.import_run_log;
+CREATE TABLE heart360tk_reporting.import_run_log (
+    id               SERIAL          PRIMARY KEY,
+    source_key       TEXT            NOT NULL,
+    started_at       TIMESTAMPTZ     NOT NULL,
+    finished_at      TIMESTAMPTZ,
+    status           TEXT            NOT NULL CHECK (status IN ('success', 'failed')),
+    duration_seconds NUMERIC(10, 2),
+    error_message    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_import_run_log_source_key
+    ON heart360tk_reporting.import_run_log (source_key, started_at DESC);
+
+GRANT INSERT, SELECT ON heart360tk_reporting.import_run_log TO heart360tk;
+GRANT USAGE ON SEQUENCE heart360tk_reporting.import_run_log_id_seq TO heart360tk;
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_cat_org_month ON heart360tk_reporting.HEART360_PATIENTS_CATEGORY (org_unit_id, ref_month);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_under_care_org_month ON heart360tk_reporting.HEART360_PATIENTS_UNDER_CARE (org_unit_id, ref_month);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_registered_org_month ON heart360tk_reporting.HEART360_PATIENTS_REGISTERED (org_unit_id, ref_month);
