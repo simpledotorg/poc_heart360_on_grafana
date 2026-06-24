@@ -212,19 +212,27 @@ def load_metadata(extract_dir: str) -> dict:
     return metadata
 
 
-def import_zip_file(conn, zip_path: str, zip_name: str) -> str:
+def read_zip_source_key(zip_path: str) -> str:
+    with zipfile.ZipFile(zip_path, 'r') as zf:
+        with zf.open('metadata.json') as f:
+            metadata = json.load(f)
+    source_key = metadata.get('source_key', '').strip()
+    if not source_key:
+        raise ValueError('metadata.json is missing source_key')
+    return source_key
+
+
+def import_zip_file(conn, zip_path: str, source_key: str) -> None:
     extract_dir = tempfile.mkdtemp(prefix='h360tk_import_')
     try:
         with zipfile.ZipFile(zip_path, 'r') as zf:
             zf.extractall(extract_dir)
 
         metadata = load_metadata(extract_dir)
-        source_key = metadata['source_key']
         version = int(metadata['import_export_version'])
 
         importer = get_importer(version)
         importer.import_zip(conn, extract_dir, metadata)
-        return source_key
 
     finally:
         shutil.rmtree(extract_dir, ignore_errors=True)
@@ -266,7 +274,8 @@ def run_import():
 
             try:
                 download_sftp_zip(zip_name, local_zip_path)
-                source_key = import_zip_file(conn, local_zip_path, zip_name)
+                source_key = read_zip_source_key(local_zip_path)
+                import_zip_file(conn, local_zip_path, source_key)
                 conn.commit()
 
                 duration = round(time.time() - zip_start, 2)
@@ -294,7 +303,7 @@ def run_import():
                     exc_info=True,
                 )
                 log_import_run(
-                    source_key=source_key or zip_name,
+                    source_key=source_key,
                     started_at=zip_start,
                     status='failed',
                     duration_seconds=duration,
