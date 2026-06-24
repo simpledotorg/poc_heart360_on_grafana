@@ -4,7 +4,8 @@ WORKDIR /importer
 
 RUN pip install --no-cache-dir \
         psycopg2-binary==2.9.9 \
-        APScheduler==3.10.4
+        APScheduler==3.10.4 \
+        paramiko==3.5.1
 
 RUN useradd -m importeruser && \
     chown -R importeruser /importer
@@ -12,10 +13,16 @@ RUN useradd -m importeruser && \
 USER importeruser
 
 COPY ./importer_scripts/importer.py ./importer.py
+COPY ./importer_scripts/import_versions/ ./import_versions/
 
 ENV IMPORT_AGGREAGATE_DATA=false
 ENV IMPORT_FOLDER_PATH=/export
 ENV IMPORT_PROTOCOL=sftp
+ENV SFTP_HOST=__CHANGE_THIS__
+ENV SFTP_PORT=22
+ENV SFTP_USER=__CHANGE_THIS__
+ENV SFTP_PASSWORD=__CHANGE_THIS__
+ENV SFTP_TIMEOUT=60
 ENV POSTGRES_HOST=postgres
 ENV POSTGRES_DB=heart360tk_database
 ENV POSTGRES_USER=heart360tk

@@ -132,6 +132,12 @@ services:
       - IMPORT_CRON=0 * * * *
       - IMPORT_AGGREAGATE_DATA=false
       - IMPORT_FOLDER_PATH=/export
+      - IMPORT_PROTOCOL=sftp
+      - SFTP_HOST=__CHANGE_THIS__
+      - SFTP_PORT=22
+      - SFTP_USER=__CHANGE_THIS__
+      - SFTP_PASSWORD=__CHANGE_THIS__
+      - SFTP_TIMEOUT=60
       - POSTGRES_HOST=postgres
       - POSTGRES_DB=heart360tk_database
       - POSTGRES_USER=heart360tk
