@@ -29,6 +29,8 @@ class ImportVersion1(BaseImportVersion):
             source_key,
         )
 
+        self.import_org_units(conn, extract_dir)
+
         for filename in sorted(os.listdir(extract_dir)):
             if filename in self.SKIP_FILES:
                 continue

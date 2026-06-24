@@ -32,6 +32,45 @@ class BaseImportVersion:
             return table_name
         return None
 
+    def import_org_units(self, conn, extract_dir: str) -> None:
+        csv_path = os.path.join(extract_dir, 'orgunit.csv')
+        if not os.path.isfile(csv_path):
+            log.warning('orgunit.csv not found in zip — skipping org_units import')
+            return
+
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                CREATE TEMP TABLE tmp_org_units (
+                    id        INTEGER,
+                    name      VARCHAR(255),
+                    level     INTEGER,
+                    parent_id INTEGER
+                ) ON COMMIT DROP
+                '''
+            )
+
+        with open(csv_path, 'r', encoding='utf-8') as csv_file:
+            with conn.cursor() as cur:
+                cur.copy_expert(
+                    'COPY tmp_org_units (id, name, level, parent_id) FROM STDIN WITH (FORMAT CSV, HEADER TRUE)',
+                    csv_file,
+                )
+
+        with conn.cursor() as cur:
+            cur.execute(
+                '''
+                INSERT INTO heart360tk_schema.org_units (id, name, level, parent_id)
+                SELECT id, name, level, parent_id FROM tmp_org_units
+                ORDER BY level, id
+                ON CONFLICT (id) DO UPDATE
+                    SET name      = EXCLUDED.name,
+                        level     = EXCLUDED.level,
+                        parent_id = EXCLUDED.parent_id
+                '''
+            )
+            log.info('  Upserted %d row(s) into heart360tk_schema.org_units', cur.rowcount)
+
     def copy_csv_to_table(self, conn, table_name: str, csv_path: str) -> None:
         with open(csv_path, 'r', encoding='utf-8') as csv_file:
             with conn.cursor() as cur:
