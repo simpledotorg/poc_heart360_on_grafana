@@ -336,6 +336,10 @@ def upload_sftp(zip_path):
         # Upload to a .tmp path first — atomic rename prevents the importer
         # from picking up a half-written file if the transfer fails midway.
         sftp.put(zip_path, remote_tmp)
+        try:
+            sftp.remove(remote_path)
+        except FileNotFoundError:
+            pass
         sftp.rename(remote_tmp, remote_path)
 
         os.remove(zip_path)
