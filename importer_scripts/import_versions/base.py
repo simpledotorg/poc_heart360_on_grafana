@@ -203,7 +203,7 @@ class BaseImportVersion:
                 for column in table_columns:
                     insert_columns.append(column)
                     if column == 'org_unit_id':
-                        select_parts.append('m.central_node_facility_id')
+                        select_parts.append(sql.SQL('m.central_node_facility_id'))
                     else:
                         select_parts.append(sql.SQL('t.{}').format(sql.Identifier(column)))
 
