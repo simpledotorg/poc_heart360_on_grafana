@@ -1545,7 +1545,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_start_month_org_month ON heart360t
 CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_called_org_month ON heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED (org_unit_id, ref_month);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_returned_org_month ON heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE (org_unit_id, ref_month);
 CREATE INDEX IF NOT EXISTS idx_cohort_org_quarter ON heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS (org_unit_id, registration_quarter);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_cohort_patient_id ON heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS (patient_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_dm_cat_org_month ON heart360tk_reporting.HEART360_DM_PATIENTS_CATEGORY (org_unit_id, ref_month);
 
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.reporting_table_refresh_log (
