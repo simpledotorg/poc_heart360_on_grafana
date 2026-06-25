@@ -272,8 +272,7 @@ def generate_metadata(tmp_dir, stats, generation_start_epoch):
 
 
 def package_zip(tmp_dir):
-    epoch = int(time.time())
-    zip_filename = f'{SOURCE_KEY}_{epoch}.zip'
+    zip_filename = f'{SOURCE_KEY}.zip'
     zip_path = os.path.join('/tmp', zip_filename)
     zip_tmp_path = zip_path + '.tmp'
 
