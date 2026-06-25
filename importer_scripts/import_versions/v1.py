@@ -30,7 +30,7 @@ class ImportVersion1(BaseImportVersion):
             source_key,
         )
 
-        self.import_org_units(conn, extract_dir)
+        self.import_org_units(conn, extract_dir, source_key, metadata)
 
         for filename in sorted(os.listdir(extract_dir)):
             if filename in self.SKIP_FILES:
@@ -48,4 +48,5 @@ class ImportVersion1(BaseImportVersion):
                 conn,
                 table_name,
                 os.path.join(extract_dir, filename),
+                source_key,
             )
