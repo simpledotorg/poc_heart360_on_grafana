@@ -1232,7 +1232,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nWITH selected_org AS (\n  SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1)))\n),\nknown_months AS (\n  SELECT DATE_TRUNC('month', series_date)::date AS ref_month\n  FROM generate_series(\n    DATE_TRUNC('month', (SELECT MIN(registration_date) FROM patients)),\n    DATE_TRUNC('month', CURRENT_DATE),\n    '1 month'::interval\n  ) AS t(series_date)\n),\nmonthly_registrations AS (\n  SELECT\n    DATE_TRUNC('month', p.registration_date)::date AS ref_month,\n    COUNT(*) AS nb_new_patients\n  FROM patients p\n  WHERE LOWER(p.patient_status) <> 'dead'\n    AND EXISTS (SELECT 1 FROM patient_diagnoses pd WHERE pd.patient_id = p.patient_id AND pd.diagnosis_code = 'I10')\n    AND p.org_unit_id IN (SELECT id FROM selected_org)\n  GROUP BY DATE_TRUNC('month', p.registration_date)\n),\nhtn_under_care AS (\n  SELECT\n    uc.ref_month,\n    SUM(uc.nb_patients_under_care) AS nb_patients_under_care\n  FROM HEART360_PATIENTS_UNDER_CARE uc\n  WHERE uc.org_unit_id IN (SELECT id FROM selected_org)\n  GROUP BY uc.ref_month\n)\nSELECT\n  km.ref_month,\n  SUM(COALESCE(mr.nb_new_patients, 0)) OVER (ORDER BY km.ref_month) AS cumulative_number_of_patients,\n  c.nb_patients_under_care,\n  COALESCE(mr.nb_new_patients, 0) AS nb_new_patients\nFROM known_months km\nLEFT JOIN monthly_registrations mr ON mr.ref_month = km.ref_month\nLEFT JOIN htn_under_care c ON c.ref_month = km.ref_month\nORDER BY km.ref_month\n) AS master_access_control WHERE '${isAllowed}' = '1'",
+          "rawSql": "SELECT * FROM (\nWITH selected_org AS (\n  SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1)))\n),\nmonthly_data AS (\n  SELECT\n    pr.ref_month,\n    SUM(COALESCE(pr.nb_new_patients, 0)) AS nb_new_patients,\n    SUM(COALESCE(uc.nb_patients_under_care, 0)) AS nb_patients_under_care\n  FROM HEART360_PATIENTS_REGISTERED pr\n  LEFT JOIN HEART360_PATIENTS_UNDER_CARE uc\n    ON uc.ref_month = pr.ref_month\n    AND uc.org_unit_id = pr.org_unit_id\n  WHERE pr.org_unit_id IN (SELECT id FROM selected_org)\n  GROUP BY pr.ref_month\n)\nSELECT\n  ref_month,\n  SUM(nb_new_patients) OVER (ORDER BY ref_month) AS cumulative_number_of_patients,\n  nb_patients_under_care,\n  nb_new_patients\nFROM monthly_data\nORDER BY ref_month\n) AS master_access_control WHERE '${isAllowed}' = '1'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -3054,7 +3054,7 @@
         },
         "datasource": {
           "type": "grafana-postgresql-datasource",
-          "uid": "postgres-hypertension"
+          "uid": "postgres-hypertension-cached"
         },
         "definition": "SELECT MAX(ref_month) AS __value FROM heart360_patients_category WHERE $__timeFilter(ref_month)",
         "hide": 2,
