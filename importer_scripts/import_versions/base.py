@@ -10,7 +10,8 @@ log = logging.getLogger(__name__)
 
 class BaseImportVersion:
     REPORTING_TABLES: list[str] = []
-    SKIP_FILES = frozenset({'metadata.json', 'orgunit.csv'})
+    ORG_UNITS_TABLE: str = 'org_units'
+    SKIP_FILES = frozenset({'metadata.json'})
 
     @classmethod
     def truncate_reporting_tables(cls, conn) -> None:
@@ -83,16 +84,41 @@ class BaseImportVersion:
         source_key: str,
         metadata: dict,
     ) -> dict[int, int]:
-        """Merge orgunit.csv into central org_units; return leaf_id -> central_id map.
+        """Merge org unit CSV into central org_units; return leaf_id -> central_id map.
+
+        Looks for ORG_UNITS.csv (new exporter format).  Falls back to orgunit.csv
+        when the zip was created by an older exporter; in that case org_units and
+        hierarchy_config are also copied directly from heart360tk_schema into the
+        reporting tables (since the new-format CSVs are absent from the zip).
 
         Each leaf node may define its own hierarchy depth (e.g. 2, 4, or 5 levels).
         Rows are processed parent-before-child using level order from the CSV.
         Every leaf org_unit id is recorded in import_facility_mapping for reporting
         table id remapping, regardless of level.
+
+        Note: for new-format zips, the reporting table is populated (with remapped ids)
+        by copy_csv_to_table() in the CSV loop, exactly like every other reporting table.
         """
-        csv_path = os.path.join(extract_dir, 'orgunit.csv')
+        csv_filename = f'{self.ORG_UNITS_TABLE.upper()}.csv'
+        csv_path = os.path.join(extract_dir, csv_filename)
+
+        # Backward compat: zips created by the old exporter used 'orgunit.csv'.
+        # When only the legacy file exists, we still build the id mapping and
+        # then copy org_units / hierarchy_config from heart360tk_schema directly
+        # into the reporting tables (the new-format CSV loop won't find them).
+        legacy_format = False
         if not os.path.isfile(csv_path):
-            raise FileNotFoundError('orgunit.csv not found in zip')
+            legacy_path = os.path.join(extract_dir, 'orgunit.csv')
+            if os.path.isfile(legacy_path):
+                log.warning(
+                    '%s not found; falling back to legacy orgunit.csv '
+                    '(zip was created by an older exporter)',
+                    csv_filename,
+                )
+                csv_path = legacy_path
+                legacy_format = True
+            else:
+                raise FileNotFoundError(f'{csv_filename} not found in zip')
 
         org_rows = self._read_orgunit_rows(csv_path)
         leaf_to_central: dict[int, int] = {}
@@ -117,7 +143,7 @@ class BaseImportVersion:
                     central_parent_id = leaf_to_central.get(leaf_parent_id)
                     if central_parent_id is None:
                         raise ValueError(
-                            f'orgunit.csv parent id {leaf_parent_id} for leaf id {leaf_id} '
+                            f'{csv_filename} parent id {leaf_parent_id} for leaf id {leaf_id} '
                             f'was not processed before its child (source_key={source_key})'
                         )
 
@@ -149,6 +175,33 @@ class BaseImportVersion:
             len(leaf_to_central),
             source_key,
         )
+
+        if legacy_format:
+            # Old zip: ORG_UNITS.csv / HIERARCHY_CONFIG.csv are absent so the
+            # CSV loop won't populate the reporting tables.  Copy them directly
+            # from heart360tk_schema (which was just updated by upsert_org_unit
+            # above) so Grafana sees data without requiring a re-export.
+            with conn.cursor() as cur:
+                cur.execute(
+                    '''
+                    INSERT INTO heart360tk_reporting.org_units
+                        (id, name, level, parent_id)
+                    SELECT id, name, level, parent_id
+                    FROM heart360tk_schema.org_units
+                    ON CONFLICT (id) DO NOTHING
+                    '''
+                )
+                cur.execute(
+                    '''
+                    INSERT INTO heart360tk_reporting.hierarchy_config
+                        (level, display_name, var_name)
+                    SELECT level, display_name, var_name
+                    FROM heart360tk_schema.hierarchy_config
+                    ON CONFLICT (level) DO NOTHING
+                    '''
+                )
+            log.info('  Copied org_units and hierarchy_config from schema (legacy fallback)')
+
         return leaf_to_central
 
     def _get_table_columns(self, conn, table_name: str) -> list[str]:
@@ -197,16 +250,47 @@ class BaseImportVersion:
                     csv_file,
                 )
 
-            if 'org_unit_id' in table_columns:
-                select_parts = []
-                insert_columns = []
-                for column in table_columns:
-                    insert_columns.append(column)
-                    if column == 'org_unit_id':
-                        select_parts.append(sql.SQL('m.central_node_facility_id'))
-                    else:
-                        select_parts.append(sql.SQL('t.{}').format(sql.Identifier(column)))
-
+            if table_name == 'org_units':
+                # org_units carries its own leaf-node primary key (id) and a
+                # self-referencing parent_id — both must be remapped to central
+                # IDs via import_facility_mapping, just like org_unit_id is
+                # remapped in the HEART360_* reporting tables.
+                #
+                # Reporting tables are truncated once per import run and then every
+                # leaf node's CSV is appended, so nodes that share an ancestor
+                # (same central id) would collide on the UNIQUE(id) index — ON
+                # CONFLICT DO NOTHING keeps the first (identical) row.
+                insert_sql = sql.SQL(
+                    'INSERT INTO heart360tk_reporting.org_units (id, name, level, parent_id) '
+                    'SELECT '
+                    '    m.central_node_facility_id, '
+                    '    t.name, '
+                    '    t.level, '
+                    '    mp.central_node_facility_id '
+                    'FROM {temp} t '
+                    'JOIN heart360tk_reporting.import_facility_mapping m '
+                    '  ON m.leaf_node_key = %s AND m.leaf_node_facility_id = t.id '
+                    'LEFT JOIN heart360tk_reporting.import_facility_mapping mp '
+                    '  ON mp.leaf_node_key = %s AND mp.leaf_node_facility_id = t.parent_id '
+                    'ON CONFLICT (id) DO NOTHING'
+                ).format(temp=sql.Identifier(temp_table))
+                cur.execute(insert_sql, (source_key, source_key))
+            elif table_name == 'hierarchy_config':
+                # Global dimension identical across every leaf node; no id remap.
+                # The first node populates all levels; later nodes are no-ops via
+                # ON CONFLICT on the UNIQUE(level) index (see truncate-once note above).
+                cur.execute(
+                    sql.SQL(
+                        'INSERT INTO heart360tk_reporting.hierarchy_config '
+                        'SELECT * FROM {temp} ON CONFLICT (level) DO NOTHING'
+                    ).format(temp=sql.Identifier(temp_table))
+                )
+            elif 'org_unit_id' in table_columns:
+                select_parts = [
+                    sql.SQL('m.central_node_facility_id') if col == 'org_unit_id'
+                    else sql.SQL('t.{}').format(sql.Identifier(col))
+                    for col in table_columns
+                ]
                 insert_sql = sql.SQL(
                     'INSERT INTO heart360tk_reporting.{target} ({columns}) '
                     'SELECT {select_exprs} '
@@ -216,7 +300,7 @@ class BaseImportVersion:
                     ' AND m.leaf_node_facility_id = t.org_unit_id'
                 ).format(
                     target=sql.Identifier(table_name),
-                    columns=sql.SQL(', ').join(map(sql.Identifier, insert_columns)),
+                    columns=sql.SQL(', ').join(map(sql.Identifier, table_columns)),
                     select_exprs=sql.SQL(', ').join(select_parts),
                     temp=sql.Identifier(temp_table),
                 )
