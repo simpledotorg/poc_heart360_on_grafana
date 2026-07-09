@@ -38,7 +38,7 @@ def _resolve_import_export_version(source_version: str) -> int:
     )
     return 1
 
-is_central_node  = os.getenv('is_central_node', 'false').strip().lower() == 'true'
+is_central_node  = os.getenv('is_central_node', '').strip().lower() != 'false'
 SOURCE_KEY       = os.getenv('SOURCE_KEY', '').strip()
 SOURCE_VERSION   = os.getenv('SOURCE_VERSION', '').strip()
 IMPORT_EXPORT_VERSION = _resolve_import_export_version(SOURCE_VERSION)
