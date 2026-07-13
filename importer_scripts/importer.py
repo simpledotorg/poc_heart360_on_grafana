@@ -195,6 +195,33 @@ def download_sftp_zip(zip_name: str, local_zip_path: str) -> None:
             transport.close()
 
 
+_SFTP_RETRY_MAX_ATTEMPTS = 3
+_SFTP_RETRY_BACKOFF_SECONDS = [0, 5, 10]
+
+
+def download_sftp_zip_with_retry(zip_name: str, local_zip_path: str) -> None:
+    last_exc: Exception | None = None
+    for attempt in range(1, _SFTP_RETRY_MAX_ATTEMPTS + 1):
+        delay = _SFTP_RETRY_BACKOFF_SECONDS[attempt - 1]
+        if delay:
+            log.warning(
+                '  Retrying download of %s (attempt %d/%d) in %ds...',
+                zip_name, attempt, _SFTP_RETRY_MAX_ATTEMPTS, delay,
+            )
+            time.sleep(delay)
+        try:
+            download_sftp_zip(zip_name, local_zip_path)
+            return
+        except Exception as e:
+            last_exc = e
+            log.warning(
+                '  Download attempt %d/%d failed for %s: %s',
+                attempt, _SFTP_RETRY_MAX_ATTEMPTS, zip_name, e,
+            )
+    assert last_exc is not None
+    raise last_exc
+
+
 def load_metadata(extract_dir: str) -> dict:
     metadata_path = os.path.join(extract_dir, 'metadata.json')
     if not os.path.isfile(metadata_path):
@@ -317,11 +344,12 @@ def run_import():
         for zip_name in zip_names:
             local_zip_path = os.path.join(work_dir, zip_name)
             try:
-                download_sftp_zip(zip_name, local_zip_path)
+                download_sftp_zip_with_retry(zip_name, local_zip_path)
                 downloaded.append((zip_name, local_zip_path))
             except Exception as e:
                 log.error(
-                    'Failed to download %s — skipping: %s', zip_name, e, exc_info=True
+                    'Failed to download %s after %d attempts — skipping: %s',
+                    zip_name, _SFTP_RETRY_MAX_ATTEMPTS, e,
                 )
 
         if not downloaded:
@@ -352,7 +380,7 @@ def run_import():
             return
 
         log.info(
-            'Phase 2 complete — %d/%d zip file(s) passed validation.',
+            'Phase 2 complete — %d/%d zip file(s) passed validation.',  # noqa: E501
             len(valid_zips),
             len(downloaded),
         )
