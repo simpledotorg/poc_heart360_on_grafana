@@ -356,7 +356,7 @@ DROP VIEW IF EXISTS HEART360_BLOOD_SUGAR_SEVERITY CASCADE;
 DROP VIEW IF EXISTS HEART360_BLOOD_SUGAR_MISSED_VISITS CASCADE;
 DROP VIEW IF EXISTS HEART360_COHORT_PATIENT_DETAILS CASCADE;
 DROP VIEW IF EXISTS HEART360_DM_PATIENTS_UNDER_CARE CASCADE;
-DROP VIEW IF EXISTS HEART360_DM_PATIENTS_CATEGORY CASCADE;
+DROP VIEW IF EXISTS HEART360_DM_PATIENTS_CATAGORY CASCADE;
 
 
 -- ============================================================================
@@ -1275,7 +1275,7 @@ GROUP BY rm.ref_month, p.org_unit_id
 ORDER BY rm.ref_month;
 
 -- ============================================================================
--- VIEW 14: HEART360_DM_PATIENTS_CATEGORY
+-- VIEW 14: HEART360_DM_PATIENTS_CATAGORY
 -- DM equivalent of HEART360_PATIENTS_CATEGORY. Produces identical columns so
 -- the DM dashboard can use the same graph formulas as HTN:
 --   % LTFU         = NB_PATIENTS_LOST_TO_FOLLOW_UP x 100 / TOTAL_NUMBER_OF_PATIENTS
@@ -1285,7 +1285,7 @@ ORDER BY rm.ref_month;
 -- where denom = NB_PATIENTS_UNDER_CARE_REGISTERED_BEFORE_THE_PAST_3_MONTHS
 --             = TOTAL - NEWLY - LTFU
 -- ============================================================================
-CREATE OR REPLACE VIEW HEART360_DM_PATIENTS_CATEGORY AS
+CREATE OR REPLACE VIEW HEART360_DM_PATIENTS_CATAGORY AS
 WITH
 KNOWN_MONTHS AS (
   SELECT date_trunc('month', series_date)::date AS REF_MONTH
@@ -1483,7 +1483,7 @@ CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_START_OF_MONTH 
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_PATIENTS_CALLED where 1=0;
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_RETURNED_TO_CARE where 1=0;
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS AS SELECT * FROM heart360tk_schema.HEART360_COHORT_PATIENT_DETAILS where 1=0;
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_CATEGORY AS SELECT * FROM heart360tk_schema.HEART360_DM_PATIENTS_CATEGORY where 1=0;
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_CATAGORY AS SELECT * FROM heart360tk_schema.HEART360_DM_PATIENTS_CATAGORY where 1=0;
 
 CREATE INDEX IF NOT EXISTS idx_import_facility_mapping_leaf_node_key ON heart360tk_reporting.IMPORT_FACILITY_MAPPING (leaf_node_key);
 
@@ -1545,7 +1545,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_start_month_org_month ON heart360t
 CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_called_org_month ON heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED (org_unit_id, ref_month);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_returned_org_month ON heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE (org_unit_id, ref_month);
 CREATE INDEX IF NOT EXISTS idx_cohort_org_quarter ON heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS (org_unit_id, registration_quarter);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_dm_cat_org_month ON heart360tk_reporting.HEART360_DM_PATIENTS_CATEGORY (org_unit_id, ref_month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_dm_cat_org_month ON heart360tk_reporting.HEART360_DM_PATIENTS_CATAGORY (org_unit_id, ref_month);
 
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.reporting_table_refresh_log (
     id serial PRIMARY KEY,
@@ -1590,7 +1590,7 @@ DECLARE
         'heart360_overdue_patients_called',
         'heart360_overdue_returned_to_care',
         'heart360_cohort_patient_details',
-        'heart360_dm_patients_category'
+        'heart360_dm_patients_catagory'
     ];
     i integer;
 BEGIN
@@ -1864,5 +1864,5 @@ BEGIN
 END;
 $$;
 
-GRANT SELECT ON heart360tk_schema.HEART360_DM_PATIENTS_CATEGORY TO heart360tk_cached;
-GRANT SELECT ON heart360tk_schema.HEART360_DM_PATIENTS_CATEGORY TO heart360tk;
+GRANT SELECT ON heart360tk_schema.HEART360_DM_PATIENTS_CATAGORY TO heart360tk_cached;
+GRANT SELECT ON heart360tk_schema.HEART360_DM_PATIENTS_CATAGORY TO heart360tk;
