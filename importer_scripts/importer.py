@@ -1,3 +1,5 @@
+import csv
+import io
 import json
 import logging
 import os
@@ -222,6 +224,57 @@ def read_zip_source_key(zip_path: str) -> str:
     return source_key
 
 
+def validate_zip(zip_path: str, zip_name: str) -> tuple[bool, str]:
+    """Return (True, '') when the ZIP is safe to import, (False, reason) otherwise.
+
+    A ZIP is considered valid when:
+      1. It is a well-formed ZIP archive.
+      2. metadata.json is present with a non-empty source_key and a recognised
+         import_export_version.
+      3. At least one CSV file inside the archive contains at least one data
+         row (beyond the header line).
+    """
+    if not zipfile.is_zipfile(zip_path):
+        return False, 'not a valid ZIP archive'
+
+    with zipfile.ZipFile(zip_path, 'r') as zf:
+        names_in_zip = zf.namelist()
+
+        if 'metadata.json' not in names_in_zip:
+            return False, 'metadata.json is missing'
+
+        try:
+            with zf.open('metadata.json') as f:
+                metadata = json.load(f)
+        except Exception as exc:
+            return False, f'metadata.json could not be parsed: {exc}'
+
+        source_key = metadata.get('source_key', '').strip()
+        if not source_key:
+            return False, 'metadata.json is missing source_key'
+
+        if metadata.get('import_export_version') is None:
+            return False, 'metadata.json is missing import_export_version'
+
+        csv_files = [n for n in names_in_zip if n.lower().endswith('.csv')]
+        has_data = False
+        for csv_name in csv_files:
+            with zf.open(csv_name) as raw:
+                reader = csv.reader(io.TextIOWrapper(raw, encoding='utf-8'))
+                try:
+                    next(reader)  # header row
+                    next(reader)  # first data row — proves file is non-empty
+                    has_data = True
+                    break
+                except StopIteration:
+                    continue
+
+        if not has_data:
+            return False, 'no CSV files contain any data rows'
+
+    return True, ''
+
+
 def import_zip_file(conn, zip_path: str, source_key: str) -> None:
     extract_dir = tempfile.mkdtemp(prefix='h360tk_import_')
     try:
@@ -259,21 +312,67 @@ def run_import():
             )
             return
 
+        log.info('Phase 1 — Downloading %d zip file(s)...', len(zip_names))
+        downloaded: list[tuple[str, str]] = []
+        for zip_name in zip_names:
+            local_zip_path = os.path.join(work_dir, zip_name)
+            try:
+                download_sftp_zip(zip_name, local_zip_path)
+                downloaded.append((zip_name, local_zip_path))
+            except Exception as e:
+                log.error(
+                    'Failed to download %s — skipping: %s', zip_name, e, exc_info=True
+                )
+
+        if not downloaded:
+            log.error('All downloads failed — reporting tables will NOT be truncated.')
+            return
+
+        log.info(
+            'Phase 1 complete — %d/%d zip file(s) downloaded successfully.',
+            len(downloaded),
+            len(zip_names),
+        )
+
+        log.info('Phase 2 — Validating %d downloaded zip file(s)...', len(downloaded))
+        valid_zips: list[tuple[str, str]] = []
+        for zip_name, local_zip_path in downloaded:
+            ok, reason = validate_zip(local_zip_path, zip_name)
+            if ok:
+                log.info('  [VALID]   %s', zip_name)
+                valid_zips.append((zip_name, local_zip_path))
+            else:
+                log.warning('  [SKIPPED] %s — %s', zip_name, reason)
+
+        if not valid_zips:
+            log.error(
+                'No zip files passed validation — '
+                'reporting tables will NOT be truncated to avoid data loss.'
+            )
+            return
+
+        log.info(
+            'Phase 2 complete — %d/%d zip file(s) passed validation.',
+            len(valid_zips),
+            len(downloaded),
+        )
+
         conn = psycopg2.connect(**DB_CONNECTION_PARAMS)
         conn.autocommit = False
 
-        log.info('Truncating reporting tables before import...')
+        log.info(
+            'Phase 3 — Truncating reporting tables and importing %d zip file(s)...',
+            len(valid_zips),
+        )
         BaseImportVersion.truncate_reporting_tables(conn)
         conn.commit()
 
         imported_count = 0
-        for zip_name in zip_names:
+        for zip_name, local_zip_path in valid_zips:
             zip_start = time.time()
-            local_zip_path = os.path.join(work_dir, zip_name)
             source_key = None
 
             try:
-                download_sftp_zip(zip_name, local_zip_path)
                 source_key = read_zip_source_key(local_zip_path)
                 import_zip_file(conn, local_zip_path, source_key)
                 conn.commit()
@@ -287,7 +386,7 @@ def run_import():
                 )
                 imported_count += 1
                 log.info(
-                    '=== Imported zip %s (source_key=%s) in %.2fs ===',
+                    '  Imported %s (source_key=%s) in %.2fs',
                     zip_name,
                     source_key,
                     duration,
@@ -311,20 +410,19 @@ def run_import():
                 )
 
         if imported_count == 0:
-            log.error('No zip files were imported successfully')
+            log.error('No zip files were imported successfully.')
         else:
             duration = round(time.time() - job_start, 2)
             log.info(
-                '=== Import job completed — %d/%d zip(s) imported in %.2fs ===',
+                '=== Import job complete — %d/%d zip(s) imported in %.2fs ===',
                 imported_count,
-                len(zip_names),
+                len(valid_zips),
                 duration,
             )
 
     except Exception as e:
         if conn is not None:
             conn.rollback()
-        duration = round(time.time() - job_start, 2)
         log.error('Import job failed: %s', e, exc_info=True)
 
     finally:
