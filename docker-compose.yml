@@ -102,20 +102,20 @@ services:
       context: .
       dockerfile: docker_build/heart360.exporter.docker
       args:
-        SOURCE_VERSION: ${SOURCE_VERSION:-}
+        SOURCE_VERSION: ${SOURCE_VERSION}
     container_name: h360tk-exporter
     restart: unless-stopped
     depends_on:
       - postgres
     environment:
-      - SOURCE_KEY=h360tk_grafana_core
-      - EXPORT_CRON=0 * * * *
-      - UPLOAD_PROTOCOL=file
-      - UPLOAD_DEST_PATH=/export
-      - POSTGRES_HOST=postgres
-      - POSTGRES_DB=heart360tk_database
-      - POSTGRES_USER=heart360tk
-      - POSTGRES_PASSWORD=YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0
+      - SOURCE_KEY=${SOURCE_KEY}
+      - EXPORT_CRON=${EXPORT_CRON}
+      - UPLOAD_PROTOCOL=${UPLOAD_PROTOCOL}
+      - UPLOAD_DEST_PATH=${UPLOAD_DEST_PATH}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - ./data/export:/export:rw
 
@@ -128,19 +128,19 @@ services:
     depends_on:
       - postgres
     environment:
-      - IMPORT_CRON=0 * * * *
-      - IMPORT_AGGREAGATE_DATA=false
-      - IMPORT_FOLDER_PATH=/export
-      - IMPORT_PROTOCOL=sftp
-      - SFTP_HOST=__CHANGE_THIS__
-      - SFTP_PORT=22
-      - SFTP_USER=__CHANGE_THIS__
-      - SFTP_PASSWORD=__CHANGE_THIS__
-      - SFTP_TIMEOUT=60
-      - POSTGRES_HOST=postgres
-      - POSTGRES_DB=heart360tk_database
-      - POSTGRES_USER=heart360tk
-      - POSTGRES_PASSWORD=YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0
+      - IMPORT_CRON=${IMPORT_CRON}
+      - IMPORT_AGGREAGATE_DATA=${IMPORT_AGGREAGATE_DATA}
+      - IMPORT_FOLDER_PATH=${IMPORT_FOLDER_PATH}
+      - IMPORT_PROTOCOL=${IMPORT_PROTOCOL}
+      - SFTP_HOST=${SFTP_HOST}
+      - SFTP_PORT=${SFTP_PORT}
+      - SFTP_USER=${SFTP_USER}
+      - SFTP_PASSWORD=${SFTP_PASSWORD}
+      - SFTP_TIMEOUT=${SFTP_TIMEOUT}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
 volumes:
   pgadmin_data:
