@@ -38,7 +38,6 @@ def _resolve_import_export_version(source_version: str) -> int:
     )
     return 1
 
-is_central_node  = os.getenv('is_central_node', '').strip().lower() != 'false'
 SOURCE_KEY       = os.getenv('SOURCE_KEY', '').strip()
 SOURCE_VERSION   = os.getenv('SOURCE_VERSION', '').strip()
 IMPORT_EXPORT_VERSION = _resolve_import_export_version(SOURCE_VERSION)
@@ -126,7 +125,6 @@ def validate_config():
         sys.exit(1)
 
     log.info("Config validated OK.")
-    log.info("  is_central_node     : %s", is_central_node)
     log.info("  SOURCE_KEY          : %s", SOURCE_KEY)
     log.info("  SOURCE_VERSION      : %s", SOURCE_VERSION)
     log.info("  IMPORT_EXPORT_VERSION : %d", IMPORT_EXPORT_VERSION)
@@ -146,13 +144,6 @@ def validate_config():
     else:
         log.info("  UPLOAD_DEST_PATH    : %s", UPLOAD_DEST_PATH)
     log.info("  EXPORT_TABLES       : %s", EXPORT_TABLES)
-
-def is_export_enabled():
-    if is_central_node:
-        log.info("is_central_node=true — export is disabled on this node. Skipping.")
-        return False
-    return True
-
 
 def generate_csvs(conn):
     tmp_dir = tempfile.mkdtemp(prefix='h360tk_export_')
@@ -430,9 +421,6 @@ def log_export_run(started_at, status, duration_seconds=None,
 
 
 def run_export():
-    if not is_export_enabled():
-        return
-
     log.info("=== Export job started (source_key=%s) ===", SOURCE_KEY)
     job_start = time.time()
 
@@ -494,9 +482,4 @@ def start_scheduler():
 
 if __name__ == '__main__':
     validate_config()
-
-    if not is_export_enabled():
-        log.info("Exporter is disabled (is_central_node=true). Container will exit.")
-        sys.exit(0)
-
     start_scheduler()
