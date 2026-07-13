@@ -1464,8 +1464,8 @@ DROP TABLE IF EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_CATEGORY;
 
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.IMPORT_FACILITY_MAPPING (
     leaf_node_key character varying(255),
-    leaf_node_facility_id integer,
-    central_node_facility_id integer,
+    leaf_org_unit_id integer,
+    central_org_unit_id integer,
     last_updated_date timestamp,
     last_extract_date timestamp
 );
