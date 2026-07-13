@@ -197,7 +197,6 @@ class BaseImportVersion:
                     csv_file,
                 )
 
-<<<<<<< HEAD
             if 'org_unit_id' in table_columns:
                 select_parts = []
                 insert_columns = []
@@ -208,49 +207,6 @@ class BaseImportVersion:
                     else:
                         select_parts.append(sql.SQL('t.{}').format(sql.Identifier(column)))
 
-=======
-            if table_name == 'org_units':
-                # org_units carries its own leaf-node primary key (id) and a
-                # self-referencing parent_id — both must be remapped to central
-                # IDs via import_facility_mapping, just like org_unit_id is
-                # remapped in the HEART360_* reporting tables.
-                #
-                # Reporting tables are truncated once per import run and then every
-                # leaf node's CSV is appended, so nodes that share an ancestor
-                # (same central id) would collide on the UNIQUE(id) index — ON
-                # CONFLICT DO NOTHING keeps the first (identical) row.
-                insert_sql = sql.SQL(
-                    'INSERT INTO heart360tk_reporting.org_units (id, name, level, parent_id) '
-                    'SELECT '
-                    '    m.central_org_unit_id, '
-                    '    t.name, '
-                    '    t.level, '
-                    '    mp.central_org_unit_id '
-                    'FROM {temp} t '
-                    'JOIN heart360tk_reporting.import_facility_mapping m '
-                    '  ON m.leaf_node_key = %s AND m.leaf_org_unit_id = t.id '
-                    'LEFT JOIN heart360tk_reporting.import_facility_mapping mp '
-                    '  ON mp.leaf_node_key = %s AND mp.leaf_org_unit_id = t.parent_id '
-                    'ON CONFLICT (id) DO NOTHING'
-                ).format(temp=sql.Identifier(temp_table))
-                cur.execute(insert_sql, (source_key, source_key))
-            elif table_name == 'hierarchy_config':
-                # Global dimension identical across every leaf node; no id remap.
-                # The first node populates all levels; later nodes are no-ops via
-                # ON CONFLICT on the UNIQUE(level) index (see truncate-once note above).
-                cur.execute(
-                    sql.SQL(
-                        'INSERT INTO heart360tk_reporting.hierarchy_config '
-                        'SELECT * FROM {temp} ON CONFLICT (level) DO NOTHING'
-                    ).format(temp=sql.Identifier(temp_table))
-                )
-            elif 'org_unit_id' in table_columns:
-                select_parts = [
-                    sql.SQL('m.central_org_unit_id') if col == 'org_unit_id'
-                    else sql.SQL('t.{}').format(sql.Identifier(col))
-                    for col in table_columns
-                ]
->>>>>>> 0df0dc0 (refactor: rename facility ID fields to org unit IDs)
                 insert_sql = sql.SQL(
                     'INSERT INTO heart360tk_reporting.{target} ({columns}) '
                     'SELECT {select_exprs} '
