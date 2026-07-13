@@ -8,8 +8,6 @@ log = logging.getLogger(__name__)
 
 class ImportVersion1(BaseImportVersion):
     REPORTING_TABLES = [
-        'org_units',
-        'hierarchy_config',
         'heart360_patients_category',
         'heart360_patients_under_care',
         'heart360_patients_registered',

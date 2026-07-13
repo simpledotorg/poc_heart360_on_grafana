@@ -61,8 +61,6 @@ S3_SECRET_KEY   = os.getenv('S3_SECRET_KEY', '').strip()
 S3_ENDPOINT_URL = os.getenv('S3_ENDPOINT_URL', '').strip() or None  # optional: MinIO / non-AWS S3
 
 DEFAULT_EXPORT_TABLES = [
-    'org_units',
-    'hierarchy_config',
     'heart360_patients_category',
     'heart360_patients_under_care',
     'heart360_patients_registered',
@@ -188,19 +186,32 @@ def generate_csvs(conn):
                 log.error("  Failed to export table '%s': %s", table_name, e)
                 raise
 
+        orgunit_path = os.path.join(tmp_dir, 'orgunit.csv')
+        cur.execute(
+            'SELECT id, name, level, parent_id FROM heart360tk_schema.org_units ORDER BY level, id'
+        )
+        rows = cur.fetchall()
+        col_names = [desc[0] for desc in cur.description]
+
+        with open(orgunit_path, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(col_names)
+            writer.writerows(rows)
+
+        facility_level = 3
         try:
             cur.execute(
-                '''
-                SELECT COUNT(*)
-                FROM heart360tk_reporting.org_units o
-                JOIN heart360tk_reporting.hierarchy_config h
-                  ON h.level = o.level AND h.var_name = 'facility'
-                '''
+                "SELECT level FROM heart360tk_schema.hierarchy_config WHERE var_name = 'facility'"
             )
-            result = cur.fetchone()
-            stats['facility_count'] = int(result[0]) if result and result[0] else 0
+            row = cur.fetchone()
+            if row:
+                facility_level = row[0]
         except Exception as e:
-            log.warning("Could not fetch facility count, defaulting to 0: %s", e)
+            log.warning("Could not fetch facility level, defaulting to 3: %s", e)
+
+        stats['facility_count'] = sum(1 for r in rows if r[2] == facility_level)
+        log.info("  Written orgunit.csv — %d org units (facility count: %d)",
+                 len(rows), stats['facility_count'])
 
         try:
             cur.execute(
@@ -219,6 +230,7 @@ def generate_csvs(conn):
             stats['patient_count'] = int(result[0]) if result and result[0] else 0
         except Exception as e:
             log.warning("Could not fetch patient count: %s", e)
+            stats['patient_count'] = 0
 
     except Exception:
         shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -256,6 +268,8 @@ def generate_metadata(tmp_dir, stats, generation_start_epoch):
     log.info("  Written metadata.json — source_key=%s, version=%s, facilities=%d, patients=%d",
              SOURCE_KEY, SOURCE_VERSION,
              stats['facility_count'], stats['patient_count'])
+
+    return metadata_path
 
 
 def package_zip(tmp_dir):
@@ -456,6 +470,7 @@ def run_export():
     finally:
         if conn:
             conn.close()
+
 
 
 def start_scheduler():
