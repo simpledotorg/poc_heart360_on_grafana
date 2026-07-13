@@ -430,7 +430,7 @@ def run_import():
                     exc_info=True,
                 )
                 log_import_run(
-                    source_key=source_key,
+                    source_key=source_key or os.path.splitext(zip_name)[0],
                     started_at=zip_start,
                     status='failed',
                     duration_seconds=duration,
