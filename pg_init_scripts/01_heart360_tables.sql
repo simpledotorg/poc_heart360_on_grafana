@@ -1461,8 +1461,6 @@ DROP TABLE IF EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED;
 DROP TABLE IF EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE;
 DROP TABLE IF EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS;
 DROP TABLE IF EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_CATEGORY;
-DROP TABLE IF EXISTS heart360tk_reporting.org_units;
-DROP TABLE IF EXISTS heart360tk_reporting.hierarchy_config;
 
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.IMPORT_FACILITY_MAPPING (
     leaf_node_key character varying(255),
@@ -1486,45 +1484,6 @@ CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_PATIENTS_CALLED
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CARE AS SELECT * FROM heart360tk_schema.HEART360_OVERDUE_RETURNED_TO_CARE where 1=0;
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS AS SELECT * FROM heart360tk_schema.HEART360_COHORT_PATIENT_DETAILS where 1=0;
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_CATEGORY AS SELECT * FROM heart360tk_schema.HEART360_DM_PATIENTS_CATEGORY where 1=0;
-
--- ============================================================================
--- ORG UNIT CACHE: Plain (no-FK) mirrors of heart360tk_schema tables.
--- The heart360tk_cached Grafana datasource has search_path =
---   heart360tk_reporting, heart360tk_schema, public
--- so unqualified references to org_units / hierarchy_config resolve here first,
--- keeping all reporting-layer queries entirely within heart360tk_reporting.
---
--- Leaf nodes:    refreshed every hour by refresh_all_reporting_tables()
---                (TRUNCATE + INSERT SELECT * FROM heart360tk_schema).
--- Central nodes: populated by the importer via the same CSV pipeline as all
---                other reporting tables (ORG_UNITS.csv / HIERARCHY_CONFIG.csv).
--- ============================================================================
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.org_units (
-    id        INTEGER,
-    name      VARCHAR(255),
-    level     INTEGER,
-    parent_id INTEGER
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_reporting_org_units_id
-    ON heart360tk_reporting.org_units(id);
-CREATE INDEX IF NOT EXISTS idx_reporting_org_units_level
-    ON heart360tk_reporting.org_units(level);
-CREATE INDEX IF NOT EXISTS idx_reporting_org_units_parent_id
-    ON heart360tk_reporting.org_units(parent_id);
-CREATE INDEX IF NOT EXISTS idx_reporting_org_units_name
-    ON heart360tk_reporting.org_units(name);
-
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.hierarchy_config (
-    level        INTEGER,
-    display_name VARCHAR(100),
-    var_name     VARCHAR(50)
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_reporting_hierarchy_config_level
-    ON heart360tk_reporting.hierarchy_config(level);
-CREATE INDEX IF NOT EXISTS idx_reporting_hierarchy_config_var_name
-    ON heart360tk_reporting.hierarchy_config(var_name);
 
 CREATE INDEX IF NOT EXISTS idx_import_facility_mapping_leaf_node_key ON heart360tk_reporting.IMPORT_FACILITY_MAPPING (leaf_node_key);
 
@@ -1618,8 +1577,6 @@ DECLARE
     v_table_name text;
     v_rows_affected integer;
     v_tables text[] := ARRAY[
-        'org_units',
-        'hierarchy_config',
         'heart360_patients_category',
         'heart360_patients_under_care',
         'heart360_patients_registered',
@@ -1895,9 +1852,6 @@ BEGIN
         patients,
         org_units
     CASCADE;
-
-    TRUNCATE TABLE heart360tk_reporting.org_units;
-    TRUNCATE TABLE heart360tk_reporting.hierarchy_config;
 
     ALTER SEQUENCE org_units_id_seq RESTART WITH 1;
     ALTER SEQUENCE encounters_id_seq RESTART WITH 1;
