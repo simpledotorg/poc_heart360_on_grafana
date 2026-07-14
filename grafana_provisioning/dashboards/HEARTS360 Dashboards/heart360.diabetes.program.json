@@ -1280,7 +1280,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nSELECT\n  ref_month,\n  (100.0 * SUM(COALESCE(nb_patients_lost_to_follow_up, 0))) /\n  NULLIF(SUM(TOTAL_NUMBER_OF_PATIENTS), 0) AS lost_to_follow_up_pct\nFROM HEART360_DM_PATIENTS_CATAGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\nGROUP BY ref_month\nORDER BY ref_month\n) AS master_access_control WHERE '${isAllowed}' = '1'",
+          "rawSql": "SELECT * FROM (\nSELECT\n  ref_month,\n  (100.0 * SUM(COALESCE(nb_patients_lost_to_follow_up, 0))) /\n  NULLIF(SUM(TOTAL_NUMBER_OF_PATIENTS), 0) AS lost_to_follow_up_pct\nFROM HEART360_DM_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\nGROUP BY ref_month\nORDER BY ref_month\n) AS master_access_control WHERE '${isAllowed}' = '1'",
           "refId": "A",
           "sql": {
             "columns": [
