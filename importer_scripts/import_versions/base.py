@@ -69,7 +69,7 @@ class BaseImportVersion:
             cur.execute(
                 '''
                 INSERT INTO heart360tk_reporting.import_facility_mapping
-                    (leaf_node_key, leaf_node_facility_id, central_node_facility_id,
+                    (leaf_node_key, leaf_org_unit_id, central_org_unit_id,
                      last_updated_date, last_extract_date)
                 VALUES (%s, %s, %s, NOW(), %s)
                 ''',
@@ -213,7 +213,7 @@ class BaseImportVersion:
                     'FROM {temp} t '
                     'JOIN heart360tk_reporting.import_facility_mapping m '
                     '  ON m.leaf_node_key = %s '
-                    ' AND m.leaf_node_facility_id = t.org_unit_id'
+                    ' AND m.leaf_org_unit_id = t.org_unit_id'
                 ).format(
                     target=sql.Identifier(table_name),
                     columns=sql.SQL(', ').join(map(sql.Identifier, insert_columns)),
