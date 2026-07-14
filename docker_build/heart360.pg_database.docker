@@ -22,6 +22,9 @@ RUN echo >> /usr/local/share/postgresql/postgresql.conf.sample && \
 COPY ./pg_init_scripts/00_schemas.sql          docker-entrypoint-initdb.d/00_schemas.sql
 COPY ./pg_init_scripts/01_heart360_tables.sql  docker-entrypoint-initdb.d/01_heart360_tables.sql
 
+# Migration scripts are NOT auto-run by the postgres entrypoint
+COPY ./pg_init_scripts/migrations               docker-entrypoint-initdb.d/migrations
+
 ## Database name, to be used everywhere
 ENV POSTGRES_DB=heart360tk_database
 ENV PGDATABASE=heart360tk_database
