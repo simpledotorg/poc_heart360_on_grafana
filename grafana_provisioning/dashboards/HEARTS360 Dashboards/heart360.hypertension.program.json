@@ -38,7 +38,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<div id=\"tab-bar-wrap\" data-level=\"${selected_level}\"><div class=\"tab-bar\" style=\"display:flex; gap:0; border-bottom:2px solid #e0e0e0; font-size:16px; margin-top:4px;\"><span style=\"padding:8px 20px; font-weight:600; color:#1f2937; border-bottom:3px solid #3b82f6; cursor:default; text-decoration:none;\">Hypertension Dashboard</span><a target=\"_top\" href=\"/d/heart360_drilldown_diabetes/hearts360-diabetes-dashboard?orgId=1&var-region=${region}&var-district=${district}&var-facility=${facility}&var-sub_facility=${sub_facility}&var-org_unit=${org_unit}&var-village=${village}&var-level_6=${level_6}&var-level_7=${level_7}&var-level_8=${level_8}&var-level_9=${level_9}&var-level_10=${level_10}&${__url_time_range}\" style=\"padding:8px 20px; text-decoration:none; color:#6b7280; cursor:pointer;\">Diabetes Dashboard</a><a target=\"_top\" href=\"/d/heart360_drilldown_overdue/hearts360-overdue-patients?orgId=1&var-region=${region}&var-district=${district}&var-facility=${facility}&var-sub_facility=${sub_facility}&var-org_unit=${org_unit}&var-village=${village}&var-level_6=${level_6}&var-level_7=${level_7}&var-level_8=${level_8}&var-level_9=${level_9}&var-level_10=${level_10}&${__url_time_range}\" style=\"padding:8px 20px; text-decoration:none; color:#6b7280; cursor:pointer;\">Overdue Patient List</a></div></div><script>(function(){var b=(window.top||window).location.pathname.split('/d/')[0];if(!b)return;var ls=document.links;for(var i=0;i<ls.length;i++){if(ls[i].getAttribute('href').indexOf('/d/')==0)ls[i].href=b+ls[i].getAttribute('href');}})();</script>",
+        "content": "<div id=\"tab-bar-wrap\" data-level=\"${selected_level}\"><div class=\"tab-bar\" style=\"display:flex; gap:0; border-bottom:2px solid #e0e0e0; font-size:16px; margin-top:4px;\"><span style=\"padding:8px 20px; font-weight:600; color:#1f2937; border-bottom:3px solid #3b82f6; cursor:default; text-decoration:none;\">Hypertension Dashboard</span><a target=\"_top\" href=\"/d/heart360_drilldown_diabetes/hearts360-diabetes-dashboard?orgId=1&var-region=${region}&var-district=${district}&var-facility=${facility}&var-sub_facility=${sub_facility}&var-org_unit=${org_unit}&var-village=${village}&var-level_6=${level_6}&var-level_7=${level_7}&var-level_8=${level_8}&var-level_9=${level_9}&var-level_10=${level_10}&${__url_time_range}\" style=\"padding:8px 20px; text-decoration:none; color:#6b7280; cursor:pointer;\">Diabetes Dashboard</a><a target=\"_top\" href=\"/d/heart360_drilldown_overdue/hearts360-overdue-patients?orgId=1&var-region=${region}&var-district=${district}&var-facility=${facility}&var-sub_facility=${sub_facility}&var-org_unit=${org_unit}&var-village=${village}&var-level_6=${level_6}&var-level_7=${level_7}&var-level_8=${level_8}&var-level_9=${level_9}&var-level_10=${level_10}&${__url_time_range}\" style=\"padding:8px 20px; text-decoration:none; color:#6b7280; cursor:pointer;\">Overdue Patient List</a></div></div><script>(function(){var b=(window.top||window).location.pathname.split('/d/')[0];if(b){var ls=document.links;for(var i=0;i<ls.length;i++){if(ls[i].getAttribute('href').indexOf('/d/')==0)ls[i].href=b+ls[i].getAttribute('href');}}if('${IsCentralNode}'==='true'){var od=document.querySelectorAll('#tab-bar-wrap a[href*=heart360_drilldown_overdue]');for(var j=0;j<od.length;j++){od[j].style.display='none';}}})();</script>",
         "mode": "html"
       },
       "pluginVersion": "12.4.1",
@@ -3208,6 +3208,24 @@
         "regex": "",
         "regexApplyTo": "value",
         "skipUrlSync": true,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "postgres",
+          "uid": "postgres-hypertension"
+        },
+        "definition": "SELECT current_setting('app.is_central_node', true)",
+        "hide": 2,
+        "name": "IsCentralNode",
+        "options": [],
+        "query": "SELECT current_setting('app.is_central_node', true)",
+        "refresh": 1,
+        "regex": "",
+        "regexApplyTo": "value",
+        "skipUrlSync": true,
+        "sort": 0,
         "type": "query"
       }
     ]
