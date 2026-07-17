@@ -4,21 +4,9 @@ SET ROLE heart360tk;
 
 SET search_path TO heart360tk_schema;
 
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM information_schema.views
-        WHERE table_schema = 'heart360tk_schema'
-          AND table_name   = 'heart360_dm_patients_catagory'
-    ) AND NOT EXISTS (
-        SELECT 1 FROM information_schema.views
-        WHERE table_schema = 'heart360tk_schema'
-          AND table_name   = 'heart360_dm_patients_category'
-    ) THEN
-        ALTER VIEW heart360tk_schema.HEART360_DM_PATIENTS_CATAGORY
-            RENAME TO HEART360_DM_PATIENTS_CATEGORY;
-    END IF;
-END $$;
+-- NOTE: heart360tk_schema (the "Main" schema) is intentionally NOT modified
+-- by this migration — HEART360_DM_PATIENTS_CATAGORY keeps its original name
+-- there, and the heart360tk_reporting-schema table below uses that same name.
 
 -- ============================================================================
 -- STEP 1: Convert the 13 reporting materialized views into empty tables.
@@ -60,7 +48,7 @@ END $$;
 
 -- ============================================================================
 -- STEP 2: Create the reporting tables (empty; structure inherited from the
---         source schema views). Includes the new DM_PATIENTS_CATEGORY table.
+--         source schema views). Includes the new DM_PATIENTS_CATAGORY table.
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_PATIENTS_CATEGORY
@@ -90,9 +78,9 @@ CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_OVERDUE_RETURNED_TO_CAR
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS
     AS SELECT * FROM heart360tk_schema.HEART360_COHORT_PATIENT_DETAILS WHERE 1=0;
 
--- New in 0.5.0
-CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_CATEGORY
-    AS SELECT * FROM heart360tk_schema.HEART360_DM_PATIENTS_CATEGORY WHERE 1=0;
+-- New in 0.5.0.
+CREATE TABLE IF NOT EXISTS heart360tk_reporting.HEART360_DM_PATIENTS_CATAGORY
+    AS SELECT * FROM heart360tk_schema.HEART360_DM_PATIENTS_CATAGORY WHERE 1=0;
 
 -- ============================================================================
 -- STEP 3: New leaf<->central org-unit mapping table (new in 0.5.0).
@@ -146,7 +134,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_returned_org_month
 CREATE INDEX IF NOT EXISTS idx_cohort_org_quarter
     ON heart360tk_reporting.HEART360_COHORT_PATIENT_DETAILS (org_unit_id, registration_quarter);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_pat_dm_cat_org_month
-    ON heart360tk_reporting.HEART360_DM_PATIENTS_CATEGORY (org_unit_id, ref_month);
+    ON heart360tk_reporting.HEART360_DM_PATIENTS_CATAGORY (org_unit_id, ref_month);
 
 -- ============================================================================
 -- STEP 5: Export run audit log (new in 0.5.0).
@@ -352,7 +340,7 @@ DECLARE
         'heart360_overdue_patients_called',
         'heart360_overdue_returned_to_care',
         'heart360_cohort_patient_details',
-        'heart360_dm_patients_category'
+        'heart360_dm_patients_catagory'
     ];
     i integer;
 BEGIN
@@ -503,9 +491,10 @@ GRANT EXECUTE ON FUNCTION heart360tk_reporting.start_async_refresh(text) TO graf
 -- Cover the new reporting tables for the cached Grafana datasource role.
 GRANT SELECT ON ALL TABLES IN SCHEMA heart360tk_reporting TO heart360tk_cached;
 
--- Re-assert grants on the (renamed) DM category schema view.
-GRANT SELECT ON heart360tk_schema.HEART360_DM_PATIENTS_CATEGORY TO heart360tk_cached;
-GRANT SELECT ON heart360tk_schema.HEART360_DM_PATIENTS_CATEGORY TO heart360tk;
+-- Re-assert grants on the DM category schema view (Main schema; kept at its
+-- original "CATAGORY" spelling — not renamed by this migration).
+GRANT SELECT ON heart360tk_schema.HEART360_DM_PATIENTS_CATAGORY TO heart360tk_cached;
+GRANT SELECT ON heart360tk_schema.HEART360_DM_PATIENTS_CATAGORY TO heart360tk;
 
 -- ============================================================================
 -- STEP 14: Rename the hourly pg_cron job.
