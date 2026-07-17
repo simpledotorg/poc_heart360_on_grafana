@@ -3,11 +3,6 @@ BEGIN;
 SET ROLE heart360tk;
 
 SET search_path TO heart360tk_schema;
-
--- NOTE: heart360tk_schema (the "Main" schema) is intentionally NOT modified
--- by this migration — HEART360_DM_PATIENTS_CATAGORY keeps its original name
--- there, and the heart360tk_reporting-schema table below uses that same name.
-
 -- ============================================================================
 -- STEP 1: Convert the 13 reporting materialized views into empty tables.
 --         Drop the matview only if the object is currently a materialized view
