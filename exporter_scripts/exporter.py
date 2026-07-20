@@ -68,12 +68,10 @@ DEFAULT_EXPORT_TABLES = [
     'heart360_blood_sugar_missed_visits',
     'heart360_dm_bp_control',
     'heart360_dm_patients_under_care',
-    'heart360_overdue_patients',
     'heart360_overdue_start_of_month',
     'heart360_overdue_patients_called',
     'heart360_overdue_returned_to_care',
     'heart360_dm_patients_catagory',
-    'heart360_cohort_patient_details',
 ]
 
 _export_tables_env = os.getenv('EXPORT_TABLES', '').strip()
