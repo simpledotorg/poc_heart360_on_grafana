@@ -116,9 +116,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_bp_control_org_month
     ON heart360tk_reporting.HEART360_DM_BP_CONTROL (org_unit_id, ref_month);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_pat_under_care_org_month
     ON heart360tk_reporting.HEART360_DM_PATIENTS_UNDER_CARE (org_unit_id, ref_month);
-DROP INDEX IF EXISTS heart360tk_reporting.idx_overdue_patient_id;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_patient_id
-    ON heart360tk_reporting.HEART360_OVERDUE_PATIENTS (org_unit_id, patient_id);
+    ON heart360tk_reporting.HEART360_OVERDUE_PATIENTS (patient_id);
 CREATE INDEX IF NOT EXISTS idx_overdue_org_last_visit
     ON heart360tk_reporting.HEART360_OVERDUE_PATIENTS (org_unit_id, last_visit_date);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_overdue_start_month_org_month
