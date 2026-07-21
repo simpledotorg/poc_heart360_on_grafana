@@ -18,6 +18,10 @@ RUN grafana cli plugins install yesoreyeram-infinity-datasource
 RUN grafana cli plugins install marcusolsson-dynamictext-panel
 RUN grafana cli plugins install volkovlabs-echarts-panel
 
+# Strips the Admin folder from provisioning at startup when IS_CENTRAL_NODE=true
+COPY --chmod=755 ./docker_build/grafana-entrypoint.sh /run-h360.sh
+ENTRYPOINT ["/run-h360.sh"]
+
 ENV GF_SECURITY_ALLOW_EMBEDDING=true
 ENV GF_PANELS_DISABLE_SANITIZE_HTML=true
 ENV GF_AUTH_ANONYMOUS_ENABLED=false

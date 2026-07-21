@@ -11,6 +11,7 @@ services:
     volumes:
       - ./grafana_provisioning:/etc/grafana/provisioning:ro
     environment:
+      - IS_CENTRAL_NODE=${is_central_node:-false}
       - GF_DATABASE_URL=postgres://grafana:ZDI5MGE3YmYyMTRlNGNmYThkMTYyZjk3@postgres:5432/heart360tk_database
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_PANELS_DISABLE_SANITIZE_HTML=true

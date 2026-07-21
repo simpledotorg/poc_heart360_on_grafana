@@ -11,14 +11,3 @@ providers:
     options:
       path: '/etc/grafana/provisioning/dashboards/HEARTS360 Dashboards'
       foldersFromFilesStructure: false
-
-
-  - name: 'Admin Dashboards'
-    orgId: 1
-    folder: 'Admin'
-    type: file
-    disableDeletion: false
-    updateIntervalSeconds: 10
-    options:
-      path: /etc/grafana/provisioning/dashboards_admin
-      foldersFromFilesStructure: false
