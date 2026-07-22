@@ -3312,22 +3312,12 @@
         "type": "query"
       },
       {
-        "current": {},
-        "datasource": {
-          "type": "postgres",
-          "uid": "postgres-hypertension"
-        },
-        "definition": "SELECT current_setting('app.is_central_node', true)",
         "hide": 2,
+        "label": "IsCentralNode",
         "name": "IsCentralNode",
-        "options": [],
-        "query": "SELECT current_setting('app.is_central_node', true)",
-        "refresh": 1,
-        "regex": "",
-        "regexApplyTo": "value",
+        "query": "__IS_CENTRAL_NODE_PLACEHOLDER__",
         "skipUrlSync": true,
-        "sort": 0,
-        "type": "query"
+        "type": "constant"
       }
     ]
   },

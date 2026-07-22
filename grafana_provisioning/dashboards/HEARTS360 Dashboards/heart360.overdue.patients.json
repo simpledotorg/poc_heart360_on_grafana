@@ -99,7 +99,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  COALESCE(current_setting('app.is_central_node', true), 'false') AS \"isCentralNode\",\n  CASE WHEN COALESCE(NULLIF('${selected_level}',''),'0')::int IN (3, 4, 10) THEN 1 ELSE 0 END AS \"isAccessible\",\n  COALESCE(NULLIF('$isAllowed', ''), '0')::int AS \"isAllowed\",\n  '${requiredGroups}' AS \"requiredGroups\" ",
+          "rawSql": "SELECT\n  '${IsCentralNode}' AS \"isCentralNode\",\n  CASE WHEN COALESCE(NULLIF('${selected_level}',''),'0')::int IN (3, 4, 10) THEN 1 ELSE 0 END AS \"isAccessible\",\n  COALESCE(NULLIF('$isAllowed', ''), '0')::int AS \"isAllowed\",\n  '${requiredGroups}' AS \"requiredGroups\" ",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1379,7 +1379,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nSELECT\n  patient_id,\n  patient_name,\n  registration_date,\n  birth_date,\n  gender,\n  phone_number,\n  (SELECT name FROM org_units WHERE id = h.org_unit_id) AS facility,\n  last_visit_date,\n  last_bp_diastolic,\n  last_bp_systolic,\n  last_call_date,\n  last_call_result AS result_type,\n  COALESCE(removed_reason, '-') AS removed_reason,\n  EXTRACT(YEAR FROM AGE(birth_date)) AS age_years,\n  (CURRENT_DATE - last_visit_date::date) AS days_since_last_visit,\n  CASE\n    WHEN last_bp_systolic IS NOT NULL AND last_bp_diastolic IS NOT NULL\n      THEN CONCAT(\n        last_bp_systolic::int,\n        '/',\n        last_bp_diastolic::int\n      )\n    ELSE NULL\n  END AS last_bp\nFROM HEART360_OVERDUE_PATIENTS h\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND last_visit_date < now() - interval '45 days'\n  AND ${selected_level} IN (3, 4, 10)\n) AS master_access_control WHERE '${isAllowed}' = '1' AND COALESCE(current_setting('app.is_central_node', true), 'false') <> 'true'",
+          "rawSql": "SELECT * FROM (\nSELECT\n  patient_id,\n  patient_name,\n  registration_date,\n  birth_date,\n  gender,\n  phone_number,\n  (SELECT name FROM org_units WHERE id = h.org_unit_id) AS facility,\n  last_visit_date,\n  last_bp_diastolic,\n  last_bp_systolic,\n  last_call_date,\n  last_call_result AS result_type,\n  COALESCE(removed_reason, '-') AS removed_reason,\n  EXTRACT(YEAR FROM AGE(birth_date)) AS age_years,\n  (CURRENT_DATE - last_visit_date::date) AS days_since_last_visit,\n  CASE\n    WHEN last_bp_systolic IS NOT NULL AND last_bp_diastolic IS NOT NULL\n      THEN CONCAT(\n        last_bp_systolic::int,\n        '/',\n        last_bp_diastolic::int\n      )\n    ELSE NULL\n  END AS last_bp\nFROM HEART360_OVERDUE_PATIENTS h\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND last_visit_date < now() - interval '45 days'\n  AND ${selected_level} IN (3, 4, 10)\n) AS master_access_control WHERE '${isAllowed}' = '1' AND '${IsCentralNode}' <> 'true'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1409,7 +1409,7 @@
           "format": "table",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nselect 'Pending to call' as option, 1 as sort\nunion select 'Agreed to visit', 2\nunion select 'Call again later', 3\nunion select 'Already visited puskesmas', 4\nunion select 'Multiple failed contact attempts', 5\nunion select 'Wrong phone number', 6\nunion select 'Moved out of catchment area', 7\nunion select 'Transferred to another puskesmas', 8\nunion select 'Refused to return', 9\nunion select 'Died', 10\nunion select 'Other reason', 11\norder by sort\n) AS master_access_control WHERE '${isAllowed}' = '1' AND COALESCE(current_setting('app.is_central_node', true), 'false') <> 'true'",
+          "rawSql": "SELECT * FROM (\nselect 'Pending to call' as option, 1 as sort\nunion select 'Agreed to visit', 2\nunion select 'Call again later', 3\nunion select 'Already visited puskesmas', 4\nunion select 'Multiple failed contact attempts', 5\nunion select 'Wrong phone number', 6\nunion select 'Moved out of catchment area', 7\nunion select 'Transferred to another puskesmas', 8\nunion select 'Refused to return', 9\nunion select 'Died', 10\nunion select 'Other reason', 11\norder by sort\n) AS master_access_control WHERE '${isAllowed}' = '1' AND '${IsCentralNode}' <> 'true'",
           "refId": "B",
           "sql": {
             "columns": [
@@ -1820,6 +1820,14 @@
         "regexApplyTo": "value",
         "skipUrlSync": true,
         "type": "query"
+      },
+      {
+        "hide": 2,
+        "label": "IsCentralNode",
+        "name": "IsCentralNode",
+        "query": "__IS_CENTRAL_NODE_PLACEHOLDER__",
+        "skipUrlSync": true,
+        "type": "constant"
       }
     ]
   },

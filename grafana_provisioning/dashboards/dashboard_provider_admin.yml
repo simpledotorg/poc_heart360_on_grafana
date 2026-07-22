@@ -8,5 +8,5 @@ providers:
     disableDeletion: false
     updateIntervalSeconds: 10
     options:
-      path: /etc/grafana/provisioning/dashboards_admin
+      path: /tmp/grafana-provisioning-runtime/dashboards_admin
       foldersFromFilesStructure: false
