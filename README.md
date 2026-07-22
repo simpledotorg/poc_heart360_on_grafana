@@ -32,9 +32,9 @@ HEARTS360 Toolkit is a Grafana-based system designed to help District Health Off
 
 HEARTS360 Toolkit supports three main use cases:
 
-**Routine Data Monitoring:** Facility staff export monthly patient line lists from their system and upload Excel files to HEARTS360 Toolkit. The system automatically processes the data and updates dashboards, providing real-time visibility into care delivery, easy identification of patients needing follow-up, and trend analysis over time.
+**Routine Data Monitoring:** Facility staff export monthly patient line lists from their system and upload CSV or Excel files to HEARTS360 Toolkit. The system automatically processes the data and updates dashboards, providing real-time visibility into care delivery, easy identification of patients needing follow-up, and trend analysis over time.
 
-**Dashboard Validation:** Staff upload line lists to HEARTS360 Toolkit and compare the charts with their EHR system dashboards to validate data accuracy, identify data entry errors, and ensure reporting consistency.
+**Dashboard Validation:** Staff upload CSV or Excel line list files to HEARTS360 Toolkit and compare the charts with their EHR system dashboards to validate data accuracy, identify data entry errors, and ensure reporting consistency.
 
 **District-Level Oversight:** Each facility uploads their data, and district team views the district-level dashboard to monitor hypertension care across all facilities. This enables district-wide visibility without compromising patient privacy, supports data-driven decision making, and helps allocate resources based on need.
 
@@ -103,7 +103,7 @@ Wait 30-60 seconds for all services to initialize.
 
 #### Step 5: Test with Sample Data
 
-1. Upload a test Excel file through FileBrowser (`http://localhost:8080`)
+1. Upload a test CSV or Excel file through FileBrowser (`http://localhost:8080`)
 2. The file should be automatically processed.
 3. The uploaded data is saved immediately in the database, but the dashboard graphs will **not** update straight away because they use precomputed data that needs to be refreshed first.
 4. Manually trigger a refresh from the **Admin · Dashboard Refresh** page (`http://localhost:3000/d/heart360-admin-refresh`) to see the data immediately (see [Admin Dashboard — Refreshing Dashboard Data](<docs/Grafana Admin Dashboard Refresh – Visual Documentation.md>)).
@@ -174,7 +174,10 @@ You have two options:
 
 The system processes uploaded files through the following workflow:
 
-1. **File Upload:** User uploads Excel file via FileBrowser web interface
+1. **File Upload:** User uploads a CSV or Excel (.xlsx) file via the FileBrowser web interface.
+
+   **Note:** We recommend using **CSV** files for data import, as they provide faster ingestion. **Excel (.xlsx)** files are also supported but may take longer to process.
+   
 2. **File Storage:** File is saved to `data/upload/` directory
 3. **File Detection:** File processor detects new file (using inotify)
 4. **Data Processing:** Python script (`ingest_file_h360tk.py`) processes the file
