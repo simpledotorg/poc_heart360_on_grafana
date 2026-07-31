@@ -2412,7 +2412,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nWITH latest_month AS (\n    SELECT MAX(ref_month) AS ref_month FROM HEART360_BLOOD_SUGAR_CONTROLLED\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n    AND $__timeFilter(ref_month)\n)\nSELECT\n    child_ou.id AS child_id,\n    child_ou.name AS child_name,\n    REPLACE(build_drill_url(child_ou.id), '/d/heart360_drilldown?', '/d/heart360_drilldown_diabetes?') AS drill_url,\n    SUM(COALESCE(uc.nb_dm_patients_under_care, 0)) AS nb_patients_under_care,\n    SUM(COALESCE(uc.nb_new_dm_patients, 0)) AS nb_patients_newly_registered,\n    SUM(COALESCE(bsc.diabetes_controlled, 0)) AS nb_patients_controlled,\n    ROUND(100.0 * SUM(COALESCE(bsc.diabetes_controlled, 0)) / NULLIF(SUM(COALESCE(bsc.diabetes_patients_under_care, 0)), 0)) AS per_patients_controlled,\n    SUM(COALESCE(bss.uncontrolled_moderate, 0) + COALESCE(bss.uncontrolled_high, 0)) AS nb_patients_uncontrolled,\n    ROUND(100.0 * SUM(COALESCE(bss.uncontrolled_moderate, 0) + COALESCE(bss.uncontrolled_high, 0)) / NULLIF(SUM(COALESCE(bss.diabetes_patients_under_care, 0)), 0)) AS per_patients_uncontrolled,\n    SUM(COALESCE(bsm.missed_visit, 0)) AS nb_patients_no_visit,\n    ROUND(100.0 * SUM(COALESCE(bsm.missed_visit, 0)) / NULLIF(SUM(COALESCE(bsm.diabetes_patients_under_care, 0)), 0)) AS per_patients_no_visit\nFROM org_unit_lineage lin\nJOIN org_units child_ou ON lin.ancestor_id = child_ou.id AND child_ou.parent_id = ((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))\nLEFT JOIN HEART360_DM_PATIENTS_UNDER_CARE uc ON uc.org_unit_id = lin.org_unit_id AND uc.ref_month = (SELECT ref_month FROM latest_month)\nLEFT JOIN HEART360_BLOOD_SUGAR_CONTROLLED bsc ON bsc.org_unit_id = lin.org_unit_id AND bsc.ref_month = (SELECT ref_month FROM latest_month)\nLEFT JOIN HEART360_BLOOD_SUGAR_SEVERITY bss ON bss.org_unit_id = lin.org_unit_id AND bss.ref_month = (SELECT ref_month FROM latest_month)\nLEFT JOIN HEART360_BLOOD_SUGAR_MISSED_VISITS bsm ON bsm.org_unit_id = lin.org_unit_id AND bsm.ref_month = (SELECT ref_month FROM latest_month)\nGROUP BY child_ou.id, child_ou.name\nORDER BY child_ou.name\n) AS master_access_control WHERE '${isAllowed}' = '1'",
+          "rawSql": "SELECT * FROM (\nWITH latest_month AS (\n    SELECT MAX(ref_month) AS ref_month FROM HEART360_BLOOD_SUGAR_CONTROLLED\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n    AND $__timeFilter(ref_month)\n)\nSELECT\n    child_ou.id AS child_id,\n    child_ou.name AS child_name,\n    REPLACE(build_drill_url(child_ou.id), '/d/heart360_drilldown?', '/d/heart360_drilldown_diabetes?') AS drill_url,\n    SUM(COALESCE(uc.nb_dm_patients_under_care, 0)) AS nb_patients_under_care,\n    SUM(COALESCE(uc.nb_new_dm_patients, 0)) AS nb_patients_newly_registered,\n    SUM(COALESCE(bsc.diabetes_controlled, 0)) AS nb_patients_controlled,\n    ROUND(100.0 * SUM(COALESCE(bsc.diabetes_controlled, 0)) / NULLIF(SUM(COALESCE(bsc.diabetes_patients_under_care, 0)), 0)) AS per_patients_controlled,\n    SUM(COALESCE(bss.uncontrolled_moderate, 0) + COALESCE(bss.uncontrolled_high, 0)) AS nb_patients_uncontrolled,\n    ROUND(100.0 * SUM(COALESCE(bss.uncontrolled_moderate, 0) + COALESCE(bss.uncontrolled_high, 0)) / NULLIF(SUM(COALESCE(bss.diabetes_patients_under_care, 0)), 0)) AS per_patients_uncontrolled,\n    SUM(COALESCE(bsm.missed_visit, 0)) AS nb_patients_no_visit,\n    ROUND(100.0 * SUM(COALESCE(bsm.missed_visit, 0)) / NULLIF(SUM(COALESCE(bsm.diabetes_patients_under_care, 0)), 0)) AS per_patients_no_visit\nFROM org_unit_lineage lin\nJOIN org_units child_ou ON lin.ancestor_id = child_ou.id AND child_ou.parent_id IS NOT DISTINCT FROM ((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))\nLEFT JOIN HEART360_DM_PATIENTS_UNDER_CARE uc ON uc.org_unit_id = lin.org_unit_id AND uc.ref_month = (SELECT ref_month FROM latest_month)\nLEFT JOIN HEART360_BLOOD_SUGAR_CONTROLLED bsc ON bsc.org_unit_id = lin.org_unit_id AND bsc.ref_month = (SELECT ref_month FROM latest_month)\nLEFT JOIN HEART360_BLOOD_SUGAR_SEVERITY bss ON bss.org_unit_id = lin.org_unit_id AND bss.ref_month = (SELECT ref_month FROM latest_month)\nLEFT JOIN HEART360_BLOOD_SUGAR_MISSED_VISITS bsm ON bsm.org_unit_id = lin.org_unit_id AND bsm.ref_month = (SELECT ref_month FROM latest_month)\nGROUP BY child_ou.id, child_ou.name\nORDER BY child_ou.name\n) AS master_access_control WHERE '${isAllowed}' = '1'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -2525,12 +2525,16 @@
   "templating": {
     "list": [
       {
-        "current": {},
+        "allValue": "0",
+        "current": {
+          "text": "All",
+          "value": "0"
+        },
         "datasource": {
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-hypertension"
         },
-        "definition": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 1 ORDER BY name",
+        "definition": "SELECT 'All' AS __text, '0' AS __value UNION ALL SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 1 ORDER BY 1",
         "includeAll": false,
         "label": "Region",
         "name": "region",
@@ -2539,7 +2543,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 1 ORDER BY name",
+          "rawSql": "SELECT 'All' AS __text, '0' AS __value UNION ALL SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 1 ORDER BY 1",
           "refId": "tempvar",
           "sql": {
             "columns": [
@@ -2575,7 +2579,7 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-hypertension"
         },
-        "definition": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 2 AND parent_id::text = '${region}' ORDER BY name",
+        "definition": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 2 AND ('${region}' = '0' OR parent_id::text = '${region}') ORDER BY name",
         "includeAll": true,
         "label": "District",
         "name": "district",
@@ -2584,7 +2588,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 2 AND parent_id::text = '${region}' ORDER BY name",
+          "rawSql": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 2 AND ('${region}' = '0' OR parent_id::text = '${region}') ORDER BY name",
           "refId": "tempvar",
           "sql": {
             "columns": [
@@ -3028,7 +3032,7 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-hypertension"
         },
-        "definition": "SELECT ou.level AS __value FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1",
+        "definition": "SELECT COALESCE((SELECT ou.level FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1), 0) AS __value",
         "hide": 2,
         "name": "selected_level",
         "options": [],
@@ -3036,7 +3040,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ou.level AS __value FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1",
+          "rawSql": "SELECT COALESCE((SELECT ou.level FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1), 0) AS __value",
           "refId": "tempvar",
           "sql": {
             "columns": [
@@ -3071,7 +3075,7 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-hypertension"
         },
-        "definition": "SELECT get_child_level_name(ou.id) AS __value FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1",
+        "definition": "WITH selected AS (SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1) SELECT COALESCE((SELECT get_child_level_name(selected.id) FROM selected), (SELECT hc.display_name FROM hierarchy_config hc WHERE hc.level = 1)) AS __value",
         "hide": 2,
         "name": "child_level_name",
         "options": [],
@@ -3079,7 +3083,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT get_child_level_name(ou.id) AS __value FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1",
+          "rawSql": "WITH selected AS (SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1) SELECT COALESCE((SELECT get_child_level_name(selected.id) FROM selected), (SELECT hc.display_name FROM hierarchy_config hc WHERE hc.level = 1)) AS __value",
           "refId": "tempvar",
           "sql": {
             "columns": [
@@ -3114,7 +3118,7 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-hypertension"
         },
-        "definition": "SELECT COALESCE(string_agg('[' || replace(replace(ancestor_name, ']', ')'), '[', '(') || '](' || REPLACE(build_drill_url(ancestor_id), '/d/heart360_drilldown?', '/d/heart360_drilldown_diabetes?') || ')', ' > ' ORDER BY ancestor_level), '*Select an **Org unit***') AS __value FROM org_unit_lineage WHERE org_unit_id = (SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1)",
+        "definition": "SELECT COALESCE(string_agg('[' || replace(replace(ancestor_name, ']', ')'), '[', '(') || '](' || REPLACE(build_drill_url(ancestor_id), '/d/heart360_drilldown?', '/d/heart360_drilldown_diabetes?') || ')', ' > ' ORDER BY ancestor_level), '**All Regions**') AS __value FROM org_unit_lineage WHERE org_unit_id = (SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1)",
         "hide": 2,
         "name": "breadcrumb_html",
         "options": [],
@@ -3122,7 +3126,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(string_agg('[' || replace(replace(ancestor_name, ']', ')'), '[', '(') || '](' || REPLACE(build_drill_url(ancestor_id), '/d/heart360_drilldown?', '/d/heart360_drilldown_diabetes?') || ')', ' > ' ORDER BY ancestor_level), '*Select an **Org unit***') AS __value FROM org_unit_lineage WHERE org_unit_id = (SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1)",
+          "rawSql": "SELECT COALESCE(string_agg('[' || replace(replace(ancestor_name, ']', ')'), '[', '(') || '](' || REPLACE(build_drill_url(ancestor_id), '/d/heart360_drilldown?', '/d/heart360_drilldown_diabetes?') || ')', ' > ' ORDER BY ancestor_level), '**All Regions**') AS __value FROM org_unit_lineage WHERE org_unit_id = (SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1)",
           "refId": "tempvar",
           "sql": {
             "columns": [
@@ -3237,7 +3241,7 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-grafana"
         },
-        "definition": "SELECT COALESCE(MAX(1), 0) AS is_allowed\nFROM grafana_schema.user u\nLEFT OUTER JOIN grafana_schema.team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN grafana_schema.team t ON tm.team_id = t.id\nWHERE u.id = ${__user.id}\n  AND (\n      u.is_admin = true\n      OR t.name IN (\n          SELECT (SELECT group_name FROM heart360tk_schema.get_access_groups(lin.ancestor_id, 'aggregated') LIMIT 1)\n          FROM heart360tk_schema.org_unit_lineage lin\n          WHERE lin.org_unit_id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int\n          \n          UNION\n          \n          SELECT (SELECT group_name FROM heart360tk_schema.get_access_groups(lin.ancestor_id, 'patients') LIMIT 1)\n          FROM heart360tk_schema.org_unit_lineage lin\n          WHERE lin.org_unit_id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int\n      )\n      OR EXISTS (\n          SELECT 1 \n          FROM heart360tk_schema.hierarchy_config hc\n          WHERE t.name IN (\n              'heart360tk_' || hc.var_name || '_view_aggregated_ALL',\n              'heart360tk_' || hc.var_name || '_view_patients_ALL'\n          )\n            AND hc.level <= (SELECT level FROM heart360tk_schema.org_units WHERE id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int LIMIT 1)\n      )\n  )",
+        "definition": "SELECT COALESCE(MAX(1), 0) AS is_allowed\nFROM grafana_schema.user u\nLEFT OUTER JOIN grafana_schema.team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN grafana_schema.team t ON tm.team_id = t.id\nWHERE u.id = ${__user.id}\n  AND (\n      u.is_admin = true\n      OR t.name IN (\n          SELECT (SELECT group_name FROM heart360tk_schema.get_access_groups(lin.ancestor_id, 'aggregated') LIMIT 1)\n          FROM heart360tk_schema.org_unit_lineage lin\n          WHERE lin.org_unit_id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int\n          \n          UNION\n          \n          SELECT (SELECT group_name FROM heart360tk_schema.get_access_groups(lin.ancestor_id, 'patients') LIMIT 1)\n          FROM heart360tk_schema.org_unit_lineage lin\n          WHERE lin.org_unit_id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int\n      )\n      OR EXISTS (\n          SELECT 1 \n          FROM heart360tk_schema.hierarchy_config hc\n          WHERE t.name IN (\n              'heart360tk_' || hc.var_name || '_view_aggregated_ALL',\n              'heart360tk_' || hc.var_name || '_view_patients_ALL'\n          )\n            AND hc.level <= COALESCE((SELECT level FROM heart360tk_schema.org_units WHERE id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int LIMIT 1), hc.level)\n      )\n  )",
         "hide": 2,
         "name": "isAllowed",
         "options": [],
@@ -3245,7 +3249,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(MAX(1), 0) AS is_allowed\nFROM grafana_schema.user u\nLEFT OUTER JOIN grafana_schema.team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN grafana_schema.team t ON tm.team_id = t.id\nWHERE u.id = ${__user.id}\n  AND (\n      u.is_admin = true\n      OR t.name IN (\n          SELECT (SELECT group_name FROM heart360tk_schema.get_access_groups(lin.ancestor_id, 'aggregated') LIMIT 1)\n          FROM heart360tk_schema.org_unit_lineage lin\n          WHERE lin.org_unit_id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int\n          \n          UNION\n          \n          SELECT (SELECT group_name FROM heart360tk_schema.get_access_groups(lin.ancestor_id, 'patients') LIMIT 1)\n          FROM heart360tk_schema.org_unit_lineage lin\n          WHERE lin.org_unit_id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int\n      )\n      OR EXISTS (\n          SELECT 1 \n          FROM heart360tk_schema.hierarchy_config hc\n          WHERE t.name IN (\n              'heart360tk_' || hc.var_name || '_view_aggregated_ALL',\n              'heart360tk_' || hc.var_name || '_view_patients_ALL'\n          )\n            AND hc.level <= (SELECT level FROM heart360tk_schema.org_units WHERE id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int LIMIT 1)\n      )\n  )",
+          "rawSql": "SELECT COALESCE(MAX(1), 0) AS is_allowed\nFROM grafana_schema.user u\nLEFT OUTER JOIN grafana_schema.team_member tm ON tm.user_id = u.id\nLEFT OUTER JOIN grafana_schema.team t ON tm.team_id = t.id\nWHERE u.id = ${__user.id}\n  AND (\n      u.is_admin = true\n      OR t.name IN (\n          SELECT (SELECT group_name FROM heart360tk_schema.get_access_groups(lin.ancestor_id, 'aggregated') LIMIT 1)\n          FROM heart360tk_schema.org_unit_lineage lin\n          WHERE lin.org_unit_id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int\n          \n          UNION\n          \n          SELECT (SELECT group_name FROM heart360tk_schema.get_access_groups(lin.ancestor_id, 'patients') LIMIT 1)\n          FROM heart360tk_schema.org_unit_lineage lin\n          WHERE lin.org_unit_id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int\n      )\n      OR EXISTS (\n          SELECT 1 \n          FROM heart360tk_schema.hierarchy_config hc\n          WHERE t.name IN (\n              'heart360tk_' || hc.var_name || '_view_aggregated_ALL',\n              'heart360tk_' || hc.var_name || '_view_patients_ALL'\n          )\n            AND hc.level <= COALESCE((SELECT level FROM heart360tk_schema.org_units WHERE id = NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int LIMIT 1), hc.level)\n      )\n  )",
           "refId": "tempvar",
           "sql": {
             "columns": [
@@ -3277,7 +3281,7 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-grafana"
         },
-        "definition": "SELECT COALESCE(\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">' || \n    (SELECT group_name FROM heart360tk_schema.get_access_groups(NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int, 'patients') LIMIT 1) || \n    '</span>, ' ||\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">' || \n    (SELECT group_name FROM heart360tk_schema.get_access_groups(NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int, 'aggregated') LIMIT 1) || \n    '</span>, or an ' ||\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">_ALL</span> access team',\n    'None'\n) AS required_groups",
+        "definition": "SELECT COALESCE(\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">' || \n    (SELECT group_name FROM heart360tk_schema.get_access_groups(NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int, 'patients') LIMIT 1) || \n    '</span>, ' ||\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">' || \n    (SELECT group_name FROM heart360tk_schema.get_access_groups(NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int, 'aggregated') LIMIT 1) || \n    '</span>, or an ' ||\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">_ALL</span> access team',\n    'an <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">_ALL</span> access team'\n) AS required_groups",
         "hide": 2,
         "name": "requiredGroups",
         "options": [],
@@ -3285,7 +3289,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">' || \n    (SELECT group_name FROM heart360tk_schema.get_access_groups(NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int, 'patients') LIMIT 1) || \n    '</span>, ' ||\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">' || \n    (SELECT group_name FROM heart360tk_schema.get_access_groups(NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int, 'aggregated') LIMIT 1) || \n    '</span>, or an ' ||\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">_ALL</span> access team',\n    'None'\n) AS required_groups",
+          "rawSql": "SELECT COALESCE(\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">' || \n    (SELECT group_name FROM heart360tk_schema.get_access_groups(NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int, 'patients') LIMIT 1) || \n    '</span>, ' ||\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">' || \n    (SELECT group_name FROM heart360tk_schema.get_access_groups(NULLIF(TRIM(BOTH FROM '${org_unit}'), '')::int, 'aggregated') LIMIT 1) || \n    '</span>, or an ' ||\n    '<span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">_ALL</span> access team',\n    'an <span style=\"border: 1px solid rgba(224, 36, 36, 0.3); padding: 1px 5px; border-radius: 3px; font-family: monospace; color: #ff7875; word-break: break-all;\">_ALL</span> access team'\n) AS required_groups",
           "refId": "tempvar",
           "sql": {
             "columns": [

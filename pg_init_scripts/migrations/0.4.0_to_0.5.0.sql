@@ -513,6 +513,34 @@ SELECT cron.schedule(
     'SELECT heart360tk_reporting.run_refresh_with_status(''cron'');'
 );
 
+-- ============================================================================
+-- STEP 15: Let get_descendant_ids() accept the "All" sentinel.
+--          The top-level (Region) dropdown has no parent level to fall back to,
+--          so its "All" option passes 0, which matches no row (org_units.id is
+--          a SERIAL starting at 1) and arrives here as NULL. Previously that
+--          returned an empty set and every panel rendered blank; it now matches
+--          every org unit, so the dashboards aggregate across the hierarchy.
+--
+--          Behaviour for a real org unit id is unchanged, and a genuinely
+--          unknown id still returns nothing. CREATE OR REPLACE keeps the
+--          existing owner and grants, so this is safe to re-run.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION heart360tk_schema.get_descendant_ids(p_parent_id INTEGER)
+RETURNS TABLE(id INTEGER)
+LANGUAGE sql STABLE
+AS $$
+    WITH RECURSIVE descendants AS (
+        SELECT ou.id FROM org_units ou
+        WHERE COALESCE(p_parent_id, 0) <> 0 AND ou.id = p_parent_id
+        UNION ALL
+        SELECT o.id FROM org_units o JOIN descendants d ON o.parent_id = d.id
+    )
+    SELECT d.id FROM descendants d
+    UNION ALL
+    SELECT ou.id FROM org_units ou WHERE COALESCE(p_parent_id, 0) = 0;
+$$;
+
 RESET ROLE;
 
 COMMIT;
