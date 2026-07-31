@@ -2573,14 +2573,14 @@
         "allValue": "0",
         "current": {
           "text": "All",
-          "value": "$__all"
+          "value": "0"
         },
         "datasource": {
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-hypertension"
         },
-        "definition": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 2 AND ('${region}' = '0' OR parent_id::text = '${region}') ORDER BY name",
-        "includeAll": true,
+        "definition": "SELECT 'All' AS __text, '0' AS __value UNION ALL SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 2 AND parent_id::text = '${region}' AND '${region}' != '0' ORDER BY 1",
+        "includeAll": false,
         "label": "District",
         "name": "district",
         "options": [],
@@ -2588,7 +2588,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 2 AND ('${region}' = '0' OR parent_id::text = '${region}') ORDER BY name",
+          "rawSql": "SELECT 'All' AS __text, '0' AS __value UNION ALL SELECT name AS __text, id::text AS __value FROM org_units WHERE level = 2 AND parent_id::text = '${region}' AND '${region}' != '0' ORDER BY 1",
           "refId": "tempvar",
           "sql": {
             "columns": [
@@ -2611,7 +2611,7 @@
         "refresh": 1,
         "regex": "",
         "regexApplyTo": "value",
-        "sort": 1,
+        "sort": 0,
         "type": "query"
       },
       {
