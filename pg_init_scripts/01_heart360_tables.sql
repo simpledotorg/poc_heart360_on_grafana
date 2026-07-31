@@ -127,17 +127,22 @@ CREATE INDEX IF NOT EXISTS idx_call_results_org_unit_id ON call_results(org_unit
 -- HELPER FUNCTIONS FOR DYNAMIC HIERARCHY
 -- ============================================================================
 
--- Returns all descendant org_unit IDs (including the given ID itself)
+-- Returns all descendant org_unit IDs (including the given ID itself).
+-- NULL or 0 is the "All" sentinel used by the top-level dropdown and matches
+-- every org unit, since no org unit is selected to scope the result to.
 CREATE OR REPLACE FUNCTION get_descendant_ids(p_parent_id INTEGER)
 RETURNS TABLE(id INTEGER)
 LANGUAGE sql STABLE
 AS $$
     WITH RECURSIVE descendants AS (
-        SELECT ou.id FROM org_units ou WHERE ou.id = p_parent_id
+        SELECT ou.id FROM org_units ou
+        WHERE COALESCE(p_parent_id, 0) <> 0 AND ou.id = p_parent_id
         UNION ALL
         SELECT o.id FROM org_units o JOIN descendants d ON o.parent_id = d.id
     )
-    SELECT d.id FROM descendants d;
+    SELECT d.id FROM descendants d
+    UNION ALL
+    SELECT ou.id FROM org_units ou WHERE COALESCE(p_parent_id, 0) = 0;
 $$;
 
 -- Returns the ancestor name of a given org_unit at a specific level
