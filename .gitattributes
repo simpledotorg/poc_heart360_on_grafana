@@ -1,0 +1,40 @@
+# Normalise line endings.
+#
+# Without this file, a clone on Windows with the default `core.autocrlf=true`
+# rewrites every shell script to CRLF. The containers run those scripts with
+# Alpine's /bin/sh, which then fails with errors like:
+#
+#     syntax error: unexpected "elif" (expecting "then")
+#     /scripts/fileproc.sh: line 1: #!/bin/bash^M: not found
+#
+# Anything that is read by a Linux container must stay LF.
+
+* text=auto eol=lf
+
+*.sh            text eol=lf
+*.bash          text eol=lf
+*.py            text eol=lf
+*.sql           text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.json          text eol=lf
+*.ini           text eol=lf
+*.docker        text eol=lf
+Dockerfile*     text eol=lf
+pgpass          text eol=lf
+.env.example    text eol=lf
+
+# Windows-only helpers keep CRLF.
+*.ps1           text eol=crlf
+*.cmd           text eol=crlf
+*.bat           text eol=crlf
+
+# Binary assets must never be touched.
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.ico           binary
+*.svg           text eol=lf
+*.xlsx          binary
+*.pdf           binary

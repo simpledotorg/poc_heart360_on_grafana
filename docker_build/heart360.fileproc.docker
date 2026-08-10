@@ -1,15 +1,39 @@
 FROM devodev/inotify
 
-# Installs dependencies
-RUN apk update
-RUN apk upgrade
-RUN apk add python3 py3-pip
-RUN pip install --break-system-packages pandas openpyxl psycopg2-binary python-calamine
+# --- Egress controls -------------------------------------------------------
+# All default to empty/false so an unproxied build is unchanged.
+# See docs/ports-and-proxy.md.
+ARG HTTP_PROXY=""
+ARG HTTPS_PROXY=""
+ARG NO_PROXY=""
+ARG PIP_INDEX_URL=""
+ARG PIP_EXTRA_INDEX_URL=""
+ARG PIP_TRUSTED_HOST=""
+ARG HEART360_APK_INSECURE_HTTP="false"
+ARG HEART360_TLS_INSECURE="false"
+ARG HEART360_TLS_LEGACY="false"
+
+# Trust the organisation's TLS-inspection CA before any outbound call is made.
+COPY ./certs /heart360-certs
+COPY ./scripts/tls_bootstrap.sh /usr/local/bin/heart360-tls-bootstrap
+RUN sh /usr/local/bin/heart360-tls-bootstrap
+
+# Pre-downloaded wheels for air-gapped builds (see vendor/wheels/README.md).
+COPY ./vendor/wheels /heart360-wheels
+
+# Bake the Python dependencies into the image so the container does not need
+# network egress on every start. The installer is idempotent, so the runtime
+# bootstrap in init.sh becomes a no-op.
+COPY ./inotify_scripts/install_python_deps.sh /scripts/install_python_deps.sh
+RUN sh /scripts/install_python_deps.sh
 
 # copies files that are required
 COPY ./inotify_scripts/fileproc.sh /scripts/fileproc.sh
+COPY ./inotify_scripts/init.sh /scripts/init.sh
 
 # Sets environement variables
 ENV INOTIFY_TARGET=/data
 ENV INOTIFY_SCRIPT=/scripts/fileproc.sh
 ENV H360TK_DATA_LOAD_SCRIPT=__CHANGE_THIS__
+# Dependencies are already present; skip the runtime bootstrap by default.
+ENV HEART360_SKIP_BOOTSTRAP=true

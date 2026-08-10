@@ -1,21 +1,56 @@
 FROM postgres:16-alpine
 
+# --- Egress controls -------------------------------------------------------
+# All default to empty/false so an unproxied build is unchanged.
+# See docs/ports-and-proxy.md.
+ARG HTTP_PROXY=""
+ARG HTTPS_PROXY=""
+ARG NO_PROXY=""
+ARG HEART360_APK_INSECURE_HTTP="false"
+ARG HEART360_TLS_INSECURE="false"
+ARG HEART360_TLS_LEGACY="false"
+ARG HEART360_PG_CRON_REPO="https://github.com/citusdata/pg_cron.git"
+ARG HEART360_DB_NAME="heart360tk_database"
+
+# Trust the organisation's TLS-inspection CA and (optionally) relax the Alpine
+# package transport before any outbound call is made.
+COPY ./certs /heart360-certs
+COPY ./scripts/tls_bootstrap.sh /usr/local/bin/heart360-tls-bootstrap
+RUN sh /usr/local/bin/heart360-tls-bootstrap
+
 # Stock postgres:16-alpine does not ship pg_cron; build from source (matches extensions used in pg_init_scripts).
-RUN apk add --no-cache --virtual .build-deps build-base postgresql-dev git && \
-    cd /tmp && \
-    git clone --depth 1 https://github.com/citusdata/pg_cron.git && \
-    cd pg_cron && \
-    make with_llvm=0 && \
-    make install with_llvm=0 && \
-    cd / && \
-    rm -rf /tmp/pg_cron && \
+RUN set -eu; \
+    apk add --no-cache --virtual .build-deps build-base postgresql-dev git; \
+    if [ "${HEART360_TLS_INSECURE}" = "true" ]; then git config --global http.sslVerify false; fi; \
+    cd /tmp; \
+    attempt=1; \
+    until git clone --depth 1 "${HEART360_PG_CRON_REPO}" pg_cron; do \
+        if [ "${attempt}" -ge 3 ]; then \
+            echo "[heart360] FAILED to clone ${HEART360_PG_CRON_REPO} after 3 attempts."; \
+            echo "[heart360] If this is a TLS/proxy failure see docs/ports-and-proxy.md:"; \
+            echo "[heart360]   - drop your corporate root CA into ./certs/"; \
+            echo "[heart360]   - or build with HTTP_PROXY / HTTPS_PROXY set"; \
+            echo "[heart360]   - or set HEART360_PG_CRON_REPO to an internal mirror"; \
+            exit 1; \
+        fi; \
+        echo "[heart360] pg_cron clone attempt ${attempt} failed, retrying..."; \
+        rm -rf /tmp/pg_cron; \
+        attempt=$((attempt + 1)); \
+        sleep 5; \
+    done; \
+    cd pg_cron; \
+    make with_llvm=0; \
+    make install with_llvm=0; \
+    cd /; \
+    rm -rf /tmp/pg_cron; \
+    git config --global --unset http.sslVerify || true; \
     apk del .build-deps
 
 # pg_cron must be preloaded; initdb copies postgresql.conf.sample into the new data directory.
 RUN echo >> /usr/local/share/postgresql/postgresql.conf.sample && \
     echo '# pg_cron' >> /usr/local/share/postgresql/postgresql.conf.sample && \
     echo "shared_preload_libraries = 'pg_cron'" >> /usr/local/share/postgresql/postgresql.conf.sample && \
-    echo "cron.database_name = 'heart360tk_database'" >> /usr/local/share/postgresql/postgresql.conf.sample
+    echo "cron.database_name = '${HEART360_DB_NAME}'" >> /usr/local/share/postgresql/postgresql.conf.sample
 
 COPY ./pg_init_scripts/00_schemas.sql          docker-entrypoint-initdb.d/00_schemas.sql
 COPY ./pg_init_scripts/01_heart360_tables.sql  docker-entrypoint-initdb.d/01_heart360_tables.sql
