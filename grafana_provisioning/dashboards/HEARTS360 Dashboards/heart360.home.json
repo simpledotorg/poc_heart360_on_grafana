@@ -38,7 +38,7 @@
           "showLineNumbers": false,
           "showMiniMap": false
         },
-        "content": "<div id=\"h360-router\" style=\"padding:24px;text-align:center;color:#9ca3af;font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px\">Loading…</div>\n<script>\n(function(){\n  try {\n    var checkInterval = setInterval(function() {\n      try {\n        var urlParams = new URLSearchParams(window.top.location.search);\n        var isGlobal = urlParams.get('var-UserIsGlobal');\n        if (isGlobal === null || isGlobal === '') {\n          return;\n        }\n        if (isGlobal === '1') {\n          clearInterval(checkInterval);\n          window.top.location.replace('/d/heart360_drilldown?orgId=1');\n        } else if (isGlobal === '0') {\n          var slug = urlParams.get('var-UserFacilitySlug');\n          var facilityId = urlParams.get('var-UserFacilityId');\n          var regionId = urlParams.get('var-UserRegionId');\n          var districtId = urlParams.get('var-UserDistrictId');\n          if (slug && slug !== 'null' && facilityId && facilityId !== 'null' && regionId && regionId !== 'null' && districtId && districtId !== 'null') {\n            clearInterval(checkInterval);\n            var url = '/d/heart360_drilldown?orgId=1&var-region=' + regionId + '&var-district=' + districtId + '&var-facility=' + facilityId;\n            window.top.location.replace(url);\n          }\n        }\n      } catch(innerEx) {\n        console.error('HEARTS360 router polling error:', innerEx);\n      }\n    }, 100);\n    setTimeout(function() {\n      clearInterval(checkInterval);\n      if (window.top.location.pathname.indexOf('/d/heart360-home') !== -1) {\n        window.top.location.replace('/d/heart360_drilldown?orgId=1');\n      }\n    }, 3000);\n  } catch(e) { console.error('HEARTS360 home redirect failed:', e); }\n})();\n</script>",
+        "content": "<div id=\"h360-router\" style=\"padding:24px;text-align:center;color:#9ca3af;font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px\">Loading…</div>\n<script>\n(function(){\n  try {\n    var checkInterval = setInterval(function() {\n      try {\n        var urlParams = new URLSearchParams(window.top.location.search);\n        var isGlobal = urlParams.get('var-UserIsGlobal');\n        if (isGlobal === null || isGlobal === '') {\n          return;\n        }\n        if (isGlobal === '1') {\n          clearInterval(checkInterval);\n          window.top.location.replace('/d/heart360_drilldown?orgId=1');\n        } else if (isGlobal === '0') {\n          var drillUrl = urlParams.get('var-UserDrillUrl');\n          if (drillUrl && drillUrl !== 'null' && drillUrl !== '') {\n            clearInterval(checkInterval);\n            window.top.location.replace(drillUrl + '&orgId=1');\n          }\n        }\n      } catch(innerEx) {\n        console.error('HEARTS360 router polling error:', innerEx);\n      }\n    }, 100);\n    setTimeout(function() {\n      clearInterval(checkInterval);\n      if (window.top.location.pathname.indexOf('/d/heart360-home') !== -1) {\n        window.top.location.replace('/d/heart360_drilldown?orgId=1');\n      }\n    }, 3000);\n  } catch(e) { console.error('HEARTS360 home redirect failed:', e); }\n})();\n</script>",
         "mode": "html"
       },
       "pluginVersion": "12.4.1",
@@ -58,28 +58,11 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-grafana"
         },
-        "definition": "SELECT COALESCE(MIN(regexp_replace(t.name, '^heart360tk_facility_view_(patients|aggregated)_', '')), '')\nFROM \"user\" u\nLEFT JOIN team_member tm ON tm.user_id = u.id\nLEFT JOIN team t ON tm.team_id = t.id\nWHERE u.id = ${__user.id}\n  AND t.name LIKE 'heart360tk_facility_view_%'\n  AND t.name NOT LIKE '%\\_ALL' ESCAPE '\\'",
+        "definition": "SELECT CASE\n  WHEN u.is_admin THEN 1\n  WHEN EXISTS (\n    SELECT 1 FROM team_member tm\n    JOIN team t ON tm.team_id = t.id\n    WHERE tm.user_id = u.id AND t.name LIKE '%\\_ALL' ESCAPE '\\'\n  )\n  AND COALESCE((\n    SELECT MIN(hc.level)\n    FROM team_member tm\n    JOIN team t ON tm.team_id = t.id\n    JOIN heart360tk_schema.hierarchy_config hc\n      ON t.name IN ('heart360tk_' || hc.var_name || '_view_patients_ALL',\n                    'heart360tk_' || hc.var_name || '_view_aggregated_ALL')\n    WHERE tm.user_id = u.id\n  ), 1) = 1 THEN 1\n  ELSE 0\nEND\nFROM \"user\" u WHERE u.id = ${__user.id}",
         "hide": 2,
-        "name": "UserFacilitySlug",
+        "name": "UserIsGlobal",
         "options": [],
-        "query": "SELECT COALESCE(MIN(regexp_replace(t.name, '^heart360tk_facility_view_(patients|aggregated)_', '')), '')\nFROM \"user\" u\nLEFT JOIN team_member tm ON tm.user_id = u.id\nLEFT JOIN team t ON tm.team_id = t.id\nWHERE u.id = ${__user.id}\n  AND t.name LIKE 'heart360tk_facility_view_%'\n  AND t.name NOT LIKE '%\\_ALL' ESCAPE '\\'",
-        "refresh": 1,
-        "regex": "",
-        "regexApplyTo": "value",
-        "sort": 0,
-        "type": "query"
-      },
-      {
-        "current": {},
-        "datasource": {
-          "type": "grafana-postgresql-datasource",
-          "uid": "postgres-hypertension"
-        },
-        "definition": "SELECT COALESCE((\n  SELECT id::text FROM org_units\n  WHERE level = 3\n    AND regexp_replace(lower(trim(name)), '\\s+', '_', 'g') = '${UserFacilitySlug}'\n  ORDER BY id\n  LIMIT 1\n), '')",
-        "hide": 2,
-        "name": "UserFacilityId",
-        "options": [],
-        "query": "SELECT COALESCE((\n  SELECT id::text FROM org_units\n  WHERE level = 3\n    AND regexp_replace(lower(trim(name)), '\\s+', '_', 'g') = '${UserFacilitySlug}'\n  ORDER BY id\n  LIMIT 1\n), '')",
+        "query": "SELECT CASE\n  WHEN u.is_admin THEN 1\n  WHEN EXISTS (\n    SELECT 1 FROM team_member tm\n    JOIN team t ON tm.team_id = t.id\n    WHERE tm.user_id = u.id AND t.name LIKE '%\\_ALL' ESCAPE '\\'\n  )\n  AND COALESCE((\n    SELECT MIN(hc.level)\n    FROM team_member tm\n    JOIN team t ON tm.team_id = t.id\n    JOIN heart360tk_schema.hierarchy_config hc\n      ON t.name IN ('heart360tk_' || hc.var_name || '_view_patients_ALL',\n                    'heart360tk_' || hc.var_name || '_view_aggregated_ALL')\n    WHERE tm.user_id = u.id\n  ), 1) = 1 THEN 1\n  ELSE 0\nEND\nFROM \"user\" u WHERE u.id = ${__user.id}",
         "refresh": 1,
         "regex": "",
         "regexApplyTo": "value",
@@ -92,11 +75,11 @@
           "type": "grafana-postgresql-datasource",
           "uid": "postgres-grafana"
         },
-        "definition": "SELECT CASE WHEN (u.is_admin OR EXISTS (\n  SELECT 1 FROM team_member tm\n  JOIN team t ON tm.team_id = t.id\n  WHERE tm.user_id = u.id AND t.name LIKE '%\\_ALL' ESCAPE '\\'\n)) THEN 1 ELSE 0 END\nFROM \"user\" u WHERE u.id = ${__user.id}",
+        "definition": "WITH me AS (\n  SELECT u.id, u.is_admin FROM \"user\" u WHERE u.id = ${__user.id}\n),\nmy_teams AS (\n  SELECT t.name\n  FROM me\n  JOIN team_member tm ON tm.user_id = me.id\n  JOIN team t ON tm.team_id = t.id\n  WHERE NOT me.is_admin\n),\nspecific_units AS (\n  SELECT hc.level, ou.id, ou.name\n  FROM my_teams mt\n  JOIN heart360tk_schema.hierarchy_config hc\n    ON mt.name ~ ('^heart360tk_' || hc.var_name || '_view_(patients|aggregated)_')\n    AND mt.name NOT LIKE '%\\_ALL' ESCAPE '\\'\n  JOIN heart360tk_schema.org_units ou\n    ON ou.level = hc.level\n    AND regexp_replace(lower(trim(ou.name)), '\\s+', '_', 'g') =\n        regexp_replace(mt.name, '^heart360tk_' || hc.var_name || '_view_(patients|aggregated)_', '')\n),\nall_access_level AS (\n  SELECT MIN(hc.level) AS level\n  FROM my_teams mt\n  JOIN heart360tk_schema.hierarchy_config hc\n    ON mt.name IN ('heart360tk_' || hc.var_name || '_view_patients_ALL',\n                   'heart360tk_' || hc.var_name || '_view_aggregated_ALL')\n),\nall_access_units AS (\n  SELECT ou.level, ou.id, ou.name\n  FROM all_access_level al\n  JOIN heart360tk_schema.org_units ou ON ou.level = al.level\n  WHERE al.level > 1\n),\ncandidates AS (\n  SELECT * FROM specific_units\n  UNION ALL\n  SELECT * FROM all_access_units\n)\nSELECT COALESCE(\n  (SELECT id::text FROM candidates ORDER BY level ASC, name ASC LIMIT 1),\n  ''\n)",
         "hide": 2,
-        "name": "UserIsGlobal",
+        "name": "UserOrgUnitId",
         "options": [],
-        "query": "SELECT CASE WHEN (u.is_admin OR EXISTS (\n  SELECT 1 FROM team_member tm\n  JOIN team t ON tm.team_id = t.id\n  WHERE tm.user_id = u.id AND t.name LIKE '%\\_ALL' ESCAPE '\\'\n)) THEN 1 ELSE 0 END\nFROM \"user\" u WHERE u.id = ${__user.id}",
+        "query": "WITH me AS (\n  SELECT u.id, u.is_admin FROM \"user\" u WHERE u.id = ${__user.id}\n),\nmy_teams AS (\n  SELECT t.name\n  FROM me\n  JOIN team_member tm ON tm.user_id = me.id\n  JOIN team t ON tm.team_id = t.id\n  WHERE NOT me.is_admin\n),\nspecific_units AS (\n  SELECT hc.level, ou.id, ou.name\n  FROM my_teams mt\n  JOIN heart360tk_schema.hierarchy_config hc\n    ON mt.name ~ ('^heart360tk_' || hc.var_name || '_view_(patients|aggregated)_')\n    AND mt.name NOT LIKE '%\\_ALL' ESCAPE '\\'\n  JOIN heart360tk_schema.org_units ou\n    ON ou.level = hc.level\n    AND regexp_replace(lower(trim(ou.name)), '\\s+', '_', 'g') =\n        regexp_replace(mt.name, '^heart360tk_' || hc.var_name || '_view_(patients|aggregated)_', '')\n),\nall_access_level AS (\n  SELECT MIN(hc.level) AS level\n  FROM my_teams mt\n  JOIN heart360tk_schema.hierarchy_config hc\n    ON mt.name IN ('heart360tk_' || hc.var_name || '_view_patients_ALL',\n                   'heart360tk_' || hc.var_name || '_view_aggregated_ALL')\n),\nall_access_units AS (\n  SELECT ou.level, ou.id, ou.name\n  FROM all_access_level al\n  JOIN heart360tk_schema.org_units ou ON ou.level = al.level\n  WHERE al.level > 1\n),\ncandidates AS (\n  SELECT * FROM specific_units\n  UNION ALL\n  SELECT * FROM all_access_units\n)\nSELECT COALESCE(\n  (SELECT id::text FROM candidates ORDER BY level ASC, name ASC LIMIT 1),\n  ''\n)",
         "refresh": 1,
         "regex": "",
         "regexApplyTo": "value",
@@ -107,30 +90,13 @@
         "current": {},
         "datasource": {
           "type": "grafana-postgresql-datasource",
-          "uid": "postgres-hypertension"
+          "uid": "postgres-grafana"
         },
-        "definition": "SELECT COALESCE((SELECT ancestor_id::text FROM org_unit_lineage WHERE org_unit_id = NULLIF('${UserFacilityId}', '')::int AND ancestor_level = 1 LIMIT 1), '')",
+        "definition": "SELECT COALESCE(\n  (SELECT '/d/heart360_drilldown?' ||\n          string_agg(\n              'var-' || hc.var_name || '=' || lin.ancestor_id::text,\n              '&' ORDER BY hc.level\n          )\n   FROM heart360tk_schema.org_unit_lineage lin\n   JOIN heart360tk_schema.hierarchy_config hc ON lin.ancestor_level = hc.level\n   WHERE lin.org_unit_id = NULLIF('${UserOrgUnitId}', '')::int),\n  ''\n)",
         "hide": 2,
-        "name": "UserRegionId",
+        "name": "UserDrillUrl",
         "options": [],
-        "query": "SELECT COALESCE((SELECT ancestor_id::text FROM org_unit_lineage WHERE org_unit_id = NULLIF('${UserFacilityId}', '')::int AND ancestor_level = 1 LIMIT 1), '')",
-        "refresh": 1,
-        "regex": "",
-        "regexApplyTo": "value",
-        "sort": 0,
-        "type": "query"
-      },
-      {
-        "current": {},
-        "datasource": {
-          "type": "grafana-postgresql-datasource",
-          "uid": "postgres-hypertension"
-        },
-        "definition": "SELECT COALESCE((SELECT ancestor_id::text FROM org_unit_lineage WHERE org_unit_id = NULLIF('${UserFacilityId}', '')::int AND ancestor_level = 2 LIMIT 1), '')",
-        "hide": 2,
-        "name": "UserDistrictId",
-        "options": [],
-        "query": "SELECT COALESCE((SELECT ancestor_id::text FROM org_unit_lineage WHERE org_unit_id = NULLIF('${UserFacilityId}', '')::int AND ancestor_level = 2 LIMIT 1), '')",
+        "query": "SELECT COALESCE(\n  (SELECT '/d/heart360_drilldown?' ||\n          string_agg(\n              'var-' || hc.var_name || '=' || lin.ancestor_id::text,\n              '&' ORDER BY hc.level\n          )\n   FROM heart360tk_schema.org_unit_lineage lin\n   JOIN heart360tk_schema.hierarchy_config hc ON lin.ancestor_level = hc.level\n   WHERE lin.org_unit_id = NULLIF('${UserOrgUnitId}', '')::int),\n  ''\n)",
         "refresh": 1,
         "regex": "",
         "regexApplyTo": "value",
