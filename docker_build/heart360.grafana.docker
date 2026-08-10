@@ -1,5 +1,16 @@
 FROM grafana/grafana:latest
 
+# --- Egress controls -------------------------------------------------------
+# Everything defaults to empty/false, so an unproxied build behaves exactly as
+# it did before. See docs/ports-and-proxy.md.
+ARG HTTP_PROXY=""
+ARG HTTPS_PROXY=""
+ARG NO_PROXY=""
+ARG HEART360_TLS_INSECURE="false"
+ARG HEART360_TLS_LEGACY="false"
+ARG HEART360_GF_PLUGIN_REPO=""
+ARG HEART360_GF_PLUGINS="volkovlabs-table-panel,yesoreyeram-infinity-datasource,marcusolsson-dynamictext-panel,volkovlabs-echarts-panel"
+
 COPY ./grafana_provisioning /etc/grafana/provisioning
 
 # Copy custom logo and favicon to standard grafana location
@@ -13,10 +24,42 @@ RUN find /usr/share/grafana/public/build/static/img -name "grafana_icon.*.svg" -
 # Replace "Welcome to Grafana" text in built JavaScript files
 RUN find /usr/share/grafana/public/build -name "*.js" -type f -exec sed -i 's/Welcome to Grafana/HEARTS360 Dashboard/g' {} \; || true
 
-RUN grafana cli plugins install volkovlabs-table-panel
-RUN grafana cli plugins install yesoreyeram-infinity-datasource
-RUN grafana cli plugins install marcusolsson-dynamictext-panel
-RUN grafana cli plugins install volkovlabs-echarts-panel
+# Trust the organisation's TLS-inspection CA before any outbound call is made.
+USER root
+COPY ./certs /heart360-certs
+COPY ./scripts/tls_bootstrap.sh /usr/local/bin/heart360-tls-bootstrap
+RUN sh /usr/local/bin/heart360-tls-bootstrap
+USER grafana
+
+# Plugin installation reaches out to grafana.com and is the first thing to fail
+# behind a strict proxy, so it retries, can point at an internal mirror, can
+# skip TLS verification, and can be turned off entirely by passing an empty
+# HEART360_GF_PLUGINS.
+RUN set -eu; \
+    if [ -z "${HEART360_GF_PLUGINS}" ]; then \
+        echo "[heart360] HEART360_GF_PLUGINS is empty - skipping plugin download"; \
+    else \
+        cli_flags=""; \
+        [ "${HEART360_TLS_INSECURE}" = "true" ] && cli_flags="${cli_flags} --insecure"; \
+        [ -n "${HEART360_GF_PLUGIN_REPO}" ] && cli_flags="${cli_flags} --repo ${HEART360_GF_PLUGIN_REPO}"; \
+        for plugin in $(echo "${HEART360_GF_PLUGINS}" | tr ',' ' '); do \
+            [ -n "${plugin}" ] || continue; \
+            attempt=1; \
+            until grafana cli ${cli_flags} plugins install "${plugin}"; do \
+                if [ "${attempt}" -ge 3 ]; then \
+                    echo "[heart360] FAILED to install plugin '${plugin}' after 3 attempts."; \
+                    echo "[heart360] If this is a TLS/proxy failure see docs/ports-and-proxy.md:"; \
+                    echo "[heart360]   - drop your corporate root CA into ./certs/"; \
+                    echo "[heart360]   - or build with HTTP_PROXY / HTTPS_PROXY set"; \
+                    echo "[heart360]   - or set HEART360_GF_PLUGIN_REPO to an internal mirror"; \
+                    exit 1; \
+                fi; \
+                echo "[heart360] plugin '${plugin}' attempt ${attempt} failed, retrying..."; \
+                attempt=$((attempt + 1)); \
+                sleep 5; \
+            done; \
+        done; \
+    fi
 
 ENV GF_SECURITY_ALLOW_EMBEDDING=true
 ENV GF_PANELS_DISABLE_SANITIZE_HTML=true

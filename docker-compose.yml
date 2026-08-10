@@ -1,33 +1,68 @@
-version: '3.8'
+# HEARTS360 Toolkit — core stack.
+#
+# Every host-facing port, container name and image tag below is driven by an
+# environment variable whose default matches the historical hard-coded value,
+# so `docker compose up -d` with no .env behaves exactly as it always has.
+#
+# To move the stack off busy ports, copy .env.example to .env and edit it, or
+# run scripts/heart360-up.sh (Linux/macOS) or scripts\heart360-up.ps1 (Windows)
+# which pick free ports automatically. See docs/ports-and-proxy.md.
+
 services:
   grafana:
     build:
       context: .
       dockerfile: docker_build/heart360.grafana.docker
-    container_name: grafana
+      args:
+        HTTP_PROXY: ${HTTP_PROXY-}
+        HTTPS_PROXY: ${HTTPS_PROXY-}
+        NO_PROXY: ${NO_PROXY-localhost,127.0.0.1,postgres,grafana,pgadmin,filebrowser-quantum,file-upload-trigger}
+        HEART360_GF_PLUGINS: ${HEART360_GF_PLUGINS-volkovlabs-table-panel,yesoreyeram-infinity-datasource,marcusolsson-dynamictext-panel,volkovlabs-echarts-panel}
+        HEART360_TLS_INSECURE: ${HEART360_TLS_INSECURE-false}
+    container_name: ${HEART360_GRAFANA_CONTAINER-grafana}
     ports:
-      - 3000:3000
+      - "${HEART360_BIND_ADDRESS-0.0.0.0}:${HEART360_GRAFANA_PORT-3000}:3000"
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     volumes:
       - ./grafana_provisioning:/etc/grafana/provisioning:ro
     environment:
-      - GF_DATABASE_URL=postgres://grafana:ZDI5MGE3YmYyMTRlNGNmYThkMTYyZjk3@postgres:5432/heart360tk_database
+      - GF_DATABASE_URL=postgres://grafana:${HEART360_DB_GRAFANA_PASSWORD-ZDI5MGE3YmYyMTRlNGNmYThkMTYyZjk3}@postgres:5432/${HEART360_DB_NAME-heart360tk_database}
       - GF_SECURITY_ALLOW_EMBEDDING=true
       - GF_PANELS_DISABLE_SANITIZE_HTML=true
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=volkovlabs-table-panel,yesoreyeram-infinity-datasource,marcusolsson-dynamictext-panel,volkovlabs-echarts-panel
+      # Plugins are already baked into the image. Set HEART360_GF_INSTALL_PLUGINS=""
+      # in .env to stop Grafana contacting grafana.com on every boot — required on
+      # air-gapped hosts and behind TLS-inspecting proxies.
+      - GF_INSTALL_PLUGINS=${HEART360_GF_INSTALL_PLUGINS-volkovlabs-table-panel,yesoreyeram-infinity-datasource,marcusolsson-dynamictext-panel,volkovlabs-echarts-panel}
       - GF_TIME_PICKER_QUICK_RANGES=[{"from":"now-6M","to":"now","display":"Last 6 months"},{"from":"now-1y","to":"now","display":"Last year"},{"from":"now-2y","to":"now","display":"Last 2 years"},{"from":"now-5y","to":"now","display":"Last 5 years"}]
       - GF_DATE_FORMATS_INTERVAL_MONTH=MMM-YYYY
       - GF_USERS_DEFAULT_THEME=light
       - GF_USERS_HOME_PAGE=/d/heart360-home?orgId=1
+      # Keeps generated links correct when Grafana is published on a non-default
+      # port or behind a reverse proxy.
+      - GF_SERVER_ROOT_URL=${HEART360_GRAFANA_ROOT_URL-http://localhost:${HEART360_GRAFANA_PORT-3000}/}
+      - HEART360_GRAFANA_PUBLIC_URL=${HEART360_GRAFANA_ROOT_URL-http://localhost:${HEART360_GRAFANA_PORT-3000}/}
+      - HTTP_PROXY=${HTTP_PROXY-}
+      - HTTPS_PROXY=${HTTPS_PROXY-}
+      - NO_PROXY=${NO_PROXY-localhost,127.0.0.1,postgres,grafana,pgadmin,filebrowser-quantum,file-upload-trigger}
   postgres:
     build:
       context: .
       dockerfile: docker_build/heart360.pg_database.docker
-    container_name: postgres
+      args:
+        HTTP_PROXY: ${HTTP_PROXY-}
+        HTTPS_PROXY: ${HTTPS_PROXY-}
+        NO_PROXY: ${NO_PROXY-localhost,127.0.0.1,postgres,grafana,pgadmin,filebrowser-quantum,file-upload-trigger}
+        HEART360_APK_INSECURE_HTTP: ${HEART360_APK_INSECURE_HTTP-false}
+        HEART360_TLS_INSECURE: ${HEART360_TLS_INSECURE-false}
+        HEART360_PG_CRON_REPO: ${HEART360_PG_CRON_REPO-https://github.com/citusdata/pg_cron.git}
+    container_name: ${HEART360_POSTGRES_CONTAINER-postgres}
     ports:
-      - 5432:5432
+      - "${HEART360_BIND_ADDRESS-0.0.0.0}:${HEART360_POSTGRES_PORT-5432}:5432"
     restart: unless-stopped
     # POSTGRES_INITDB_ARGS goes to initdb, not the running server — pg_cron must load during init scripts too.
     command:
@@ -35,26 +70,32 @@ services:
       - -c
       - shared_preload_libraries=pg_cron
       - -c
-      - cron.database_name=heart360tk_database
+      - cron.database_name=${HEART360_DB_NAME-heart360tk_database}
     environment:
-      - POSTGRES_USER=h360tk_root
-      - POSTGRES_PASSWORD=NGE5ZjljYjM1ZWEyNDI5N2I0YmZiZGM0
-      - POSTGRES_DB=heart360tk_database
+      - POSTGRES_USER=${HEART360_DB_ROOT_USER-h360tk_root}
+      - POSTGRES_PASSWORD=${HEART360_DB_ROOT_PASSWORD-NGE5ZjljYjM1ZWEyNDI5N2I0YmZiZGM0}
+      - POSTGRES_DB=${HEART360_DB_NAME-heart360tk_database}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 40s
     volumes:
       - ./pg_init_scripts:/docker-entrypoint-initdb.d:ro
       - ./data:/var/lib/postgresql/import:ro
 
   pgadmin:
-    image: dpage/pgadmin4:9.14
-    container_name: pgadmin
+    image: ${HEART360_PGADMIN_IMAGE-dpage/pgadmin4:9.14}
+    container_name: ${HEART360_PGADMIN_CONTAINER-pgadmin}
     ports:
-      - "5050:80"
+      - "${HEART360_BIND_ADDRESS-0.0.0.0}:${HEART360_PGADMIN_PORT-5050}:80"
     restart: unless-stopped
     user: root
     entrypoint: /bin/sh -c "cp /pgadmin4/pgpass_src /tmp/pgpass && chmod 0600 /tmp/pgpass && chown 5050:5050 /tmp/pgpass && /entrypoint.sh"
     environment:
-      - PGADMIN_DEFAULT_EMAIL=admin@heart360.org
-      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_DEFAULT_EMAIL=${HEART360_PGADMIN_EMAIL-admin@heart360.org}
+      - PGADMIN_DEFAULT_PASSWORD=${HEART360_PGADMIN_PASSWORD-admin}
       - PGADMIN_CONFIG_SERVER_MODE=True
       - PGPASSFILE=/tmp/pgpass
     volumes:
@@ -62,37 +103,63 @@ services:
       - ./pgadmin_config/servers.json:/pgadmin4/servers.json:ro
       - ./pgadmin_config/pgpass:/pgadmin4/pgpass_src:ro
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   filebrowser:
-    image: gtstef/filebrowser:stable-slim
-    container_name: filebrowser-quantum
+    image: ${HEART360_FILEBROWSER_IMAGE-gtstef/filebrowser:stable-slim}
+    container_name: ${HEART360_FILEBROWSER_CONTAINER-filebrowser-quantum}
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${HEART360_BIND_ADDRESS-0.0.0.0}:${HEART360_FILEBROWSER_PORT-8080}:80"
     volumes:
       - ./data/upload:/srv:rw
     environment:
-      - FILEBROWSER_ADMIN_PASSWORD=admin
+      - FILEBROWSER_ADMIN_PASSWORD=${HEART360_FILEBROWSER_PASSWORD-admin}
       - FILEBROWSER_BASEURL=/
 
   file-processor:
-    image: devodev/inotify
-    container_name: file-upload-trigger
+    image: ${HEART360_FILEPROC_IMAGE-devodev/inotify}
+    container_name: ${HEART360_FILEPROC_CONTAINER-file-upload-trigger}
     entrypoint: /bin/sh /scripts/init.sh
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       - H360TK_DATA_LOAD_SCRIPT=/scripts/ingest_file_h360tk.py
       - INOTIFY_TARGET=/data
       - INOTIFY_SCRIPT=/scripts/fileproc.sh
       - POSTGRES_HOST=postgres
-      - POSTGRES_USER=heart360tk
-      - POSTGRES_PASSWORD=YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0
-      - POSTGRES_DB=heart360tk_database
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${HEART360_DB_APP_USER-heart360tk}
+      - POSTGRES_PASSWORD=${HEART360_DB_APP_PASSWORD-YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0}
+      - POSTGRES_DB=${HEART360_DB_NAME-heart360tk_database}
+      # --- Egress / TLS controls, see docs/ports-and-proxy.md ---
+      - HTTP_PROXY=${HTTP_PROXY-}
+      - HTTPS_PROXY=${HTTPS_PROXY-}
+      - NO_PROXY=${NO_PROXY-localhost,127.0.0.1,postgres,grafana,pgadmin,filebrowser-quantum,file-upload-trigger}
+      - http_proxy=${HTTP_PROXY-}
+      - https_proxy=${HTTPS_PROXY-}
+      - no_proxy=${NO_PROXY-localhost,127.0.0.1,postgres,grafana,pgadmin,filebrowser-quantum,file-upload-trigger}
+      - PIP_INDEX_URL=${PIP_INDEX_URL-}
+      - PIP_EXTRA_INDEX_URL=${PIP_EXTRA_INDEX_URL-}
+      - PIP_TRUSTED_HOST=${PIP_TRUSTED_HOST-}
+      - HEART360_APK_INSECURE_HTTP=${HEART360_APK_INSECURE_HTTP-false}
+      - HEART360_TLS_INSECURE=${HEART360_TLS_INSECURE-false}
+      - HEART360_TLS_LEGACY=${HEART360_TLS_LEGACY-false}
+      - HEART360_SKIP_BOOTSTRAP=${HEART360_SKIP_BOOTSTRAP-false}
     volumes:
       - ./data:/grafana_target
       - ./data/upload:/data:rw
       - ./inotify_scripts:/scripts:ro
       - ./prepare_date.py:/prepare_date.py
+      # Shared TLS bootstrap, so a new CA works without rebuilding the image.
+      - ./scripts:/heart360-scripts:ro
+      # Drop corporate root CAs (*.crt / *.pem) into ./certs to survive TLS interception.
+      - ./certs:/heart360-certs:ro
+      # Drop pre-downloaded .whl files into ./vendor/wheels for fully offline installs.
+      - ./vendor/wheels:/heart360-wheels:ro
 
 volumes:
   pgadmin_data:

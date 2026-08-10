@@ -1,22 +1,47 @@
-In order to launch this poc:
+# HEARTS360 Toolkit
 
+## Quick start
+
+```bash
+git clone https://github.com/simpledotorg/h360tk_grafana_core.git
+cd h360tk_grafana_core
 ```
-git clone git@github.com:simpledotorg/poc_heart360_on_grafana.git
-cd poc_heart360_on_grafana
+
+Then start the stack. The helper scripts pick free ports automatically, so this
+works even when 3000, 5432, 8080 or 5050 are already in use on your machine:
+
+```bash
+# Linux / macOS
+./scripts/heart360-up.sh
+
+# Windows (PowerShell)
+.\scripts\heart360-up.ps1
+```
+
+The script prints the URLs it settled on. If you prefer the plain command and
+know the default ports are free:
+
+```bash
 docker compose up -d
 ```
 
-Then just go to this url:
+| What | Default URL |
+| --- | --- |
+| Dashboards | <http://localhost:3000> |
+| Upload files | <http://localhost:8080> |
+| pgAdmin | <http://localhost:5050> |
+| PostgreSQL | `localhost:5432` |
 
-http://localhost:3000/d/heart360_drilldown/hearts360-hypertension-dashboard
+> **Something already using those ports, or a corporate proxy in the way?**
+> See [docs/ports-and-proxy.md](docs/ports-and-proxy.md). Every port is
+> configurable via `.env`, and the stack supports proxies, custom CA
+> certificates, internal package mirrors and fully offline installs.
 
-to upload file:
-
-http://localhost:8080/
+> **Before exposing this to anyone else**, read
+> [the hardening checklist](docs/ports-and-proxy.md#hardening). The credentials
+> in this repository are public defaults.
 
 ---
-
-# HEARTS360 Toolkit
 
 HEARTS360 Toolkit is a Grafana-based system designed to help District Health Offices monitor hypertension care across facilities. The system processes patient line list data and generates visual dashboards.
 
@@ -69,20 +94,36 @@ brew install --cask dockerOpen Docker Desktop application and wait for it to sta
 
 #### Step 2: Launch HEARTS360 Toolkit
 ```
-git clone git@github.com:simpledotorg/poc_heart360_on_grafana.git
-cd poc_heart360_on_grafana
-docker compose up -d
+git clone https://github.com/simpledotorg/h360tk_grafana_core.git
+cd h360tk_grafana_core
+./scripts/heart360-up.sh          # Windows: .\scripts\heart360-up.ps1
 ```
-`docker compose up -d` command will:
+The launcher will:
+- Check that ports 3000, 5432, 8080 and 5050 are free, and choose alternatives if not
+- Record the chosen ports in `.env` so they stay stable across restarts
 - Download required Docker images (first time only)
 - Start PostgreSQL database
 - Start Grafana dashboard server
 - Start FileBrowser for file uploads
 - Start file processing service
+- Print the URLs to open
 
-Wait 30-60 seconds for all services to initialize.
+`docker compose up -d` on its own does the same thing, but uses the default
+ports and fails if any of them is taken.
+
+Wait 30-60 seconds for all services to initialize. Grafana now waits for the
+database to report healthy, so the first start takes longer but no longer
+crash-loops.
+
+On a corporate network the build may fail while downloading Grafana plugins,
+Python packages or the `pg_cron` source — typically with
+`SSLError(1, '[SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] ...')`.
+[docs/ports-and-proxy.md](docs/ports-and-proxy.md) covers proxy configuration,
+custom CA certificates, internal mirrors and offline installation.
 
 #### Step 4: Verify Installation
+
+Use the URLs printed by the launcher. With default ports:
 
 1. **Check Grafana Dashboard:**
    - Open browser: `http://localhost:3000`
@@ -96,9 +137,9 @@ Wait 30-60 seconds for all services to initialize.
 
 3. **Check Database:**
    - PostgreSQL is running on port 5432
-   - Database name: `metrics_db`
-   - Username: `grafana_user`
-   - Password: `your_db_password`
+   - Database name: `heart360tk_database`
+   - Username: `heart360tk`
+   - Password: see `.env.example`
 
 
 #### Step 5: Test with Sample Data
@@ -121,6 +162,19 @@ git pull
 docker compose down
 docker compose up -d
 ```
+Your `.env` is not tracked by git, so any ports, proxy settings and credentials
+you configured are preserved across updates.
+
+### Troubleshooting
+
+| Problem | Where to look |
+| --- | --- |
+| `port is already allocated` / `Ports are not available` | [docs/ports-and-proxy.md — Ports](docs/ports-and-proxy.md#part-1--ports) |
+| `SSLV3_ALERT_HANDSHAKE_FAILURE`, `CERTIFICATE_VERIFY_FAILED`, `tls: handshake timeout` | [docs/ports-and-proxy.md — Proxies and TLS](docs/ports-and-proxy.md#part-2--proxies-and-tls) |
+| Uploaded file is not ingested | `docker compose logs file-processor` |
+| Dashboards show no new data | Run a refresh from **Admin · Dashboard Refresh** |
+| `^M: not found` or `syntax error: unexpected "elif"` | Line endings — see [docs/ports-and-proxy.md](docs/ports-and-proxy.md#part-3--related-pitfalls) |
+
 ### Database Considerations
 
 #### Current Setup: PostgreSQL
@@ -151,22 +205,30 @@ You have two options:
 
 #### Components
 
+All host ports below are defaults and can be changed in `.env` — see
+[docs/ports-and-proxy.md](docs/ports-and-proxy.md).
+
 1. **Grafana Container**
-   - Port: 3000
+   - Port: 3000 (`HEART360_GRAFANA_PORT`)
    - Purpose: Dashboard visualization
    - Configuration: `grafana_provisioning/`
 
 2. **PostgreSQL Container**
-   - Port: 5432
+   - Port: 5432 (`HEART360_POSTGRES_PORT`)
    - Purpose: Data storage
    - Initialization scripts: `pg_init_scripts/`
 
 3. **FileBrowser Container**
-   - Port: 8080
+   - Port: 8080 (`HEART360_FILEBROWSER_PORT`)
    - Purpose: File upload interface
    - Upload directory: `data/upload/`
 
-4. **File Processor Container**
+4. **pgAdmin Container**
+   - Port: 5050 (`HEART360_PGADMIN_PORT`)
+   - Purpose: Database administration
+   - Configuration: `pgadmin_config/`
+
+5. **File Processor Container**
    - Purpose: Watches for new files and processes them
    - Scripts: `inotify_scripts/`
 

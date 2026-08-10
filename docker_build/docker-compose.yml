@@ -1,17 +1,42 @@
-version: '3.8'
+# Image-build-only stack. Used by .github/workflows/build.yml to produce and
+# publish the simpledotorg/* images. Proxy and TLS build args mirror the ones
+# in the root docker-compose.yml so a build behind a corporate proxy works the
+# same way here. See docs/ports-and-proxy.md.
+
+x-egress-args: &egress-args
+  HTTP_PROXY: ${HTTP_PROXY-}
+  HTTPS_PROXY: ${HTTPS_PROXY-}
+  NO_PROXY: ${NO_PROXY-localhost,127.0.0.1,postgres,grafana,pgadmin,filebrowser-quantum,file-upload-trigger}
+  HEART360_APK_INSECURE_HTTP: ${HEART360_APK_INSECURE_HTTP-false}
+  HEART360_TLS_INSECURE: ${HEART360_TLS_INSECURE-false}
+  HEART360_TLS_LEGACY: ${HEART360_TLS_LEGACY-false}
+
 services:
   grafana:
     build: 
       context: ..
       dockerfile: docker_build/heart360.grafana.docker
+      args:
+        <<: *egress-args
+        HEART360_GF_PLUGINS: ${HEART360_GF_PLUGINS-volkovlabs-table-panel,yesoreyeram-infinity-datasource,marcusolsson-dynamictext-panel,volkovlabs-echarts-panel}
+        HEART360_GF_PLUGIN_REPO: ${HEART360_GF_PLUGIN_REPO-}
   postgresql:
     build: 
       context: ..
       dockerfile: docker_build/heart360.pg_database.docker
+      args:
+        <<: *egress-args
+        HEART360_PG_CRON_REPO: ${HEART360_PG_CRON_REPO-https://github.com/citusdata/pg_cron.git}
+        HEART360_DB_NAME: ${HEART360_DB_NAME-heart360tk_database}
   fileprocessor:
     build: 
       context: ..
       dockerfile: docker_build/heart360.fileproc.docker
+      args:
+        <<: *egress-args
+        PIP_INDEX_URL: ${PIP_INDEX_URL-}
+        PIP_EXTRA_INDEX_URL: ${PIP_EXTRA_INDEX_URL-}
+        PIP_TRUSTED_HOST: ${PIP_TRUSTED_HOST-}
   pgadmin:
     build:
       context: ..

@@ -13,6 +13,11 @@ datasources:
     isDefault: false
     jsonData:
       allowedHosts:
+        # Follows HEART360_GRAFANA_ROOT_URL so this keeps working when Grafana
+        # is published on a port other than 3000 or behind a reverse proxy.
+        # The literal entry below is the historical default and is retained as
+        # a fallback for setups that do not set the variable.
+        - $__env{HEART360_GRAFANA_PUBLIC_URL}
         - http://localhost:3000/
       auth_method: basicAuth
       keepCookies:

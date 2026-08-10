@@ -1,8 +1,10 @@
 services:
   db:
-    image: simpledotorg/heart360tk-postgresql:latest
+    image: ${HEART360_AUTODOC_DB_IMAGE-simpledotorg/heart360tk-postgresql:latest}
     ports:
-      - 5432:5432
+      # Defaults to 5433 so the autodoc stack never collides with a running
+      # HEARTS360 core stack (or a local PostgreSQL) on 5432.
+      - "${HEART360_AUTODOC_DB_PORT-5433}:5432"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
@@ -13,7 +15,7 @@ services:
 
 
   schemaspy:
-    image: schemaspy/schemaspy:6.2.4
+    image: ${HEART360_SCHEMASPY_IMAGE-schemaspy/schemaspy:6.2.4}
     volumes:
       - ./schemaspy-output:/output
     depends_on:
@@ -24,9 +26,9 @@ services:
       -t pgsql 
       -host db 
       -port 5432 
-      -db heart360tk_database 
-      -u heart360tk
-      -p YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0
+      -db ${HEART360_DB_NAME-heart360tk_database} 
+      -u ${HEART360_DB_APP_USER-heart360tk}
+      -p ${HEART360_DB_APP_PASSWORD-YmE4ZTk0OGI0OTNmNGU5YmFjZDY1YTA0}
       -norows
 
 

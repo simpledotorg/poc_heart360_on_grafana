@@ -5,4 +5,15 @@ pythonvenv
 data/upload/*.csv
 data/upload/*.xlsx
 
+# Local configuration - never commit real credentials or site-specific ports.
+.env
+.env.local
+
+# Corporate CA certificates and offline wheels are site-specific.
+certs/*
+!certs/README.md
+!certs/.gitkeep
+vendor/wheels/*
+!vendor/wheels/README.md
+!vendor/wheels/.gitkeep
 
