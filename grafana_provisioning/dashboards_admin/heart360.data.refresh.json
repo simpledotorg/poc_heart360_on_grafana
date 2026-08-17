@@ -727,8 +727,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Admin \u00b7 Dashboard Refresh",
-  "uid": "heart360-admin-refresh",
+  "title": "Data Refresh Dashboard",
+  "uid": "heart360-data-refresh",
   "version": 1,
   "weekStart": ""
 }

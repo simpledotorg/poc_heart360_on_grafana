@@ -13,7 +13,7 @@ providers:
       foldersFromFilesStructure: false
 
 
-  - name: 'Admin Dashboards'
+  - name: 'Data Refresh Dashboards'
     orgId: 1
     folder: 'Admin'
     type: file

@@ -1,7 +1,7 @@
-# Grafana Admin Dashboard Refresh – Visual Documentation
+# Grafana Data Refresh Dashboard – Visual Documentation
 
 ## Overview
-This document captures the visual workflow and behavior of the new Grafana Admin Dashboard Refresh feature.
+This document captures the visual workflow and behavior of the new Grafana Data Refresh Dashboard feature.
 
 The dashboard provides admins with:
 * Visibility into dashboard refresh freshness and status
@@ -14,7 +14,7 @@ The dashboard provides admins with:
 ## 1. Initial First-Time Admin State
 
 ### Purpose
-This screen represents the initial state of the Grafana Admin Dashboard when an admin logs in for the first time before any dashboard refresh has been triggered.
+This screen represents the initial state of the Grafana Data Refresh Dashboard when an admin logs in for the first time before any dashboard refresh has been triggered.
 
 ### Expected Behavior
 * Overall status displays as `Idle`
@@ -69,7 +69,7 @@ This screen validates that duplicate refresh requests are prevented while a refr
 ### Expected Behavior
 * Clicking **Refresh Dashboard** during an active refresh does not start another run
 * Button remains disabled or ignored while refresh is in progress
-* The disabled UI is not visible in the current screenshot. We will need to manually verify this behavior by going through the admin dashboard flow.
+* The disabled UI is not visible in the current screenshot. We will need to manually verify this behavior by going through the data refresh dashboard flow.
 
 ![Duplicate Refresh Prevention (Refreshing State)](images/admin_refresh/refresh_in_progress.png)
 
@@ -105,10 +105,10 @@ This screen validates that the dashboard is restricted to admin users only.
 
 ---
 
-## 8. Admin Dashboard Overview
+## 8. Data Refresh Dashboard Overview
 
 ### Purpose
-This screen shows the overall admin dashboard refresh page available only to admin users.
+This screen shows the overall data refresh dashboard page available only to admin users.
 
 ### Expected Behavior
 * Dashboard loads successfully for admin users
@@ -122,10 +122,10 @@ This screen shows the overall admin dashboard refresh page available only to adm
 The following sections show the top-level status card, the charts component, and the final materialized views log details:
 
 1. **Top-Level Status Indicators & Manual Control Button:**
-   ![Admin Dashboard Overview - Top Section](images/admin_refresh/admin_dashboard_overview_top.png)
+   ![Data Refresh Dashboard Overview - Top Section](images/admin_refresh/admin_dashboard_overview_top.png)
 
 2. **Historical Performance & Freshness Charts:**
-   ![Admin Dashboard Overview - Charts Section](images/admin_refresh/admin_dashboard_overview_charts.png)
+   ![Data Refresh Dashboard Overview - Charts Section](images/admin_refresh/admin_dashboard_overview_charts.png)
 
 3. **Detailed Materialized View Logs Table:**
-   ![Admin Dashboard Overview - Table Section](images/admin_refresh/admin_dashboard_overview_table.png)
+   ![Data Refresh Dashboard Overview - Table Section](images/admin_refresh/admin_dashboard_overview_table.png)

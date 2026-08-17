@@ -106,7 +106,7 @@ Wait 30-60 seconds for all services to initialize.
 1. Upload a test CSV or Excel file through FileBrowser (`http://localhost:8080`)
 2. The file should be automatically processed.
 3. The uploaded data is saved immediately in the database, but the dashboard graphs will **not** update straight away because they use precomputed data that needs to be refreshed first.
-4. Manually trigger a refresh from the **Admin · Dashboard Refresh** page (`http://localhost:3000/d/heart360-admin-refresh`) to see the data immediately (see [Admin Dashboard — Refreshing Dashboard Data](<docs/Grafana Admin Dashboard Refresh – Visual Documentation.md>)).
+4. Manually trigger a refresh from the **Data Refresh Dashboard** page (`http://localhost:3000/d/heart360-data-refresh`) to see the data immediately (see [Data Refresh Dashboard — Refreshing Dashboard Data](<docs/Grafana Data Refresh Dashboard – Visual Documentation.md>)).
 
 
 #### Step 6: Set Up User Access
@@ -182,17 +182,17 @@ The system processes uploaded files through the following workflow:
 3. **File Detection:** File processor detects new file (using inotify)
 4. **Data Processing:** Python script (`ingest_file_h360tk.py`) processes the file
 5. **Database Insertion:** Data is inserted into PostgreSQL raw tables (`heart360tk_schema`)
-6. **Data Refresh Needed:** Uploaded data is saved in the database, but the dashboard graphs do **not** update until the dashboard data is refreshed (see [Admin Dashboard — Refreshing Dashboard Data](<docs/Grafana Admin Dashboard Refresh – Visual Documentation.md>))
+6. **Data Refresh Needed:** Uploaded data is saved in the database, but the dashboard graphs do **not** update until the dashboard data is refreshed (see [Data Refresh Dashboard — Refreshing Dashboard Data](<docs/Grafana Data Refresh Dashboard – Visual Documentation.md>))
 7. **Dashboard Display:** After a refresh, Grafana shows the updated data on the dashboards
 
-### Admin Dashboard — Refreshing Dashboard Data
+### Data Refresh Dashboard — Refreshing Dashboard Data
 
 When a sheet is uploaded, the data is saved in the database immediately, but it will **not** show up in the dashboard graphs straight away. The dashboards use precomputed data that needs to be refreshed first.
 
 A refresh happens in two ways:
 
 - **Automatically:** the data refreshes on its own once every hour.
-- **Manually (admin only):** an admin can refresh it right away from the **Admin · Dashboard Refresh** dashboard instead of waiting for the hourly update.
+- **Manually (admin only):** an admin can refresh it right away from the **Data Refresh Dashboard** instead of waiting for the hourly update.
 
 #### Who can refresh
 
@@ -201,7 +201,7 @@ Only admins can refresh the dashboard data. Non-admin users will see an "Access 
 #### How to refresh after uploading a sheet
 
 1. Upload the sheet via FileBrowser (`http://localhost:8080`) and wait for it to be processed. The data is now in the database but not yet visible in the graphs.
-2. Open the **Admin · Dashboard Refresh** dashboard: `http://localhost:3000/d/heart360-admin-refresh`
+2. Open the **Data Refresh Dashboard**: `http://localhost:3000/d/heart360-data-refresh`
 3. Click the **⟳ Refresh Dashboard** button and confirm. The refresh runs in the background and may take a few minutes.
 4. Wait for the status on the dashboard to finish (it moves through **Queued → Refreshing… → All Good**).
 5. Once it shows the refresh is complete, open any dashboard (Hypertension, Diabetes, Overdue, etc.) and the newly uploaded data will now be visible.
