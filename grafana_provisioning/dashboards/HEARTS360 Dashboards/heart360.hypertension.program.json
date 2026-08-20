@@ -152,7 +152,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nselect\n  ref_month,\n  sum(nb_patients_controlled) nb_patients_controlled\nfrom heart360_patients_category\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\ngroup by 1\n) AS master_access_control WHERE '${isAllowed}' = '1'",
+          "rawSql": "SELECT * FROM (\nselect\n  ref_month,\n  sum(nb_patients_controlled) nb_patients_controlled\nfrom heart360_patients_category\nwhere org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month >= date_trunc('month', $__timeFrom()::timestamp)::date\n  AND ref_month <= date_trunc('month', $__timeTo()::timestamp)::date\ngroup by 1\n) AS master_access_control WHERE '${isAllowed}' = '1'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -642,7 +642,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nSELECT\n  (100.00 * SUM(nb_patients_controlled) / NULLIF(GREATEST(0, SUM(TOTAL_NUMBER_OF_PATIENTS) - SUM(NB_PATIENTS_NEWLY_REGISTERED) - SUM(NB_PATIENTS_LOST_TO_FOLLOW_UP)), 0)) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
+          "rawSql": "SELECT * FROM (\nSELECT\n  (100.00 * SUM(nb_patients_controlled) / NULLIF(GREATEST(0, SUM(TOTAL_NUMBER_OF_PATIENTS) - SUM(NB_PATIENTS_NEWLY_REGISTERED) - SUM(NB_PATIENTS_LOST_TO_FOLLOW_UP)), 0)) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n    AND ref_month <= date_trunc('month', $__timeTo()::timestamp)::date\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -724,7 +724,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nSELECT\n  SUM(nb_patients_controlled) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
+          "rawSql": "SELECT * FROM (\nSELECT\n  SUM(nb_patients_controlled) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n    AND ref_month <= date_trunc('month', $__timeTo()::timestamp)::date\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -806,7 +806,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nSELECT\n  (100.00 * SUM(nb_patients_uncontrolled) / NULLIF(GREATEST(0, SUM(TOTAL_NUMBER_OF_PATIENTS) - SUM(NB_PATIENTS_NEWLY_REGISTERED) - SUM(NB_PATIENTS_LOST_TO_FOLLOW_UP)), 0)) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
+          "rawSql": "SELECT * FROM (\nSELECT\n  (100.00 * SUM(nb_patients_uncontrolled) / NULLIF(GREATEST(0, SUM(TOTAL_NUMBER_OF_PATIENTS) - SUM(NB_PATIENTS_NEWLY_REGISTERED) - SUM(NB_PATIENTS_LOST_TO_FOLLOW_UP)), 0)) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n    AND ref_month <= date_trunc('month', $__timeTo()::timestamp)::date\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -888,7 +888,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nSELECT\n  SUM(nb_patients_uncontrolled) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
+          "rawSql": "SELECT * FROM (\nSELECT\n  SUM(nb_patients_uncontrolled) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n    AND ref_month <= date_trunc('month', $__timeTo()::timestamp)::date\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -970,7 +970,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nSELECT\n  (100.00 * SUM(nb_patients_no_visit) / NULLIF(GREATEST(0, SUM(TOTAL_NUMBER_OF_PATIENTS) - SUM(NB_PATIENTS_NEWLY_REGISTERED) - SUM(NB_PATIENTS_LOST_TO_FOLLOW_UP)), 0)) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
+          "rawSql": "SELECT * FROM (\nSELECT\n  (100.00 * SUM(nb_patients_no_visit) / NULLIF(GREATEST(0, SUM(TOTAL_NUMBER_OF_PATIENTS) - SUM(NB_PATIENTS_NEWLY_REGISTERED) - SUM(NB_PATIENTS_LOST_TO_FOLLOW_UP)), 0)) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n    AND ref_month <= date_trunc('month', $__timeTo()::timestamp)::date\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -1052,7 +1052,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM (\nSELECT\n  SUM(nb_patients_no_visit) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
+          "rawSql": "SELECT * FROM (\nSELECT\n  SUM(nb_patients_no_visit) AS value\nFROM HEART360_PATIENTS_CATEGORY\nWHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n  AND ref_month = (\n    SELECT MAX(ref_month) FROM HEART360_PATIENTS_CATEGORY\n    WHERE org_unit_id IN (SELECT id FROM get_descendant_ids(((SELECT ou.id FROM org_units ou WHERE ou.id::text = NULLIF(TRIM(BOTH FROM '${org_unit}'), '') LIMIT 1))))\n    AND ref_month <= date_trunc('month', $__timeTo()::timestamp)::date\n  )\n) AS master_access_control WHERE '${isAllowed}' = '1'",
           "refId": "A",
           "sql": {
             "columns": [
