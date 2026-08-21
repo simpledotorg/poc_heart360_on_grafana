@@ -1803,6 +1803,77 @@ BEGIN
 END;
 $$;
 
+-- =======================================================================================
+-- Watchdog: recovers the status row if a refresh gets stuck (e.g. the database was
+-- restarted, or the process running the refresh was killed) while a normal completion
+-- never had a chance to write 'success'/'failed'. Run every minute by pg_cron so the
+-- admin dashboard button re-enables itself instead of staying stuck forever.
+--   - 'in_progress' for > 30s with no advisory lock held  -> the worker died mid-refresh.
+--   - 'in_progress' for > 30 minutes regardless           -> safety net for slow refreshes.
+--   - 'queued' for > 3 minutes                            -> the one-shot cron job that
+--     should have picked it up never ran (e.g. pg_cron/postgres restarted in between).
+-- Also sweeps orphaned one-shot jobs that failed to unschedule themselves.
+-- =======================================================================================
+CREATE OR REPLACE FUNCTION heart360tk_reporting.reset_stale_refresh_status()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_lock_key bigint := hashtext('heart360tk_reporting.matview_refresh');
+    v_lock_acquired boolean;
+    v_row heart360tk_reporting.reporting_table_refresh_status%ROWTYPE;
+    v_stale_job record;
+BEGIN
+    SELECT * INTO v_row FROM heart360tk_reporting.reporting_table_refresh_status WHERE id = 1;
+
+    IF FOUND AND v_row.status = 'in_progress' THEN
+        IF v_row.started_at IS NOT NULL AND v_row.started_at < clock_timestamp() - interval '30 minutes' THEN
+            UPDATE heart360tk_reporting.reporting_table_refresh_status
+            SET status = 'failed',
+                finished_at = clock_timestamp(),
+                last_error = 'Refresh timed out after 30 minutes and was automatically reset. Please try again.'
+            WHERE id = 1 AND status = 'in_progress';
+        ELSIF v_row.started_at IS NOT NULL AND v_row.started_at < clock_timestamp() - interval '30 seconds' THEN
+            SELECT pg_try_advisory_lock(v_lock_key) INTO v_lock_acquired;
+            IF v_lock_acquired THEN
+                PERFORM pg_advisory_unlock(v_lock_key);
+                UPDATE heart360tk_reporting.reporting_table_refresh_status
+                SET status = 'failed',
+                    finished_at = clock_timestamp(),
+                    last_error = 'Refresh was interrupted (the cron job was killed, or the database connection/process was lost) and was automatically reset. Please try again.'
+                WHERE id = 1 AND status = 'in_progress';
+            END IF;
+        END IF;
+    ELSIF FOUND AND v_row.status = 'queued' THEN
+        IF v_row.requested_at IS NOT NULL AND v_row.requested_at < clock_timestamp() - interval '3 minutes' THEN
+            UPDATE heart360tk_reporting.reporting_table_refresh_status
+            SET status = 'failed',
+                finished_at = clock_timestamp(),
+                last_error = 'Refresh request was never picked up by the scheduler (it may have restarted) and was automatically reset. Please try again.'
+            WHERE id = 1 AND status = 'queued';
+
+            IF v_row.job_name IS NOT NULL AND EXISTS (SELECT 1 FROM cron.job WHERE jobname = v_row.job_name) THEN
+                PERFORM cron.unschedule(v_row.job_name);
+            END IF;
+        END IF;
+    END IF;
+
+    -- Defensive sweep: unschedule any one-shot refresh jobs that somehow failed to
+    -- unschedule themselves (e.g. the database restarted mid-run) so they don't pile up.
+    FOR v_stale_job IN
+        SELECT jobname FROM cron.job WHERE jobname LIKE 'mv_refresh_oneshot_%'
+    LOOP
+        BEGIN
+            IF to_timestamp(split_part(v_stale_job.jobname, '_', 4)::bigint) < clock_timestamp() - interval '10 minutes' THEN
+                PERFORM cron.unschedule(v_stale_job.jobname);
+            END IF;
+        EXCEPTION WHEN OTHERS THEN
+            NULL; -- unexpected job name format; leave it alone rather than fail the watchdog
+        END;
+    END LOOP;
+END;
+$$;
+
 GRANT SELECT ON heart360tk_reporting.reporting_table_refresh_status TO heart360tk;
 GRANT EXECUTE ON FUNCTION heart360tk_reporting.start_async_refresh(text) TO heart360tk;
 GRANT EXECUTE ON FUNCTION heart360tk_reporting.run_refresh_with_status(text) TO heart360tk;
@@ -1851,6 +1922,11 @@ GRANT EXECUTE ON FUNCTION heart360tk_schema.get_user_visible_org_units(integer) 
 -- pg_cron: Schedule the refresh of all reporting tables every hour
 -- ============================================================================
 SELECT cron.schedule('refresh_reporting_tables_every_hour', '0 * * * *', 'SELECT heart360tk_reporting.run_refresh_with_status(''cron'');');
+
+-- ============================================================================
+-- pg_cron: Watchdog that recovers a stuck refresh status every minute
+-- ============================================================================
+SELECT cron.schedule('reset_stale_refresh_status_watchdog', '* * * * *', 'SELECT heart360tk_reporting.reset_stale_refresh_status();');
 
 
 -- ============================================================================
