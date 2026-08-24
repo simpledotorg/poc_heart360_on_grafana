@@ -1677,7 +1677,7 @@ END;
 $$;
 
 -- =======================================================================================
--- Single-row status table for the admin dashboard: tracks the most recent refresh attempt
+-- Single-row status table for the data refresh dashboard: tracks the most recent refresh attempt
 -- and serves as the queue gate for manual triggers.
 -- =======================================================================================
 CREATE TABLE IF NOT EXISTS heart360tk_reporting.reporting_table_refresh_status (
